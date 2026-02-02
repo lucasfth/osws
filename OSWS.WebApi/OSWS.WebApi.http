@@ -1,0 +1,7 @@
+### @OSWS.WebApi_HostAddress = http://localhost:5161
+
+### GET {{OSWS.WebApi_HostAddress}}/todos/
+### Accept: application/json
+
+###
+###

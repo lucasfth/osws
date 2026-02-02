@@ -20,6 +20,8 @@ if (app.Environment.IsDevelopment())
 
 var pingApi = app.MapGet("/", () => "Hello World!");
 
+app.Run();
+
 // Todo[] sampleTodos =
 // [
 //     new(1, "Walk the dog"),

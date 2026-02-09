@@ -97,8 +97,7 @@ public class S3Put(IS3ClientFactory clientFactory) : IS3Put
         }
 
         // Forward metadata headers should probably be moved into httpheaderhelper
-        if (!string.IsNullOrEmpty(resp.ETag))
-            httpRequest.HttpContext.Response.Headers.Append("ETag", resp.ETag);
+        await HttpHeaderHelper.AppendS3ETag(resp, httpRequest);
 
         S3ErrorHelper.AddBufferingDebugHeaders(httpRequest.HttpContext, tempFile);
 

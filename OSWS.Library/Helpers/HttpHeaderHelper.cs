@@ -129,6 +129,14 @@ public static class HttpHeaderHelper
         return Task.CompletedTask;
     }
 
+    
+    public static Task AppendS3ETag(PutObjectResponse from, HttpRequest to)
+    {
+        if (!string.IsNullOrEmpty(from.ETag))
+            to.Headers.Append("ETag", from.ETag);
+        return Task.CompletedTask;
+    }
+
     /// <summary>
     /// Forwards the LastModified header from a GetObjectResponse to an HttpResponse, if it exists.
     /// </summary>

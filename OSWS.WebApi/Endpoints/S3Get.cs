@@ -60,9 +60,7 @@ public class S3Get(IS3ClientFactory clientFactory) : IS3Get
         // TODO (FUTURE): Fetch relevant keys from KMS
 
         // TODO (FUTURE): Decrypt object stream if needed using fetched keys
-
-
-        await HttpHeaderHelper.ForwardS3Metadata(resp, httpResponse);
+        
 
         // After fetching the full object, handle range slicing in-memory streaming (after potential decryption)
         var contentLength = resp.ContentLength;
@@ -76,12 +74,9 @@ public class S3Get(IS3ClientFactory clientFactory) : IS3Get
                 httpResponse.Headers.ContentRange = $"bytes */{contentLength}";
                 return Results.StatusCode(416);
             }
-
-            // Forward metadata headers should probably be moved into httpheaderhelper
-            if (!string.IsNullOrEmpty(resp.ETag))
-                httpResponse.Headers.ETag = resp.ETag;
-            if (resp.LastModified != null)
-                httpResponse.Headers.LastModified = resp.LastModified.GetValueOrDefault().ToString("R");
+            
+            await HttpHeaderHelper.ForwardS3ETag(resp, httpResponse);
+            await HttpHeaderHelper.ForwardS3LastModified(resp, httpResponse);
             httpResponse.Headers.AcceptRanges = "bytes";
             httpResponse.Headers.ContentRange = $"bytes {bounds.Start}-{bounds.End}/{contentLength}";
             httpResponse.ContentLength = bounds.Length;

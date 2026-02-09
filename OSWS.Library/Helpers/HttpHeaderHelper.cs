@@ -112,13 +112,13 @@ public static class HttpHeaderHelper
     }
 
     /// <summary>
-    /// Forwards relevant S3 metadata headers (ETag, Last-Modified, Accept-Ranges)
-    /// from the GetObjectResponse to the HttpResponse.
+    /// Forwards relevant S3 object metadata from a GetObjectResponse to an HttpResponse, including ETag and LastModified headers,
+    /// and sets the Accept-Ranges header to indicate byte-range support.
     /// </summary>
     /// <param name="from"></param>
     /// <param name="to"></param>
     /// <returns></returns>
-    public static Task ForwardS3Metadata(GetObjectResponse from, HttpResponse to)
+    public static Task ForwardS3ETag(GetObjectResponse from, HttpResponse to)
     {
         if (!string.IsNullOrEmpty(from.ETag))
             to.Headers.ETag = from.ETag;
@@ -127,6 +127,23 @@ public static class HttpHeaderHelper
         to.Headers.AcceptRanges = "bytes";
 
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Forwards the LastModified header from a GetObjectResponse to an HttpResponse, if it exists.
+    /// </summary>
+    /// <param name="from"></param>
+    /// <param name="to"></param>
+    /// <returns></returns>
+    public static Task ForwardS3LastModified(GetObjectResponse from, HttpResponse to)
+    {
+        if (from.LastModified != null) to.Headers.LastModified = from.LastModified.GetValueOrDefault().ToString("R");
+        return Task.CompletedTask;
+    }
+
+    public static Task ForwardS3ContentRelatedHeaders(GetObjectResponse from, HttpResponse to)
+    {
+        
     }
 
     /// <summary>
@@ -200,7 +217,6 @@ public static class HttpHeaderHelper
         var didSetLength = false;
 
         // If the incoming request provides a Content-Length header, use it. Buffer if the stream is not seekable
-        // to avoid streaming-signature/trailer flows that some providers don't support.
         if (contentLengthHeader.HasValue)
         {
             if (!canSeek)
@@ -230,10 +246,9 @@ public static class HttpHeaderHelper
                 }
 
                 await tempFs.FlushAsync(cancellationToken).ConfigureAwait(false);
-                // Close the writer stream so the SDK can open the file independently and avoid any file-lock issues.
                 await tempFs.DisposeAsync().ConfigureAwait(false);
 
-                // Open a read stream for the SDK (don't set both FilePath and InputStream - SDK expects only one)
+                // Open a read stream for the SDK (don't set both FilePath and InputStream)
                 var readFs2 = File.OpenRead(tempFile);
                 req.InputStream = readFs2;
 
@@ -297,10 +312,9 @@ public static class HttpHeaderHelper
             }
 
             await tempFs.FlushAsync(cancellationToken).ConfigureAwait(false);
-            // Close the writer to release file handle
             await tempFs.DisposeAsync().ConfigureAwait(false);
 
-            // Open a read stream for the SDK (don't set both FilePath and InputStream - SDK expects only one)
+            // Open a read stream for the SDK (don't set both FilePath and InputStream)
             var readFs = File.OpenRead(tempFile);
             req.InputStream = readFs;
 

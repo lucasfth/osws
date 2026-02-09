@@ -77,10 +77,8 @@ public class S3Get(IS3ClientFactory clientFactory) : IS3Get
             
             await HttpHeaderHelper.ForwardS3ETag(resp, httpResponse);
             await HttpHeaderHelper.ForwardS3LastModified(resp, httpResponse);
-            httpResponse.Headers.AcceptRanges = "bytes";
-            httpResponse.Headers.ContentRange = $"bytes {bounds.Start}-{bounds.End}/{contentLength}";
-            httpResponse.ContentLength = bounds.Length;
-            httpResponse.ContentType = resp.Headers?.ContentType ?? "application/octet-stream";
+            await HttpHeaderHelper.ForwardS3ContentRelatedHeaders(httpResponse, bounds.Start, bounds.End, bounds.Length,
+                resp.Headers?.ContentType);
             httpResponse.StatusCode = 206;
 
             await StreamRangeHelper.CopyRangeAsync(resp.ResponseStream, httpResponse.Body, bounds.Start, bounds.Length, cancellationToken).ConfigureAwait(false);

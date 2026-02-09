@@ -141,9 +141,23 @@ public static class HttpHeaderHelper
         return Task.CompletedTask;
     }
 
-    public static Task ForwardS3ContentRelatedHeaders(GetObjectResponse from, HttpResponse to)
+    /// <summary>
+    /// Forwards content-related headers (Accept-Ranges, Content-Range, Content-Length, Content-Type) to the HttpResponse based on the provided parameters.
+    /// </summary>
+    /// <param name="to"></param>
+    /// <param name="contentRangeStart"></param>
+    /// <param name="contentRangeEnd"></param>
+    /// <param name="contentLength"></param>
+    /// <param name="contentType"></param>
+    /// <returns></returns>
+    public static Task ForwardS3ContentRelatedHeaders(HttpResponse to, long contentRangeStart,
+        long contentRangeEnd, long contentLength, string? contentType)
     {
-        
+        to.Headers.AcceptRanges = "bytes";
+        to.Headers.ContentRange = $"bytes {contentRangeStart}-{contentRangeEnd}/{contentLength}";
+        to.Headers.ContentLength = contentLength;
+        to.Headers.ContentType = contentType ?? "application/octet-stream";
+        return Task.CompletedTask;
     }
 
     /// <summary>

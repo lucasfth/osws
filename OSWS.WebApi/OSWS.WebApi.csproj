@@ -15,6 +15,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\OSWS.Models\OSWS.Models.csproj" />
+      <ProjectReference Include="..\OSWS.Library\OSWS.Library.csproj" />
     </ItemGroup>
 
 </Project>

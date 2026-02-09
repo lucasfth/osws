@@ -1,155 +1,104 @@
-using System.Text.Json;
-using Amazon;
-using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
 using OSWS.Models.DTOs;
 using OSWS.WebApi.Interfaces;
+using OSWS.Library;
+using OSWS.Library.Helpers;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Get(IAmazonS3 s3Client) : IS3Get
+public class S3Get(IS3ClientFactory clientFactory) : IS3Get
 {
-    public async Task<IResult> GetObject(Params prms, S3Options s3Options, int retryOptions = 3,
-        int timeoutOptionsMs = 3000,
-        CancellationToken cancellationToken = default)
+    public async Task<IResult> GetObject(string bucket, string? key, Params prms, S3Options s3Options,
+        HttpRequest httpRequest, HttpResponse httpResponse,
+        int retryOptions = 3, int timeoutOptionsMs = 3000, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrEmpty(prms.Bucket))
-            return Results.BadRequest(new { error = "Bucket name is required" });
-        if (string.IsNullOrEmpty(prms.Key))
-            return Results.BadRequest(new { error = "Key is required" });
-        
-        var localS3Client = CreateClientFromOptionsOrDefault(s3Options);
 
-        var req = new GetObjectRequest()
+        if (string.IsNullOrEmpty(bucket))
         {
-            BucketName = prms.Bucket,
-            Key = prms.Key,
+            httpRequest.HttpContext.Response.StatusCode = 400;
+            return Results.Text(ParamValidation.BucketNameIsRequired(), "application/json");
+        }
+
+        var s3Client = clientFactory.GetClient(s3Options); // Should probably be moved into try to have finally for release
+
+        // Build GetObjectRequest now (we may add range)
+        var req = new GetObjectRequest
+        {
+            BucketName = bucket,
+            Key = key,
             VersionId = string.IsNullOrEmpty(prms.Version) ? null : prms.Version,
         };
 
-        if (!string.IsNullOrEmpty(prms.Version))
-            req.VersionId = prms.Version;
+        var rangeSpec = await HttpHeaderHelper.ParseRange(httpRequest);
+        if (rangeSpec.IsInvalidSpec)
+        {
+            clientFactory.ReleaseClient(s3Client);
+            return Results.StatusCode(400);
+        }
+
+        // Due to how OSWS handles encryption, we cannot set byte-range on the S3 request, as we may need to fetch the full object to decrypt before slicing.
+        // Instead, we'll handle range slicing in-memory after fetching (and potentially decrypting) the full object.
+        // This allows us to support range requests even for encrypted objects without needing to know the content length or encryption details upfront.
 
         GetObjectResponse resp;
         try
         {
-            resp = await localS3Client.GetObjectAsync(req, cancellationToken).ConfigureAwait(false);
+            resp = await s3Client.GetObjectAsync(req, cancellationToken).ConfigureAwait(false);
         }
         catch (AmazonS3Exception e)
         {
-            return Results.InternalServerError(e.Message);
+            clientFactory.ReleaseClient(s3Client);
+            return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
+        }
+        finally
+        {
+            // release after using response stream (ReleaseClient only disposes non-default clients)
+            clientFactory.ReleaseClient(s3Client);
         }
 
-        // Fetch needed keys
+        // TODO (FUTURE): Fetch relevant keys from KMS
 
-        // Decrypt
+        // TODO (FUTURE): Decrypt object stream if needed using fetched keys
 
-        var contentType = resp.Headers?.ContentType ?? "application/octet-stream";
-        return Results.File(resp.ResponseStream, contentType, fileDownloadName: prms.Key);
 
-    }
+        await HttpHeaderHelper.ForwardS3Metadata(resp, httpResponse);
 
-    private IAmazonS3 CreateClientFromOptionsOrDefault(S3Options? opts)
-    {
-        if (opts == null)
-            return s3Client;
+        // After fetching the full object, handle range slicing in-memory streaming (after potential decryption)
+        var contentLength = resp.ContentLength;
 
-        var hasEndpoint = !string.IsNullOrWhiteSpace(opts.EndpointHostname);
-        var hasCredsJson = !string.IsNullOrWhiteSpace(opts.V2AwsSdkCredentials) ||
-                           !string.IsNullOrWhiteSpace(opts.V3AwsSdkCredentials);
-
-        // If neither endpoint nor credentials provided, use injected default client
-        if (!hasEndpoint && !hasCredsJson)
-            return s3Client;
-
-        AWSCredentials? creds = null;
-        var json = !string.IsNullOrWhiteSpace(opts.V3AwsSdkCredentials)
-            ? opts.V3AwsSdkCredentials
-            : opts.V2AwsSdkCredentials;
-        if (!string.IsNullOrWhiteSpace(json) &&
-            TryParseCredentials(json!, out var accessKey, out var secretKey, out var sessionToken))
+        // If a range was requested, compute bounds and stream only that range using StreamRangeHelper
+        if (rangeSpec.IsRangeRequested)
         {
-            creds = string.IsNullOrEmpty(sessionToken)
-                ? new BasicAWSCredentials(accessKey, secretKey)
-                : new SessionAWSCredentials(accessKey, secretKey, sessionToken);
-        }
-
-        // If no creds parsed and no endpoint, fallback
-        if (creds == null && !hasEndpoint)
-            return s3Client;
-
-        // Build config
-        var endpoint = (opts.EndpointHostname ?? string.Empty).Trim();
-        if (!string.IsNullOrEmpty(endpoint))
-        {
-            if (!endpoint.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
-                !endpoint.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            var bounds = await StreamRangeHelper.ComputeRangeBounds(rangeSpec, contentLength);
+            if (bounds.IsUnsatisfiable)
             {
-                endpoint = "https://" + endpoint.TrimEnd('/');
-            }
-            else
-            {
-                endpoint = endpoint.TrimEnd('/');
-            }
-        }
-
-        var config = new AmazonS3Config
-        {
-            ServiceURL = string.IsNullOrEmpty(endpoint) ? null : endpoint,
-            ForcePathStyle = true
-        };
-
-        if (!string.IsNullOrWhiteSpace(opts.Region) && !opts.Region.Equals("auto", StringComparison.OrdinalIgnoreCase))
-        {
-            try
-            {
-                config.RegionEndpoint = RegionEndpoint.GetBySystemName(opts.Region);
-            }
-            catch
-            {
-                // ignore invalid region names
-            }
-        }
-
-        // If creds missing, but endpoint provided, fall back to default client (so default credentials can be used)
-        return creds == null ? s3Client : new AmazonS3Client(creds, config);
-    }
-
-    private static bool TryParseCredentials(string json, out string accessKey, out string secretKey,
-        out string sessionToken)
-    {
-        accessKey = secretKey = sessionToken = string.Empty;
-        try
-        {
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            string? GetValue(params string[] keys)
-            {
-                foreach (var prop in root.EnumerateObject())
-                {
-                    foreach (var k in keys)
-                    {
-                        if (string.Equals(prop.Name, k, StringComparison.OrdinalIgnoreCase))
-                            return prop.Value.GetString();
-                    }
-                }
-
-                return null;
+                httpResponse.Headers.ContentRange = $"bytes */{contentLength}";
+                return Results.StatusCode(416);
             }
 
-            accessKey = GetValue("accessKeyId", "accessKey", "AccessKeyId") ?? string.Empty;
-            secretKey = GetValue("secretAccessKey", "secretKey", "SecretAccessKey") ?? string.Empty;
-            sessionToken = GetValue("sessionToken", "token", "SessionToken") ?? string.Empty;
+            // Forward metadata headers should probably be moved into httpheaderhelper
+            if (!string.IsNullOrEmpty(resp.ETag))
+                httpResponse.Headers.ETag = resp.ETag;
+            if (resp.LastModified != null)
+                httpResponse.Headers.LastModified = resp.LastModified.GetValueOrDefault().ToString("R");
+            httpResponse.Headers.AcceptRanges = "bytes";
+            httpResponse.Headers.ContentRange = $"bytes {bounds.Start}-{bounds.End}/{contentLength}";
+            httpResponse.ContentLength = bounds.Length;
+            httpResponse.ContentType = resp.Headers?.ContentType ?? "application/octet-stream";
+            httpResponse.StatusCode = 206;
 
-            return !string.IsNullOrEmpty(accessKey) && !string.IsNullOrEmpty(secretKey);
+            await StreamRangeHelper.CopyRangeAsync(resp.ResponseStream, httpResponse.Body, bounds.Start, bounds.Length, cancellationToken).ConfigureAwait(false);
+            return Results.StatusCode(206);
         }
-        catch
-        {
-            return false;
-        }
+
+        // Full object
+        if (!string.IsNullOrEmpty(resp.ETag))
+            httpResponse.Headers.ETag = resp.ETag;
+        if (resp.LastModified != null)
+            httpResponse.Headers.LastModified = resp.LastModified.GetValueOrDefault().ToString("R");
+        httpResponse.Headers.AcceptRanges = "bytes";
+        httpResponse.ContentLength = contentLength;
+        return Results.File(resp.ResponseStream, resp.Headers?.ContentType ?? "application/octet-stream", fileDownloadName: key);
     }
 }

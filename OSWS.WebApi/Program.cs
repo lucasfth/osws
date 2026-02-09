@@ -1,12 +1,9 @@
-using System.Text.Json.Serialization;
 using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
-using OSWS.Models.DTOs;
 using OSWS.WebApi.Endpoints;
 using OSWS.WebApi.Interfaces;
+using OSWS.Library;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -22,6 +19,7 @@ var r2SecretKey = Environment.GetEnvironmentVariable("R2_SECRET_ACCESS_KEY") ?? 
 var r2Region = Environment.GetEnvironmentVariable("R2_REGION") ?? "auto"; // can be any string for S3-compatible providers
 
 builder.Services.AddTransient<IS3Get, S3Get>();
+builder.Services.AddTransient<IS3Put, S3Put>();
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
     var creds = new BasicAWSCredentials(r2AccessKey, r2SecretKey);
@@ -33,7 +31,7 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
         // Optionally set RegionEndpoint if you have a meaningful region name:
         // RegionEndpoint = RegionEndpoint.GetBySystemName(r2Region)
     };
-    
+
     if (!string.IsNullOrEmpty(r2Region) && !r2Region.Equals("auto", StringComparison.OrdinalIgnoreCase))
     {
         config.RegionEndpoint = RegionEndpoint.GetBySystemName(r2Region);
@@ -42,20 +40,18 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
     return new AmazonS3Client(creds, config);
 });
 
+builder.Services.AddSingleton<IS3ClientFactory, S3ClientFactory>();
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
 app.MapGet("/", () => "Hello World!");
 
-app.MapGet("/s3/get", async (
-        [FromServices] IS3Get s3Get,
-        [AsParameters] Params prms,
-        [AsParameters] S3Options s3Options,
-        [FromQuery] int retryOptions = 3,
-        [FromQuery] int timeoutOptionsMs = 3000,
-        CancellationToken cancellationToken = default) =>
-    await s3Get.GetObject(prms, s3Options, retryOptions, timeoutOptionsMs, cancellationToken));
+// Map S3 routes (GET, PUT) to their handlers
+app.MapS3Routes();
+
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

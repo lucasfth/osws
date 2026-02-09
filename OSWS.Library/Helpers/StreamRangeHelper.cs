@@ -26,7 +26,10 @@ public static class StreamRangeHelper
     /// <param name="spec"></param>
     /// <param name="contentLength"></param>
     /// <returns></returns>
-    public static Task<RangeBoundsResult> ComputeRangeBounds(RangeParseResult spec, long contentLength)
+    public static Task<RangeBoundsResult> ComputeRangeBounds(
+        RangeParseResult spec,
+        long contentLength
+    )
     {
         var res = new RangeBoundsResult { IsRequested = false };
         if (!spec.IsRangeRequested)
@@ -74,8 +77,13 @@ public static class StreamRangeHelper
     /// <param name="start"></param>
     /// <param name="length"></param>
     /// <param name="cancellationToken"></param>
-    public static async Task CopyRangeAsync(Stream source, Stream destination, long start,
-        long length, CancellationToken cancellationToken)
+    public static async Task CopyRangeAsync(
+        Stream source,
+        Stream destination,
+        long start,
+        long length,
+        CancellationToken cancellationToken
+    )
     {
         if (source.CanSeek)
         {
@@ -85,9 +93,14 @@ public static class StreamRangeHelper
             while (remaining > 0)
             {
                 var toRead = (int)Math.Min(buffer.Length, remaining);
-                var read = await source.ReadAsync(buffer.AsMemory(0, toRead), cancellationToken).ConfigureAwait(false);
-                if (read == 0) break;
-                await destination.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                var read = await source
+                    .ReadAsync(buffer.AsMemory(0, toRead), cancellationToken)
+                    .ConfigureAwait(false);
+                if (read == 0)
+                    break;
+                await destination
+                    .WriteAsync(buffer.AsMemory(0, read), cancellationToken)
+                    .ConfigureAwait(false);
                 remaining -= read;
             }
             return;
@@ -99,9 +112,13 @@ public static class StreamRangeHelper
         while (toSkip > 0)
         {
             var read = await source
-                .ReadAsync(buffer2.AsMemory(0, (int)Math.Min(buffer2.Length, toSkip)), cancellationToken)
+                .ReadAsync(
+                    buffer2.AsMemory(0, (int)Math.Min(buffer2.Length, toSkip)),
+                    cancellationToken
+                )
                 .ConfigureAwait(false);
-            if (read == 0) return; // EOF reached early
+            if (read == 0)
+                return; // EOF reached early
             toSkip -= read;
         }
 
@@ -109,10 +126,16 @@ public static class StreamRangeHelper
         while (remaining2 > 0)
         {
             var read = await source
-                .ReadAsync(buffer2.AsMemory(0, (int)Math.Min(buffer2.Length, remaining2)), cancellationToken)
+                .ReadAsync(
+                    buffer2.AsMemory(0, (int)Math.Min(buffer2.Length, remaining2)),
+                    cancellationToken
+                )
                 .ConfigureAwait(false);
-            if (read == 0) break;
-            await destination.WriteAsync(buffer2.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+            if (read == 0)
+                break;
+            await destination
+                .WriteAsync(buffer2.AsMemory(0, read), cancellationToken)
+                .ConfigureAwait(false);
             remaining2 -= read;
         }
     }

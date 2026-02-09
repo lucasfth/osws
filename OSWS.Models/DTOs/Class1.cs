@@ -1,5 +1,3 @@
 ﻿namespace OSWS.Models.DTOs;
 
-public class Class1
-{
-}
+public class Class1 { }

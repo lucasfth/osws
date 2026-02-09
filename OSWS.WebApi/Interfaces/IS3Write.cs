@@ -1,6 +1,3 @@
 namespace OSWS.WebApi.Interfaces;
 
-public interface IS3Write
-{
-    
-}
+public interface IS3Write { }

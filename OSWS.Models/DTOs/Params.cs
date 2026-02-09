@@ -9,7 +9,7 @@ public class Params
     /// Version Identifier
     /// </summary>
     public string? Version { get; set; }
-    
+
     /// <summary>
     /// Part Number for multipart objects
     /// </summary>

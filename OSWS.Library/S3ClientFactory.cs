@@ -20,8 +20,9 @@ public class S3ClientFactory : IS3ClientFactory
             return _defaultClient;
 
         var hasEndpoint = !string.IsNullOrWhiteSpace(opts.EndpointHostname);
-        var hasCredsJson = !string.IsNullOrWhiteSpace(opts.V2AwsSdkCredentials) ||
-                           !string.IsNullOrWhiteSpace(opts.V3AwsSdkCredentials);
+        var hasCredsJson =
+            !string.IsNullOrWhiteSpace(opts.V2AwsSdkCredentials)
+            || !string.IsNullOrWhiteSpace(opts.V3AwsSdkCredentials);
 
         // If neither endpoint nor credentials provided, use injected default client
         if (!hasEndpoint && !hasCredsJson)
@@ -31,8 +32,15 @@ public class S3ClientFactory : IS3ClientFactory
         var json = !string.IsNullOrWhiteSpace(opts.V3AwsSdkCredentials)
             ? opts.V3AwsSdkCredentials
             : opts.V2AwsSdkCredentials;
-        if (!string.IsNullOrWhiteSpace(json) &&
-            AwsCredentialHelper.TryParseCredentials(json!, out var accessKey, out var secretKey, out var sessionToken))
+        if (
+            !string.IsNullOrWhiteSpace(json)
+            && AwsCredentialHelper.TryParseCredentials(
+                json!,
+                out var accessKey,
+                out var secretKey,
+                out var sessionToken
+            )
+        )
         {
             creds = string.IsNullOrEmpty(sessionToken)
                 ? new BasicAWSCredentials(accessKey, secretKey)
@@ -52,7 +60,10 @@ public class S3ClientFactory : IS3ClientFactory
             ForcePathStyle = true,
         };
 
-        if (!string.IsNullOrWhiteSpace(opts.Region) && !opts.Region.Equals("auto", StringComparison.OrdinalIgnoreCase))
+        if (
+            !string.IsNullOrWhiteSpace(opts.Region)
+            && !opts.Region.Equals("auto", StringComparison.OrdinalIgnoreCase)
+        )
         {
             try
             {

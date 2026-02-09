@@ -1,16 +1,24 @@
+using Amazon.S3;
+using Amazon.S3.Model;
 using OSWS.Library;
+using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
 using OSWS.WebApi.Interfaces;
-using Amazon.S3.Model;
-using Amazon.S3;
-using OSWS.Library.Helpers;
 
 namespace OSWS.WebApi.Endpoints;
 
 public class S3Put(IS3ClientFactory clientFactory) : IS3Put
 {
-    public async Task<IResult> PutObject(string bucket, string? key, Params prms, S3Options s3Options, HttpRequest httpRequest, int retryOptions = 3,
-        int timeoutOptionsMs = 3000, CancellationToken cancellationToken = default)
+    public async Task<IResult> PutObject(
+        string bucket,
+        string? key,
+        Params prms,
+        S3Options s3Options,
+        HttpRequest httpRequest,
+        int retryOptions = 3,
+        int timeoutOptionsMs = 3000,
+        CancellationToken cancellationToken = default
+    )
     {
         if (string.IsNullOrEmpty(bucket))
         {
@@ -46,11 +54,16 @@ public class S3Put(IS3ClientFactory clientFactory) : IS3Put
         try
         {
             var forceBuf = ConfigHelper.GetForceUploadBuffering();
-            var prep = await HttpHeaderHelper.PreparePutRequestAsync(req, httpRequest, forceBuf, cancellationToken).ConfigureAwait(false);
+            var prep = await HttpHeaderHelper
+                .PreparePutRequestAsync(req, httpRequest, forceBuf, cancellationToken)
+                .ConfigureAwait(false);
             if (prep.IsError)
             {
                 httpRequest.HttpContext.Response.StatusCode = prep.StatusCode;
-                return Results.Text(prep.ErrorJson ?? "{\"error\":\"Upload error\"}", "application/json");
+                return Results.Text(
+                    prep.ErrorJson ?? "{\"error\":\"Upload error\"}",
+                    "application/json"
+                );
             }
 
             tempFile = prep.TempFile;
@@ -58,9 +71,11 @@ public class S3Put(IS3ClientFactory clientFactory) : IS3Put
         }
         catch
         {
-            if (tempFs == null) throw;
+            if (tempFs == null)
+                throw;
             await tempFs.DisposeAsync().ConfigureAwait(false);
-            if (tempFile != null && File.Exists(tempFile)) File.Delete(tempFile);
+            if (tempFile != null && File.Exists(tempFile))
+                File.Delete(tempFile);
             throw;
         }
 
@@ -101,9 +116,22 @@ public class S3Put(IS3ClientFactory clientFactory) : IS3Put
 
         S3ErrorHelper.AddBufferingDebugHeaders(httpRequest.HttpContext, tempFile);
 
-        var successJson = "{" + "\"etag\":" + (resp.ETag == null ? "null" : "\"" + ParamValidation.JsonEscape(resp.ETag).Trim('"') + "\"") + "," +
-                          "\"versionId\":" + (resp.VersionId == null ? "null" : "\"" + ParamValidation.JsonEscape(resp.VersionId).Trim('"') + "\"") +
-                          "}";
+        var successJson =
+            "{"
+            + "\"etag\":"
+            + (
+                resp.ETag == null
+                    ? "null"
+                    : "\"" + ParamValidation.JsonEscape(resp.ETag).Trim('"') + "\""
+            )
+            + ","
+            + "\"versionId\":"
+            + (
+                resp.VersionId == null
+                    ? "null"
+                    : "\"" + ParamValidation.JsonEscape(resp.VersionId).Trim('"') + "\""
+            )
+            + "}";
         return Results.Text(successJson, "application/json");
     }
 }

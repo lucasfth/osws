@@ -1,6 +1,3 @@
 namespace OSWS.WebApi.Interfaces;
 
-public class IS3Restore
-{
-    
-}
+public class IS3Restore { }

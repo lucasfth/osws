@@ -1,6 +1,3 @@
 namespace OSWS.WebApi.Interfaces;
 
-public class IS3Rename
-{
-    
-}
+public class IS3Rename { }

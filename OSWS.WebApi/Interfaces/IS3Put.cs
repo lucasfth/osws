@@ -20,7 +20,14 @@ public interface IS3Put
     /// <param name="cancellationToken"></param>
     /// <returns>IResult</returns>
     /// <remarks>https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html</remarks>
-    public Task<IResult> PutObject(string bucket, string? key, [FromQuery] Params prms,
-        [FromQuery] S3Options s3Options, HttpRequest httpRequest, [FromQuery] int retryOptions = 3, [FromQuery] int timeoutOptionsMs = 3000,
-        CancellationToken cancellationToken = default);
+    public Task<IResult> PutObject(
+        string bucket,
+        string? key,
+        [FromQuery] Params prms,
+        [FromQuery] S3Options s3Options,
+        HttpRequest httpRequest,
+        [FromQuery] int retryOptions = 3,
+        [FromQuery] int timeoutOptionsMs = 3000,
+        CancellationToken cancellationToken = default
+    );
 }

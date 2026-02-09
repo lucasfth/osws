@@ -1,19 +1,26 @@
 using Amazon.S3;
 using Amazon.S3.Model;
-using OSWS.Models.DTOs;
-using OSWS.WebApi.Interfaces;
 using OSWS.Library;
 using OSWS.Library.Helpers;
+using OSWS.Models.DTOs;
+using OSWS.WebApi.Interfaces;
 
 namespace OSWS.WebApi.Endpoints;
 
 public class S3Get(IS3ClientFactory clientFactory) : IS3Get
 {
-    public async Task<IResult> GetObject(string bucket, string? key, Params prms, S3Options s3Options,
-        HttpRequest httpRequest, HttpResponse httpResponse,
-        int retryOptions = 3, int timeoutOptionsMs = 3000, CancellationToken cancellationToken = default)
+    public async Task<IResult> GetObject(
+        string bucket,
+        string? key,
+        Params prms,
+        S3Options s3Options,
+        HttpRequest httpRequest,
+        HttpResponse httpResponse,
+        int retryOptions = 3,
+        int timeoutOptionsMs = 3000,
+        CancellationToken cancellationToken = default
+    )
     {
-
         if (string.IsNullOrEmpty(bucket))
         {
             httpRequest.HttpContext.Response.StatusCode = 400;
@@ -60,7 +67,6 @@ public class S3Get(IS3ClientFactory clientFactory) : IS3Get
         // TODO (FUTURE): Fetch relevant keys from KMS
 
         // TODO (FUTURE): Decrypt object stream if needed using fetched keys
-        
 
         // After fetching the full object, handle range slicing in-memory streaming (after potential decryption)
         var contentLength = resp.ContentLength;
@@ -74,14 +80,27 @@ public class S3Get(IS3ClientFactory clientFactory) : IS3Get
                 httpResponse.Headers.ContentRange = $"bytes */{contentLength}";
                 return Results.StatusCode(416);
             }
-            
+
             await HttpHeaderHelper.ForwardS3ETag(resp, httpResponse);
             await HttpHeaderHelper.ForwardS3LastModified(resp, httpResponse);
-            await HttpHeaderHelper.ForwardS3ContentRelatedHeaders(httpResponse, bounds.Start, bounds.End, bounds.Length,
-                resp.Headers?.ContentType);
+            await HttpHeaderHelper.ForwardS3ContentRelatedHeaders(
+                httpResponse,
+                bounds.Start,
+                bounds.End,
+                bounds.Length,
+                resp.Headers?.ContentType
+            );
             httpResponse.StatusCode = 206;
 
-            await StreamRangeHelper.CopyRangeAsync(resp.ResponseStream, httpResponse.Body, bounds.Start, bounds.Length, cancellationToken).ConfigureAwait(false);
+            await StreamRangeHelper
+                .CopyRangeAsync(
+                    resp.ResponseStream,
+                    httpResponse.Body,
+                    bounds.Start,
+                    bounds.Length,
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
             return Results.StatusCode(206);
         }
 
@@ -92,6 +111,10 @@ public class S3Get(IS3ClientFactory clientFactory) : IS3Get
             httpResponse.Headers.LastModified = resp.LastModified.GetValueOrDefault().ToString("R");
         httpResponse.Headers.AcceptRanges = "bytes";
         httpResponse.ContentLength = contentLength;
-        return Results.File(resp.ResponseStream, resp.Headers?.ContentType ?? "application/octet-stream", fileDownloadName: key);
+        return Results.File(
+            resp.ResponseStream,
+            resp.Headers?.ContentType ?? "application/octet-stream",
+            fileDownloadName: key
+        );
     }
 }

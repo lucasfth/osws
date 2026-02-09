@@ -6,7 +6,4 @@ public class ContextOptions
     public Emit Emitter { get; set; }
 }
 
-public class Emit
-{
-    
-}
+public class Emit { }

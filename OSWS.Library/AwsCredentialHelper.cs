@@ -4,7 +4,12 @@ namespace OSWS.Library;
 
 public static class AwsCredentialHelper
 {
-    public static bool TryParseCredentials(string json, out string accessKey, out string secretKey, out string sessionToken)
+    public static bool TryParseCredentials(
+        string json,
+        out string accessKey,
+        out string secretKey,
+        out string sessionToken
+    )
     {
         accessKey = secretKey = sessionToken = string.Empty;
         try
@@ -44,8 +49,10 @@ public static class AwsCredentialHelper
             return null;
 
         var e = endpoint.Trim();
-        if (!e.StartsWith("http://", StringComparison.OrdinalIgnoreCase) &&
-            !e.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+        if (
+            !e.StartsWith("http://", StringComparison.OrdinalIgnoreCase)
+            && !e.StartsWith("https://", StringComparison.OrdinalIgnoreCase)
+        )
         {
             e = "https://" + e.TrimEnd('/');
         }

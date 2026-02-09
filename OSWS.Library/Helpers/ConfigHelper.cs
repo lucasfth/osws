@@ -13,7 +13,8 @@ public static class ConfigHelper
     public static bool GetForceUploadBuffering()
     {
         var forceEnv = Environment.GetEnvironmentVariable("FORCE_UPLOAD_BUFFERING");
-        return string.IsNullOrEmpty(forceEnv) || forceEnv.Equals("true", StringComparison.OrdinalIgnoreCase);
+        return string.IsNullOrEmpty(forceEnv)
+            || forceEnv.Equals("true", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

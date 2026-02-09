@@ -19,7 +19,10 @@ public static class S3ErrorHelper
         {
             case System.Net.HttpStatusCode.NotFound:
                 httpContext.Response.StatusCode = 404;
-                return Results.Text(ParamValidation.CreateErrorJson("Bucket or object not found"), "application/json");
+                return Results.Text(
+                    ParamValidation.CreateErrorJson("Bucket or object not found"),
+                    "application/json"
+                );
 
             case System.Net.HttpStatusCode.Forbidden:
                 return Results.StatusCode(403);

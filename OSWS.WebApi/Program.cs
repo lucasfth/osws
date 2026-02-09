@@ -1,9 +1,9 @@
 using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
+using OSWS.Library;
 using OSWS.WebApi.Endpoints;
 using OSWS.WebApi.Interfaces;
-using OSWS.Library;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -12,8 +12,9 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     // options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
 });
 
-var r2Endpoint = Environment.GetEnvironmentVariable("R2_ENDPOINT") ??
-                 "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com";
+var r2Endpoint =
+    Environment.GetEnvironmentVariable("R2_ENDPOINT")
+    ?? "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com";
 var r2AccessKey = Environment.GetEnvironmentVariable("R2_ACCESS_KEY_ID") ?? "";
 var r2SecretKey = Environment.GetEnvironmentVariable("R2_SECRET_ACCESS_KEY") ?? "";
 var r2Region = Environment.GetEnvironmentVariable("R2_REGION") ?? "auto"; // can be any string for S3-compatible providers
@@ -32,7 +33,10 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
         // RegionEndpoint = RegionEndpoint.GetBySystemName(r2Region)
     };
 
-    if (!string.IsNullOrEmpty(r2Region) && !r2Region.Equals("auto", StringComparison.OrdinalIgnoreCase))
+    if (
+        !string.IsNullOrEmpty(r2Region)
+        && !r2Region.Equals("auto", StringComparison.OrdinalIgnoreCase)
+    )
     {
         config.RegionEndpoint = RegionEndpoint.GetBySystemName(r2Region);
     }
@@ -50,7 +54,6 @@ app.MapGet("/", () => "Hello World!");
 
 // Map S3 routes (GET, PUT) to their handlers
 app.MapS3Routes();
-
 
 if (app.Environment.IsDevelopment())
 {

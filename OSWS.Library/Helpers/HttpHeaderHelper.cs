@@ -20,7 +20,8 @@ public class RangeParseResult
 
     public ByteRange ToByteRange(long contentLength)
     {
-        if (!IsRangeRequested) return null!;
+        if (!IsRangeRequested)
+            return null!;
         if (IsSuffix)
         {
             var s = Math.Max(0, contentLength - (SuffixLength ?? 0));
@@ -129,7 +130,6 @@ public static class HttpHeaderHelper
         return Task.CompletedTask;
     }
 
-    
     public static Task AppendS3ETag(PutObjectResponse from, HttpRequest to)
     {
         if (!string.IsNullOrEmpty(from.ETag))
@@ -145,7 +145,8 @@ public static class HttpHeaderHelper
     /// <returns></returns>
     public static Task ForwardS3LastModified(GetObjectResponse from, HttpResponse to)
     {
-        if (from.LastModified != null) to.Headers.LastModified = from.LastModified.GetValueOrDefault().ToString("R");
+        if (from.LastModified != null)
+            to.Headers.LastModified = from.LastModified.GetValueOrDefault().ToString("R");
         return Task.CompletedTask;
     }
 
@@ -158,8 +159,13 @@ public static class HttpHeaderHelper
     /// <param name="contentLength"></param>
     /// <param name="contentType"></param>
     /// <returns></returns>
-    public static Task ForwardS3ContentRelatedHeaders(HttpResponse to, long contentRangeStart,
-        long contentRangeEnd, long contentLength, string? contentType)
+    public static Task ForwardS3ContentRelatedHeaders(
+        HttpResponse to,
+        long contentRangeStart,
+        long contentRangeEnd,
+        long contentLength,
+        string? contentType
+    )
     {
         to.Headers.AcceptRanges = "bytes";
         to.Headers.ContentRange = $"bytes {contentRangeStart}-{contentRangeEnd}/{contentLength}";
@@ -188,8 +194,12 @@ public static class HttpHeaderHelper
     /// The method will set req.InputStream and req.ContentLength when applicable and will also copy any
     /// x-amz-meta- headers into req.Metadata.
     /// </summary>
-    public static async Task<PreparePutRequestResult> PreparePutRequestAsync(PutObjectRequest req,
-        HttpRequest httpRequest, bool forceBuffer = false, CancellationToken cancellationToken = default)
+    public static async Task<PreparePutRequestResult> PreparePutRequestAsync(
+        PutObjectRequest req,
+        HttpRequest httpRequest,
+        bool forceBuffer = false,
+        CancellationToken cancellationToken = default
+    )
     {
         var res = new PreparePutRequestResult();
 
@@ -204,7 +214,13 @@ public static class HttpHeaderHelper
             var bufferF = new byte[81920];
             long totalF = 0;
             int readF;
-            while ((readF = await httpRequest.Body.ReadAsync(bufferF.AsMemory(0, bufferF.Length), cancellationToken).ConfigureAwait(false)) > 0)
+            while (
+                (
+                    readF = await httpRequest
+                        .Body.ReadAsync(bufferF.AsMemory(0, bufferF.Length), cancellationToken)
+                        .ConfigureAwait(false)
+                ) > 0
+            )
             {
                 totalF += readF;
                 if (totalF > maxBytesF)
@@ -213,11 +229,15 @@ public static class HttpHeaderHelper
                     File.Delete(tempFileF);
                     res.IsError = true;
                     res.StatusCode = 413;
-                    res.ErrorJson = ParamValidation.CreateErrorJson("Upload exceeds max buffer size");
+                    res.ErrorJson = ParamValidation.CreateErrorJson(
+                        "Upload exceeds max buffer size"
+                    );
                     return res;
                 }
 
-                await tempFsF.WriteAsync(bufferF.AsMemory(0, readF), cancellationToken).ConfigureAwait(false);
+                await tempFsF
+                    .WriteAsync(bufferF.AsMemory(0, readF), cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             await tempFsF.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -251,7 +271,13 @@ public static class HttpHeaderHelper
                 var buffer2 = new byte[81920];
                 long total2 = 0;
                 int read2;
-                while ((read2 = await httpRequest.Body.ReadAsync(buffer2.AsMemory(0, buffer2.Length), cancellationToken).ConfigureAwait(false)) > 0)
+                while (
+                    (
+                        read2 = await httpRequest
+                            .Body.ReadAsync(buffer2.AsMemory(0, buffer2.Length), cancellationToken)
+                            .ConfigureAwait(false)
+                    ) > 0
+                )
                 {
                     total2 += read2;
                     if (total2 > maxBytes2)
@@ -260,11 +286,15 @@ public static class HttpHeaderHelper
                         File.Delete(tempFile);
                         res.IsError = true;
                         res.StatusCode = 413;
-                        res.ErrorJson = ParamValidation.CreateErrorJson("Upload exceeds max buffer size");
+                        res.ErrorJson = ParamValidation.CreateErrorJson(
+                            "Upload exceeds max buffer size"
+                        );
                         return res;
                     }
 
-                    await tempFs.WriteAsync(buffer2.AsMemory(0, read2), cancellationToken).ConfigureAwait(false);
+                    await tempFs
+                        .WriteAsync(buffer2.AsMemory(0, read2), cancellationToken)
+                        .ConfigureAwait(false);
                 }
 
                 await tempFs.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -317,7 +347,13 @@ public static class HttpHeaderHelper
             var buffer = new byte[81920];
             long total = 0;
             int read;
-            while ((read = await httpRequest.Body.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken).ConfigureAwait(false)) > 0)
+            while (
+                (
+                    read = await httpRequest
+                        .Body.ReadAsync(buffer.AsMemory(0, buffer.Length), cancellationToken)
+                        .ConfigureAwait(false)
+                ) > 0
+            )
             {
                 total += read;
                 if (total > maxBytes)
@@ -326,11 +362,15 @@ public static class HttpHeaderHelper
                     File.Delete(tempFile);
                     res.IsError = true;
                     res.StatusCode = 413;
-                    res.ErrorJson = ParamValidation.CreateErrorJson("Upload exceeds max buffer size");
+                    res.ErrorJson = ParamValidation.CreateErrorJson(
+                        "Upload exceeds max buffer size"
+                    );
                     return res;
                 }
 
-                await tempFs.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                await tempFs
+                    .WriteAsync(buffer.AsMemory(0, read), cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             await tempFs.FlushAsync(cancellationToken).ConfigureAwait(false);
@@ -348,7 +388,8 @@ public static class HttpHeaderHelper
         foreach (var h in httpRequest.Headers)
         {
             var hn = h.Key;
-            if (!hn.StartsWith("x-amz-meta-", StringComparison.OrdinalIgnoreCase)) continue;
+            if (!hn.StartsWith("x-amz-meta-", StringComparison.OrdinalIgnoreCase))
+                continue;
             var metaKey = hn.Substring("x-amz-meta-".Length);
             req.Metadata[metaKey] = h.Value.ToString();
         }

@@ -1,6 +1,3 @@
 namespace OSWS.WebApi.Interfaces;
 
-public interface IS3Abort
-{
-    
-}
+public interface IS3Abort { }

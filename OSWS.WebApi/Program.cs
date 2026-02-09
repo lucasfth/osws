@@ -2,6 +2,8 @@ using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
 using OSWS.Library;
+using OSWS.ParquetSolver;
+using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Endpoints;
 using OSWS.WebApi.Interfaces;
 
@@ -21,6 +23,8 @@ var r2Region = Environment.GetEnvironmentVariable("R2_REGION") ?? "auto"; // can
 
 builder.Services.AddTransient<IS3Get, S3Get>();
 builder.Services.AddTransient<IS3Put, S3Put>();
+builder.Services.AddTransient<IParquetWriter, ParquetWriter>();
+builder.Services.AddTransient<IParquetReader, ParquetReader>();
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
     var creds = new BasicAWSCredentials(r2AccessKey, r2SecretKey);

@@ -22,5 +22,6 @@
     <ProjectReference Include="..\OSWS.Models\OSWS.Models.csproj" />
     <ProjectReference Include="..\OSWS.Library\OSWS.Library.csproj" />
     <ProjectReference Include="..\OSWS.ParquetSolver\OSWS.ParquetSolver.csproj" />
+    <ProjectReference Include="..\OSWS.Common\OSWS.Common.csproj" />
   </ItemGroup>
 </Project>

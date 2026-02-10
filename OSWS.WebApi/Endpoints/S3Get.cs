@@ -3,11 +3,12 @@ using Amazon.S3.Model;
 using OSWS.Library;
 using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
+using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Interfaces;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Get(IS3ClientFactory clientFactory) : IS3Get
+public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader) : IS3Get
 {
     public async Task<IResult> GetObject(
         string bucket,
@@ -60,16 +61,37 @@ public class S3Get(IS3ClientFactory clientFactory) : IS3Get
         }
         finally
         {
-            // release after using response stream (ReleaseClient only disposes non-default clients)
             clientFactory.ReleaseClient(s3Client);
         }
 
-        // TODO (FUTURE): Fetch relevant keys from KMS
+        // Decrypt parquet files after retrieving from S3
+        var isParquetFile = TypeCheck.IsParquetFile(key, resp.Headers?.ContentType);
+        var outputStream = resp.ResponseStream;
 
-        // TODO (FUTURE): Decrypt object stream if needed using fetched keys
+        if (isParquetFile)
+        {
+            try
+            {
+                // Copy to MemoryStream to make it seekable for Parquet library
+                var seekableStream = new MemoryStream();
+                await resp.ResponseStream.CopyToAsync(seekableStream, cancellationToken);
+                seekableStream.Position = 0;
 
-        // After fetching the full object, handle range slicing in-memory streaming (after potential decryption)
-        var contentLength = resp.ContentLength;
+                outputStream = await parquetReader.ReadParquetAsync(seekableStream);
+            }
+            catch (Exception ex)
+            {
+                httpRequest.HttpContext.Response.StatusCode = 500;
+                return Results.Text(
+                    ParamValidation.CreateErrorJson(
+                        $"Failed to decrypt parquet file: {ex.Message}"
+                    ),
+                    "application/json"
+                );
+            }
+        }
+
+        var contentLength = outputStream.CanSeek ? outputStream.Length : resp.ContentLength;
 
         // If a range was requested, compute bounds and stream only that range using StreamRangeHelper
         if (rangeSpec.IsRangeRequested)
@@ -94,7 +116,7 @@ public class S3Get(IS3ClientFactory clientFactory) : IS3Get
 
             await StreamRangeHelper
                 .CopyRangeAsync(
-                    resp.ResponseStream,
+                    outputStream,
                     httpResponse.Body,
                     bounds.Start,
                     bounds.Length,
@@ -112,7 +134,7 @@ public class S3Get(IS3ClientFactory clientFactory) : IS3Get
         httpResponse.Headers.AcceptRanges = "bytes";
         httpResponse.ContentLength = contentLength;
         return Results.File(
-            resp.ResponseStream,
+            outputStream,
             resp.Headers?.ContentType ?? "application/octet-stream",
             fileDownloadName: key
         );

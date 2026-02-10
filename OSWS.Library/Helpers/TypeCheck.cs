@@ -1,6 +1,6 @@
 namespace OSWS.Library.Helpers;
 
-public class TypeCheck
+public static class TypeCheck
 {
     public static bool IsParquetFile(string? key, string? contentType)
     {

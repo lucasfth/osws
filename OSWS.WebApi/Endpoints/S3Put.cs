@@ -98,7 +98,6 @@ public class S3Put(IS3ClientFactory clientFactory, IParquetWriter parquetWriter)
         try
         {
             // Only call PreparePutRequestAsync for non-parquet files
-            // (for parquet, we already have a seekable stream)
             if (!isParquetFile)
             {
                 var forceBuf = ConfigHelper.GetForceUploadBuffering();

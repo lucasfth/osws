@@ -61,7 +61,6 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
         }
         finally
         {
-            // release after using response stream (ReleaseClient only disposes non-default clients)
             clientFactory.ReleaseClient(s3Client);
         }
 

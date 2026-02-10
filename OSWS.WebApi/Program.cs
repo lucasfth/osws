@@ -1,6 +1,9 @@
 using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
+using Microsoft.EntityFrameworkCore;
+using OSWS.Common.Configuration;
+using OSWS.KeyManager.Persistence;
 using OSWS.Library;
 using OSWS.ParquetSolver;
 using OSWS.ParquetSolver.Interfaces;
@@ -13,6 +16,13 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 {
     // options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
 });
+
+// Configure DatabaseSettings from appsettings.json
+
+builder.Configuration.AddEnvironmentVariables();
+builder.Services.AddDbContext<OswsContext>(opts =>
+    opts.UseNpgsql(builder.Configuration.GetConnectionString("OswsContext"))
+);
 
 var r2Endpoint =
     Environment.GetEnvironmentVariable("R2_ENDPOINT")

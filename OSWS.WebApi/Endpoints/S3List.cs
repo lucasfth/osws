@@ -1,45 +1,39 @@
+using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using Amazon.S3;
 using Amazon.S3.Model;
 using OSWS.Library;
 using OSWS.Library.Helpers;
-using OSWS.Models.DTOs;
 using OSWS.WebApi.Interfaces;
-using System.Linq;
-using System.Text.Json;
-using System.Text.Json.Serialization.Metadata;
 
 namespace OSWS.WebApi.Endpoints;
 
 #pragma warning disable IL2026, IL3050
 
-public class S3List(IS3ClientFactory clientFactory) : IS3List
+public class S3List(IAmazonS3 s3Client) : IS3List
 {
     private static readonly JsonSerializerOptions _reflectionSerializerOptions = new()
     {
-        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
+        TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
     };
 
     public async Task<IResult> ListBuckets(
-        S3Options s3Options,
         HttpRequest httpRequest,
         int retryOptions = 3,
         int timeoutOptionsMs = 3000,
         CancellationToken cancellationToken = default
     )
     {
-        var s3Client = clientFactory.GetClient(s3Options);
-
         try
         {
             var resp = await s3Client.ListBucketsAsync(cancellationToken).ConfigureAwait(false);
             var dto = new
             {
-                Buckets = resp.Buckets?.Select(b => new
-                {
-                    Name = b.BucketName,
-                    Created = b.CreationDate
-                }).ToList(),
-                Owner = resp.Owner is null ? null : new { resp.Owner.DisplayName, resp.Owner.Id }
+                Buckets = resp
+                    .Buckets?.Select(b => new { Name = b.BucketName, Created = b.CreationDate })
+                    .ToList(),
+                Owner = resp.Owner is null ? null : new { resp.Owner.DisplayName, resp.Owner.Id },
             };
 
             var json = JsonSerializer.Serialize(dto, _reflectionSerializerOptions);
@@ -49,15 +43,10 @@ public class S3List(IS3ClientFactory clientFactory) : IS3List
         {
             return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
         }
-        finally
-        {
-            clientFactory.ReleaseClient(s3Client);
-        }
     }
 
     public async Task<IResult> ListObjects(
         string bucket,
-        S3Options s3Options,
         HttpRequest httpRequest,
         int retryOptions = 3,
         int timeoutOptionsMs = 3000,
@@ -69,8 +58,6 @@ public class S3List(IS3ClientFactory clientFactory) : IS3List
             httpRequest.HttpContext.Response.StatusCode = 400;
             return Results.Text(ParamValidation.BucketNameIsRequired(), "application/json");
         }
-
-        var s3Client = clientFactory.GetClient(s3Options);
 
         var query = httpRequest.Query;
         var req = new ListObjectsV2Request
@@ -87,7 +74,9 @@ public class S3List(IS3ClientFactory clientFactory) : IS3List
 
         try
         {
-            var resp = await s3Client.ListObjectsV2Async(req, cancellationToken).ConfigureAwait(false);
+            var resp = await s3Client
+                .ListObjectsV2Async(req, cancellationToken)
+                .ConfigureAwait(false);
             var dto = new
             {
                 Bucket = bucket,
@@ -95,30 +84,30 @@ public class S3List(IS3ClientFactory clientFactory) : IS3List
                 resp.MaxKeys,
                 resp.KeyCount,
                 resp.NextContinuationToken,
-                Objects = resp.S3Objects?.Select(o => new
-                {
-                    Key = o.Key,
-                    Size = o.Size,
-                    LastModified = o.LastModified,
-                    ETag = o.ETag,
-                    StorageClass = o.StorageClass
-                }).ToList()
+                Objects = resp
+                    .S3Objects?.Select(o => new
+                    {
+                        Key = o.Key,
+                        Size = o.Size,
+                        LastModified = o.LastModified,
+                        ETag = o.ETag,
+                        StorageClass = o.StorageClass,
+                    })
+                    .ToList(),
             };
-            return Results.Text(JsonSerializer.Serialize(dto, _reflectionSerializerOptions), "application/json");
+            return Results.Text(
+                JsonSerializer.Serialize(dto, _reflectionSerializerOptions),
+                "application/json"
+            );
         }
         catch (AmazonS3Exception e)
         {
             return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
         }
-        finally
-        {
-            clientFactory.ReleaseClient(s3Client);
-        }
     }
 
     public async Task<IResult> ListMultipartUploads(
         string bucket,
-        S3Options s3Options,
         HttpRequest httpRequest,
         int retryOptions = 3,
         int timeoutOptionsMs = 3000,
@@ -131,7 +120,6 @@ public class S3List(IS3ClientFactory clientFactory) : IS3List
             return Results.Text(ParamValidation.BucketNameIsRequired(), "application/json");
         }
 
-        var s3Client = clientFactory.GetClient(s3Options);
         var query = httpRequest.Query;
         var req = new ListMultipartUploadsRequest
         {
@@ -147,7 +135,8 @@ public class S3List(IS3ClientFactory clientFactory) : IS3List
 
         try
         {
-            var resp = await s3Client.ListMultipartUploadsAsync(req, cancellationToken)
+            var resp = await s3Client
+                .ListMultipartUploadsAsync(req, cancellationToken)
                 .ConfigureAwait(false);
             var json = JsonSerializer.Serialize(resp, _reflectionSerializerOptions);
             return Results.Text(json, "application/json");
@@ -156,17 +145,12 @@ public class S3List(IS3ClientFactory clientFactory) : IS3List
         {
             return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
         }
-        finally
-        {
-            clientFactory.ReleaseClient(s3Client);
-        }
     }
 
     public async Task<IResult> ListParts(
         string bucket,
         string key,
         string uploadId,
-        S3Options s3Options,
         HttpRequest httpRequest,
         int retryOptions = 3,
         int timeoutOptionsMs = 3000,
@@ -188,10 +172,12 @@ public class S3List(IS3ClientFactory clientFactory) : IS3List
         if (string.IsNullOrEmpty(uploadId))
         {
             httpRequest.HttpContext.Response.StatusCode = 400;
-            return Results.Text(ParamValidation.CreateErrorJson("UploadId is required"), "application/json");
+            return Results.Text(
+                ParamValidation.CreateErrorJson("UploadId is required"),
+                "application/json"
+            );
         }
 
-        var s3Client = clientFactory.GetClient(s3Options);
         var query = httpRequest.Query;
         var req = new ListPartsRequest
         {
@@ -215,10 +201,6 @@ public class S3List(IS3ClientFactory clientFactory) : IS3List
         catch (AmazonS3Exception e)
         {
             return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
-        }
-        finally
-        {
-            clientFactory.ReleaseClient(s3Client);
         }
     }
 }

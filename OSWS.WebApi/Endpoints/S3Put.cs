@@ -8,13 +8,12 @@ using OSWS.WebApi.Interfaces;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Put(IS3ClientFactory clientFactory, IParquetWriter parquetWriter) : IS3Put
+public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter) : IS3Put
 {
     public async Task<IResult> PutObject(
         string bucket,
         string? key,
         Params prms,
-        S3Options s3Options,
         HttpRequest httpRequest,
         int retryOptions = 3,
         int timeoutOptionsMs = 3000,
@@ -32,8 +31,6 @@ public class S3Put(IS3ClientFactory clientFactory, IParquetWriter parquetWriter)
             httpRequest.HttpContext.Response.StatusCode = 400;
             return Results.Text(ParamValidation.KeyIsRequired(), "application/json");
         }
-
-        var s3Client = clientFactory.GetClient(s3Options);
 
         var isParquetFile = TypeCheck.IsParquetFile(key, httpRequest.ContentType);
 
@@ -155,8 +152,6 @@ public class S3Put(IS3ClientFactory clientFactory, IParquetWriter parquetWriter)
         }
         finally
         {
-            clientFactory.ReleaseClient(s3Client);
-
             try
             {
                 // Clean up encrypted parquet stream

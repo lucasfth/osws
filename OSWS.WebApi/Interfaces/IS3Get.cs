@@ -14,7 +14,8 @@ public interface IS3Get
     /// <param name="bucket"></param>
     /// <param name="key"></param>
     /// <param name="prms"></param>
-    /// <param name="s3Options"></param>
+    /// <param name="httpRequest"></param>
+    /// <param name="httpResponse"></param>
     /// <param name="retryOptions"></param>
     /// <param name="timeoutOptionsMs"></param>
     /// <param name="cancellationToken"></param>
@@ -24,7 +25,6 @@ public interface IS3Get
         string bucket,
         string? key,
         [FromQuery] Params prms,
-        [FromQuery] S3Options s3Options,
         HttpRequest httpRequest,
         HttpResponse httpResponse,
         [FromQuery] int retryOptions = 3,

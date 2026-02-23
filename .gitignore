@@ -52,11 +52,10 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
-/osws.sln
 
 # Rider
 .idea
-Folder.DotSettings.user
+OSWS.sln.DotSettings.user
 
 # Private env
 http-client.private.env.json

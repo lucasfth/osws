@@ -8,13 +8,12 @@ using OSWS.WebApi.Interfaces;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader) : IS3Get
+public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
 {
     public async Task<IResult> GetObject(
         string bucket,
         string? key,
         Params prms,
-        S3Options s3Options,
         HttpRequest httpRequest,
         HttpResponse httpResponse,
         int retryOptions = 3,
@@ -28,8 +27,6 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
             return Results.Text(ParamValidation.BucketNameIsRequired(), "application/json");
         }
 
-        var s3Client = clientFactory.GetClient(s3Options); // Should probably be moved into try to have finally for release
-
         // Build GetObjectRequest now (we may add range)
         var req = new GetObjectRequest
         {
@@ -41,7 +38,6 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
         var rangeSpec = await HttpHeaderHelper.ParseRange(httpRequest);
         if (rangeSpec.IsInvalidSpec)
         {
-            clientFactory.ReleaseClient(s3Client);
             return Results.StatusCode(400);
         }
 
@@ -56,12 +52,7 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
         }
         catch (AmazonS3Exception e)
         {
-            clientFactory.ReleaseClient(s3Client);
             return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
-        }
-        finally
-        {
-            clientFactory.ReleaseClient(s3Client);
         }
 
         // Decrypt parquet files after retrieving from S3

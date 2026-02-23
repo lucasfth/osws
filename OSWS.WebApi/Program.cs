@@ -20,18 +20,12 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 
 // Configure DatabaseSettings from appsettings.json
-
 builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddDbContext<OswsContext>(opts =>
     opts.UseNpgsql(builder.Configuration.GetConnectionString("OswsContext"))
 );
 
-var r2Endpoint =
-    Environment.GetEnvironmentVariable("R2_ENDPOINT")
-    ?? "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com";
-var r2AccessKey = Environment.GetEnvironmentVariable("R2_ACCESS_KEY_ID") ?? "";
-var r2SecretKey = Environment.GetEnvironmentVariable("R2_SECRET_ACCESS_KEY") ?? "";
-var r2Region = Environment.GetEnvironmentVariable("R2_REGION") ?? "auto"; // can be any string for S3-compatible providers
+builder.Services.Configure<S3Settings>(builder.Configuration.GetSection("S3Settings"));
 
 builder.Services.AddTransient<IS3Get, S3Get>();
 builder.Services.AddTransient<IS3Put, S3Put>();
@@ -40,8 +34,10 @@ builder.Services.AddTransient<IS3Put, S3Put>();
 // Configure from appsettings.json "KeyVault" section or environment variables.
 // Set Provider to "Azure" for production (requires VaultUri), or "Internal" for dev/testing though not yet set fully up
 var kvSettings =
-    builder.Configuration.GetSection("KeyVault").Get<KeyVaultSettings>()
-    ?? new KeyVaultSettings { Provider = "Internal" };
+    builder.Configuration.GetSection("KeyVault").Get<KeyVaultSettings>() ?? new KeyVaultSettings
+    {
+        Provider = "Internal",
+    };
 
 builder.Services.AddSingleton(kvSettings);
 
@@ -68,28 +64,27 @@ builder.Services.AddTransient<IParquetReader>(sp =>
 });
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
-    var creds = new BasicAWSCredentials(r2AccessKey, r2SecretKey);
+    var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<S3Settings>>().Value;
+
+    var creds = new BasicAWSCredentials(opts.AccessKeyId, opts.SecretAccessKey);
+    var endpoint = AwsCredentialHelper.NormalizeEndpoint(opts.EndpointHostname);
 
     var config = new AmazonS3Config
     {
-        ServiceURL = r2Endpoint?.TrimEnd('/'),
+        ServiceURL = string.IsNullOrEmpty(endpoint ?? string.Empty) ? null : endpoint,
         ForcePathStyle = true,
-        // Optionally set RegionEndpoint if you have a meaningful region name:
-        // RegionEndpoint = RegionEndpoint.GetBySystemName(r2Region)
     };
 
     if (
-        !string.IsNullOrEmpty(r2Region)
-        && !r2Region.Equals("auto", StringComparison.OrdinalIgnoreCase)
+        !string.IsNullOrWhiteSpace(opts.Region)
+        && !opts.Region.Equals("auto", StringComparison.OrdinalIgnoreCase)
     )
     {
-        config.RegionEndpoint = RegionEndpoint.GetBySystemName(r2Region);
+        config.RegionEndpoint = RegionEndpoint.GetBySystemName(opts.Region);
     }
 
     return new AmazonS3Client(creds, config);
 });
-
-builder.Services.AddSingleton<IS3ClientFactory, S3ClientFactory>();
 
 builder.Services.AddOpenApi();
 

@@ -13,11 +13,11 @@ public static class S3Routes
     {
         // S3 GET - path-style routing for S3 compatibility: /{bucket}/{*key} and /{bucket}
         app.MapGet(
-            "/{bucket}/{*key}",
+            "/{bucket}/{key}",
             async (
                 [FromServices] IS3Get s3Get,
                 string bucket,
-                string? key,
+                string key,
                 [AsParameters] Params prms,
                 HttpRequest httpRequest,
                 HttpResponse httpResponse,
@@ -55,6 +55,69 @@ public static class S3Routes
                     key,
                     prms,
                     httpRequest,
+                    retryOptions,
+                    timeoutOptionsMs,
+                    cancellationToken
+                )
+        );
+
+        // S3 LIST BUCKETS - path-style routing for S3 compatibility: /
+        app.MapGet(
+            "/",
+            async (
+                [FromServices] IS3List s3List,
+                HttpRequest httpRequest,
+                [FromQuery] int retryOptions = DefaultRetryOptions,
+                [FromQuery] int timeoutOptionsMs = DefaultTimeoutOptionsMs,
+                CancellationToken cancellationToken = default
+            ) =>
+                await s3List.ListBuckets(
+                    httpRequest,
+                    retryOptions,
+                    timeoutOptionsMs,
+                    cancellationToken
+                )
+        );
+
+        // S3 LIST OBJECTS - path-style routing for S3 compatibility: /{bucket}
+        app.MapGet(
+            "/{bucket}",
+            async (
+                [FromServices] IS3List s3List,
+                string bucket,
+                HttpRequest httpRequest,
+                [FromQuery] int retryOptions = DefaultRetryOptions,
+                [FromQuery] int timeoutOptionsMs = DefaultTimeoutOptionsMs,
+                CancellationToken cancellationToken = default
+            ) =>
+                await s3List.ListObjects(
+                    bucket,
+                    httpRequest,
+                    retryOptions,
+                    timeoutOptionsMs,
+                    cancellationToken
+                )
+        );
+
+        // S3 HEAD - path-style routing for S3 compatibility: /{bucket}/{key}
+        app.MapMethods(
+            "/{bucket}/{key}",
+            new[] { "HEAD" },
+            async (
+                [FromServices] IS3Head s3Head,
+                string bucket,
+                string key,
+                HttpRequest httpRequest,
+                HttpResponse httpResponse,
+                [FromQuery] int retryOptions = DefaultRetryOptions,
+                [FromQuery] int timeoutOptionsMs = DefaultTimeoutOptionsMs,
+                CancellationToken cancellationToken = default
+            ) =>
+                await s3Head.HeadObject(
+                    bucket,
+                    key,
+                    httpRequest,
+                    httpResponse,
                     retryOptions,
                     timeoutOptionsMs,
                     cancellationToken

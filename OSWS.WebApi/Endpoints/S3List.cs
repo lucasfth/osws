@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using System.Xml.Linq;
 using Amazon.S3;
 using Amazon.S3.Model;
 using OSWS.Library;
@@ -18,6 +20,11 @@ public class S3List(IAmazonS3 s3Client) : IS3List
         TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
     };
 
+    private static readonly XNamespace S3XmlNs = "http://s3.amazonaws.com/doc/2006-03-01/";
+
+    private static string FormatS3Date(DateTime dt) =>
+        dt.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture);
+
     public async Task<IResult> ListBuckets(
         HttpRequest httpRequest,
         int retryOptions = 3,
@@ -28,16 +35,32 @@ public class S3List(IAmazonS3 s3Client) : IS3List
         try
         {
             var resp = await s3Client.ListBucketsAsync(cancellationToken).ConfigureAwait(false);
-            var dto = new
-            {
-                Buckets = resp
-                    .Buckets?.Select(b => new { Name = b.BucketName, Created = b.CreationDate })
-                    .ToList(),
-                Owner = resp.Owner is null ? null : new { resp.Owner.DisplayName, resp.Owner.Id },
-            };
 
-            var json = JsonSerializer.Serialize(dto, _reflectionSerializerOptions);
-            return Results.Text(json, "application/json");
+            var owner = resp.Owner is null
+                ? null
+                : new XElement(
+                    S3XmlNs + "Owner",
+                    new XElement(S3XmlNs + "ID", resp.Owner.Id ?? string.Empty),
+                    new XElement(S3XmlNs + "DisplayName", resp.Owner.DisplayName ?? string.Empty)
+                );
+
+            var buckets = new XElement(
+                S3XmlNs + "Buckets",
+                resp.Buckets?.Select(b => new XElement(
+                    S3XmlNs + "Bucket",
+                    new XElement(S3XmlNs + "Name", b.BucketName),
+                    new XElement(
+                        S3XmlNs + "CreationDate",
+                        FormatS3Date(b.CreationDate ?? new DateTime())
+                    )
+                ))
+            );
+
+            var doc = new XDocument(
+                new XElement(S3XmlNs + "ListAllMyBucketsResult", owner, buckets)
+            );
+
+            return Results.Text(doc.ToString(SaveOptions.DisableFormatting), "application/xml");
         }
         catch (AmazonS3Exception e)
         {
@@ -77,28 +100,48 @@ public class S3List(IAmazonS3 s3Client) : IS3List
             var resp = await s3Client
                 .ListObjectsV2Async(req, cancellationToken)
                 .ConfigureAwait(false);
-            var dto = new
-            {
-                Bucket = bucket,
-                resp.IsTruncated,
-                resp.MaxKeys,
-                resp.KeyCount,
-                resp.NextContinuationToken,
-                Objects = resp
-                    .S3Objects?.Select(o => new
-                    {
-                        Key = o.Key,
-                        Size = o.Size,
-                        LastModified = o.LastModified,
-                        ETag = o.ETag,
-                        StorageClass = o.StorageClass,
-                    })
-                    .ToList(),
-            };
-            return Results.Text(
-                JsonSerializer.Serialize(dto, _reflectionSerializerOptions),
-                "application/json"
+
+            var contents = resp.S3Objects?.Select(o => new XElement(
+                S3XmlNs + "Contents",
+                new XElement(S3XmlNs + "Key", o.Key ?? string.Empty),
+                new XElement(
+                    S3XmlNs + "LastModified",
+                    FormatS3Date(o.LastModified ?? new DateTime())
+                ),
+                new XElement(S3XmlNs + "ETag", o.ETag ?? string.Empty),
+                new XElement(S3XmlNs + "Size", o.Size),
+                new XElement(S3XmlNs + "StorageClass", o.StorageClass ?? "STANDARD")
+            ));
+
+            var commonPrefixes = resp.CommonPrefixes?.Select(p => new XElement(
+                S3XmlNs + "CommonPrefixes",
+                new XElement(S3XmlNs + "Prefix", p ?? string.Empty)
+            ));
+
+            var doc = new XDocument(
+                new XElement(
+                    S3XmlNs + "ListBucketResult",
+                    new XElement(S3XmlNs + "Name", bucket),
+                    new XElement(S3XmlNs + "Prefix", resp.Prefix ?? string.Empty),
+                    new XElement(S3XmlNs + "KeyCount", resp.KeyCount),
+                    new XElement(S3XmlNs + "MaxKeys", resp.MaxKeys),
+                    new XElement(S3XmlNs + "Delimiter", resp.Delimiter ?? string.Empty),
+                    new XElement(
+                        S3XmlNs + "IsTruncated",
+                        resp.IsTruncated.ToString().ToLowerInvariant()
+                    ),
+                    string.IsNullOrEmpty(resp.NextContinuationToken)
+                        ? null
+                        : new XElement(
+                            S3XmlNs + "NextContinuationToken",
+                            resp.NextContinuationToken
+                        ),
+                    contents,
+                    commonPrefixes
+                )
             );
+
+            return Results.Text(doc.ToString(SaveOptions.DisableFormatting), "application/xml");
         }
         catch (AmazonS3Exception e)
         {

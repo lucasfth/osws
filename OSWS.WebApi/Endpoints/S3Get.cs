@@ -8,13 +8,12 @@ using OSWS.WebApi.Interfaces;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader) : IS3Get
+public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
 {
     public async Task<IResult> GetObject(
         string bucket,
         string? key,
         Params prms,
-        S3Options s3Options,
         HttpRequest httpRequest,
         HttpResponse httpResponse,
         int retryOptions = 3,
@@ -28,20 +27,17 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
             return Results.Text(ParamValidation.BucketNameIsRequired(), "application/json");
         }
 
-        var s3Client = clientFactory.GetClient(s3Options); // Should probably be moved into try to have finally for release
-
         // Build GetObjectRequest now (we may add range)
         var req = new GetObjectRequest
         {
             BucketName = bucket,
             Key = key,
-            VersionId = string.IsNullOrEmpty(prms.Version) ? null : prms.Version,
+            // VersionId = string.IsNullOrEmpty(prms.Version) ? null : prms.Version,
         };
 
         var rangeSpec = await HttpHeaderHelper.ParseRange(httpRequest);
         if (rangeSpec.IsInvalidSpec)
         {
-            clientFactory.ReleaseClient(s3Client);
             return Results.StatusCode(400);
         }
 
@@ -56,12 +52,7 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
         }
         catch (AmazonS3Exception e)
         {
-            clientFactory.ReleaseClient(s3Client);
             return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
-        }
-        finally
-        {
-            clientFactory.ReleaseClient(s3Client);
         }
 
         // Decrypt parquet files after retrieving from S3
@@ -92,6 +83,9 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
         }
 
         var contentLength = outputStream.CanSeek ? outputStream.Length : resp.ContentLength;
+        var responseContentType = string.IsNullOrWhiteSpace(resp.Headers?.ContentType)
+            ? "application/octet-stream"
+            : resp.Headers.ContentType;
 
         // If a range was requested, compute bounds and stream only that range using StreamRangeHelper
         if (rangeSpec.IsRangeRequested)
@@ -110,7 +104,7 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
                 bounds.Start,
                 bounds.End,
                 bounds.Length,
-                resp.Headers?.ContentType
+                responseContentType
             );
             httpResponse.StatusCode = 206;
 
@@ -135,7 +129,7 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
         httpResponse.ContentLength = contentLength;
         return Results.File(
             outputStream,
-            resp.Headers?.ContentType ?? "application/octet-stream",
+            responseContentType,
             fileDownloadName: key
         );
     }

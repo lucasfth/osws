@@ -8,4 +8,9 @@
   <ItemGroup>
     <PackageReference Include="ParquetSharp" Version="21.0.0" />
   </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OSWS.Models\OSWS.Models.csproj" />
+    <ProjectReference Include="..\OSWS.Common\OSWS.Common.csproj" />
+  </ItemGroup>
 </Project>

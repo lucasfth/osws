@@ -8,13 +8,12 @@ using OSWS.WebApi.Interfaces;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Put(IS3ClientFactory clientFactory, IParquetWriter parquetWriter) : IS3Put
+public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter) : IS3Put
 {
     public async Task<IResult> PutObject(
         string bucket,
         string? key,
         Params prms,
-        S3Options s3Options,
         HttpRequest httpRequest,
         int retryOptions = 3,
         int timeoutOptionsMs = 3000,
@@ -32,8 +31,6 @@ public class S3Put(IS3ClientFactory clientFactory, IParquetWriter parquetWriter)
             httpRequest.HttpContext.Response.StatusCode = 400;
             return Results.Text(ParamValidation.KeyIsRequired(), "application/json");
         }
-
-        var s3Client = clientFactory.GetClient(s3Options);
 
         var isParquetFile = TypeCheck.IsParquetFile(key, httpRequest.ContentType);
 
@@ -54,12 +51,15 @@ public class S3Put(IS3ClientFactory clientFactory, IParquetWriter parquetWriter)
             MemoryStream? seekableStream = null;
             try
             {
+                // Role determines which KEK in Azure Key Vault wraps the DEK
+                var role = httpRequest.Headers["x-osws-role"].FirstOrDefault() ?? "default";
+
                 // Copy to MemoryStream to make it seekable for Parquet library
                 seekableStream = new MemoryStream();
                 await httpRequest.Body.CopyToAsync(seekableStream, cancellationToken);
                 seekableStream.Position = 0;
 
-                var uploadStream = await parquetWriter.WriteParquetAsync(seekableStream);
+                var uploadStream = await parquetWriter.WriteParquetAsync(seekableStream, role);
 
                 // Ensure stream is at position 0 and set content length
                 uploadStream.Position = 0;
@@ -86,7 +86,7 @@ public class S3Put(IS3ClientFactory clientFactory, IParquetWriter parquetWriter)
             }
             finally
             {
-                seekableStream?.Dispose();
+                seekableStream?.DisposeAsync();
             }
         }
         else
@@ -152,8 +152,6 @@ public class S3Put(IS3ClientFactory clientFactory, IParquetWriter parquetWriter)
         }
         finally
         {
-            clientFactory.ReleaseClient(s3Client);
-
             try
             {
                 // Clean up encrypted parquet stream

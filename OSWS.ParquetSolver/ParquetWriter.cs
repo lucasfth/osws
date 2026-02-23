@@ -1,3 +1,4 @@
+using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using ParquetSharp;
@@ -7,27 +8,32 @@ namespace OSWS.ParquetSolver;
 
 public class ParquetWriter : IParquetWriter
 {
-    /// <summary>
-    /// Read an unencrypted parquet file and write an encrypted version. Encrypts specified columns (or all columns if null).
-    /// </summary>
-    /// <param name="input"></param>
-    /// <param name="columnsToEncrypt"></param>
-    /// <returns>A Stream containing the encrypted parquet content (positioned at 0)</returns>
-    /// <remarks>ParquetSharp operates synchronously via native C++ calls, so we wrap in Task.Run to avoid blocking.</remarks>
-    public Task<Stream> WriteParquetAsync(Stream input, string[]? columnsToEncrypt = null)
+    private readonly IKeyVaultProvider _keyVaultProvider;
+    private readonly string _providerType;
+
+    public ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerType = "Azure")
     {
-        return Task.Run(() => WriteParquetInternal(input, columnsToEncrypt));
+        _keyVaultProvider = keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
+        _providerType = providerType;
     }
 
     /// <summary>
-    /// Internal method to read an unencrypted parquet file and write an encrypted version. Encrypts specified columns (or all columns if null).
+    /// Read an unencrypted parquet file and write an encrypted version.
+    /// Encrypts specified columns (or all columns if null) using envelope encryption
+    /// via the configured <see cref="IKeyVaultProvider"/>.
     /// </summary>
-    /// <param name="input"></param>
-    /// <param name="columnsToEncrypt"></param>
-    /// <returns></returns>
-    private static Stream WriteParquetInternal(Stream input, string[]? columnsToEncrypt)
+    /// <param name="input">Stream containing plaintext parquet data.</param>
+    /// <param name="role">The role to associate encryption keys with.</param>
+    /// <param name="columnsToEncrypt">Column names to encrypt, or null for all columns.</param>
+    /// <returns>A Stream containing the encrypted parquet content (positioned at 0).</returns>
+    /// <remarks>ParquetSharp operates synchronously via native C++ calls, so we wrap in Task.Run to avoid blocking.</remarks>
+    public Task<Stream> WriteParquetAsync(Stream input, string role, string[]? columnsToEncrypt = null)
     {
-        // Read original parquet file from stream
+        return Task.Run(() => WriteParquetInternal(input, role, columnsToEncrypt));
+    }
+
+    private Stream WriteParquetInternal(Stream input, string role, string[]? columnsToEncrypt)
+    {
         using var inputRaf = new ManagedRandomAccessFile(input, leaveOpen: true);
         using var reader = new ParquetFileReader(inputRaf);
 
@@ -37,25 +43,18 @@ public class ParquetWriter : IParquetWriter
         var schema = fileMetaData.Schema;
         var keyValueMetadata = fileMetaData.KeyValueMetadata;
 
-        // Build encryption properties with native Parquet Modular Encryption
-        var encryptionProperties = Cryptography.BuildEncryptionProperties(schema, columnsToEncrypt);
+        // Build encryption properties via the key vault provider (envelope encryption)
+        var encryptionProperties = Cryptography.BuildEncryptionProperties(
+            schema, columnsToEncrypt, _keyVaultProvider, role, _providerType);
 
-        // Build writer properties with encryption
         using var writerPropertiesBuilder = new WriterPropertiesBuilder();
         writerPropertiesBuilder.Encryption(encryptionProperties);
-
         using var writerProperties = writerPropertiesBuilder.Build();
 
-        // Write to output stream
         var outputStream = new MemoryStream();
         using var outputMos = new ManagedOutputStream(outputStream, leaveOpen: true);
-
         using var writer = new ParquetFileWriter(
-            outputMos,
-            schema.GroupNode,
-            writerProperties,
-            keyValueMetadata
-        );
+            outputMos, schema.GroupNode, writerProperties, keyValueMetadata);
 
         Copy.CopyRowGroups(writer, reader, numColumns, numRowGroups);
 
@@ -64,47 +63,5 @@ public class ParquetWriter : IParquetWriter
 
         outputStream.Position = 0;
         return outputStream;
-    }
-
-    private static FileEncryptionProperties BuildEncryptionProperties(
-        SchemaDescriptor schema,
-        string[]? columnsToEncrypt
-    )
-    {
-        using var builder = new FileEncryptionPropertiesBuilder(DummyCryptoParameters.FooterKey);
-        builder.FooterKeyMetadata(DummyCryptoParameters.FooterKeyMetadata);
-        builder.SetPlaintextFooter(); // Keep footer readable; only encrypt column data
-
-        // Build column encryption for specified columns (or all if null)
-        var numColumns = schema.NumColumns;
-        var columnProperties = new ColumnEncryptionProperties[numColumns];
-
-        for (var i = 0; i < numColumns; i++)
-        {
-            var colName = schema.Column(i).Name;
-            var shouldEncrypt =
-                columnsToEncrypt == null
-                || Array.Exists(
-                    columnsToEncrypt,
-                    c => string.Equals(c, colName, StringComparison.OrdinalIgnoreCase)
-                );
-
-            if (!shouldEncrypt)
-                continue;
-
-            using var colBuilder = new ColumnEncryptionPropertiesBuilder(colName);
-            colBuilder.Key(DummyCryptoParameters.ColumnKey);
-            colBuilder.KeyMetadata(DummyCryptoParameters.ColumnKeyMetadata);
-            columnProperties[i] = colBuilder.Build();
-        }
-
-        // Filter out nulls (unencrypted columns)
-        var encryptedCols = Array.FindAll(columnProperties, p => true);
-        if (encryptedCols.Length > 0)
-        {
-            builder.EncryptedColumns(encryptedCols!);
-        }
-
-        return builder.Build();
     }
 }

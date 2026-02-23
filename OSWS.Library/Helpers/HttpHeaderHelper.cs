@@ -167,10 +167,14 @@ public static class HttpHeaderHelper
         string? contentType
     )
     {
+        var resolvedContentType = string.IsNullOrWhiteSpace(contentType)
+            ? "application/octet-stream"
+            : contentType;
+
         to.Headers.AcceptRanges = "bytes";
         to.Headers.ContentRange = $"bytes {contentRangeStart}-{contentRangeEnd}/{contentLength}";
         to.Headers.ContentLength = contentLength;
-        to.Headers.ContentType = contentType ?? "application/octet-stream";
+        to.Headers.ContentType = resolvedContentType;
         return Task.CompletedTask;
     }
 

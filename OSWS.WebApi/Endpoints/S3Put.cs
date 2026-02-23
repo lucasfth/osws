@@ -54,12 +54,15 @@ public class S3Put(IS3ClientFactory clientFactory, IParquetWriter parquetWriter)
             MemoryStream? seekableStream = null;
             try
             {
+                // Role determines which KEK in Azure Key Vault wraps the DEK
+                var role = httpRequest.Headers["x-osws-role"].FirstOrDefault() ?? "default";
+
                 // Copy to MemoryStream to make it seekable for Parquet library
                 seekableStream = new MemoryStream();
                 await httpRequest.Body.CopyToAsync(seekableStream, cancellationToken);
                 seekableStream.Position = 0;
 
-                var uploadStream = await parquetWriter.WriteParquetAsync(seekableStream);
+                var uploadStream = await parquetWriter.WriteParquetAsync(seekableStream, role);
 
                 // Ensure stream is at position 0 and set content length
                 uploadStream.Position = 0;
@@ -86,7 +89,7 @@ public class S3Put(IS3ClientFactory clientFactory, IParquetWriter parquetWriter)
             }
             finally
             {
-                seekableStream?.Dispose();
+                seekableStream?.DisposeAsync();
             }
         }
         else

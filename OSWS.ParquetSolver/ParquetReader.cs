@@ -1,3 +1,4 @@
+using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using ParquetSharp;
@@ -7,30 +8,30 @@ namespace OSWS.ParquetSolver;
 
 public class ParquetReader : IParquetReader
 {
+    private readonly IKeyVaultProvider _keyVaultProvider;
+
+    public ParquetReader(IKeyVaultProvider keyVaultProvider)
+    {
+        _keyVaultProvider = keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
+    }
+
     /// <summary>
-    /// Read and recreate a parquet file, attempting to decrypt columns when possible. Returns a Stream
-    /// containing the recreated parquet content (positioned at 0).
+    /// Read and recreate a parquet file, decrypting columns via the configured
+    /// <see cref="IKeyVaultProvider"/>. Returns a Stream containing the recreated
+    /// parquet content (positioned at 0).
     /// </summary>
-    /// <param name="input"></param>
-    /// <returns>A Stream containing the recreated parquet content (positioned at 0)</returns>
     /// <remarks>ParquetSharp operates synchronously via native C++ calls, so we wrap in Task.Run to avoid blocking.</remarks>
     public Task<MemoryStream> ReadParquetAsync(Stream input) =>
         Task.Run(() => ReadParquetInternal(input));
 
-    /// <summary>
-    /// Internal method to read and recreate a parquet file, attempting to decrypt columns when possible. Returns a MemoryStream
-    /// containing the recreated parquet content (positioned at 0).
-    /// </summary>
-    /// <param name="input"></param>
-    /// <returns></returns>
-    private static MemoryStream ReadParquetInternal(Stream input)
+    private MemoryStream ReadParquetInternal(Stream input)
     {
-        // Build decryption properties using the same keys used for encryption
-        using var decryptionProperties = Cryptography.BuildDecryptionProperties();
+        // Build decryption properties — the KeyRetriever will call IKeyVaultProvider
+        // to unwrap DEKs stored in the parquet footer metadata
+        using var decryptionProperties = Cryptography.BuildDecryptionProperties(_keyVaultProvider);
         using var readerProperties = ReaderProperties.GetDefaultReaderProperties();
         readerProperties.FileDecryptionProperties = decryptionProperties;
 
-        // Read the encrypted parquet file from stream
         using var inputRaf = new ManagedRandomAccessFile(input, leaveOpen: true);
         using var reader = new ParquetFileReader(inputRaf, readerProperties);
 
@@ -40,7 +41,6 @@ public class ParquetReader : IParquetReader
         var schema = fileMetaData.Schema;
         var keyValueMetadata = fileMetaData.KeyValueMetadata;
 
-        // Write decrypted parquet file to output stream (no encryption)
         var outputStream = new MemoryStream();
         using var outputMos = new ManagedOutputStream(outputStream, leaveOpen: true);
 

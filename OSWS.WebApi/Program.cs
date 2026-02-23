@@ -4,7 +4,9 @@ using Amazon.S3;
 using Microsoft.EntityFrameworkCore;
 using OSWS.Common.Configuration;
 using OSWS.KeyManager.Persistence;
+using OSWS.KeyManager.Providers;
 using OSWS.Library;
+using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Endpoints;
@@ -33,8 +35,37 @@ var r2Region = Environment.GetEnvironmentVariable("R2_REGION") ?? "auto"; // can
 
 builder.Services.AddTransient<IS3Get, S3Get>();
 builder.Services.AddTransient<IS3Put, S3Put>();
-builder.Services.AddTransient<IParquetWriter, ParquetWriter>();
-builder.Services.AddTransient<IParquetReader, ParquetReader>();
+
+// --- Key Vault Provider ---
+// Configure from appsettings.json "KeyVault" section or environment variables.
+// Set Provider to "Azure" for production (requires VaultUri), or "Internal" for dev/testing though not yet set fully up
+var kvSettings =
+    builder.Configuration.GetSection("KeyVault").Get<KeyVaultSettings>()
+    ?? new KeyVaultSettings { Provider = "Internal" };
+
+builder.Services.AddSingleton(kvSettings);
+
+builder.Services.AddSingleton<IKeyVaultProvider>(sp =>
+{
+    var settings = sp.GetRequiredService<KeyVaultSettings>();
+    return settings.Provider?.ToLowerInvariant() switch
+    {
+        "azure" => new AzureKeyVaultProvider(settings),
+        _ => new InternalKeyVaultProvider(),
+    };
+});
+
+builder.Services.AddTransient<IParquetWriter>(sp =>
+{
+    var provider = sp.GetRequiredService<IKeyVaultProvider>();
+    var settings = sp.GetRequiredService<KeyVaultSettings>();
+    return new ParquetWriter(provider, settings.Provider ?? "Internal");
+});
+builder.Services.AddTransient<IParquetReader>(sp =>
+{
+    var provider = sp.GetRequiredService<IKeyVaultProvider>();
+    return new ParquetReader(provider);
+});
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
     var creds = new BasicAWSCredentials(r2AccessKey, r2SecretKey);
@@ -64,7 +95,7 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+app.MapGet("/health", () => "OSWS Web API running");
 
 // Map S3 routes (GET, PUT) to their handlers
 app.MapS3Routes();
@@ -73,7 +104,5 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
-
-// var pingApi = app.MapGet("/", () => "Hello World!");
 
 app.Run();

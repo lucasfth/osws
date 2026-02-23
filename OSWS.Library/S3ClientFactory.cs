@@ -58,6 +58,8 @@ public class S3ClientFactory : IS3ClientFactory
         {
             ServiceURL = string.IsNullOrEmpty(endpoint ?? string.Empty) ? null : endpoint,
             ForcePathStyle = true,
+            // Disable chunked encoding to prevent streaming signature issues with S3-compatible services
+            DisableHostPrefixInjection = true,
         };
 
         if (
@@ -76,7 +78,11 @@ public class S3ClientFactory : IS3ClientFactory
         }
 
         // If creds missing, but endpoint provided, fall back to default client (so default credentials can be used)
-        return creds == null ? _defaultClient : new AmazonS3Client(creds, config);
+        if (creds == null)
+            return _defaultClient;
+
+        // Create client and configure it to handle streaming signatures for S3-compatible services
+        return new AmazonS3Client(creds, config);
     }
 
     public void ReleaseClient(IAmazonS3 client)

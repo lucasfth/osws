@@ -8,7 +8,7 @@ public class S3Options
     /// <summary>
     /// AWS Region
     /// </summary>
-    public required string Region { get; set; }
+    public string? Region { get; set; }
 
     /// <summary>
     /// AWS SDK V2 Credentials in JSON format
@@ -18,7 +18,7 @@ public class S3Options
     /// <summary>
     /// Endpoint Hostname for S3 Compatible Storage
     /// </summary>
-    public required string EndpointHostname { get; set; }
+    public string? EndpointHostname { get; set; }
 
     /// <summary>
     /// User Agent String

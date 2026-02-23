@@ -35,7 +35,7 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
         {
             BucketName = bucket,
             Key = key,
-            VersionId = string.IsNullOrEmpty(prms.Version) ? null : prms.Version,
+            // VersionId = string.IsNullOrEmpty(prms.Version) ? null : prms.Version,
         };
 
         var rangeSpec = await HttpHeaderHelper.ParseRange(httpRequest);
@@ -92,6 +92,9 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
         }
 
         var contentLength = outputStream.CanSeek ? outputStream.Length : resp.ContentLength;
+        var responseContentType = string.IsNullOrWhiteSpace(resp.Headers?.ContentType)
+            ? "application/octet-stream"
+            : resp.Headers.ContentType;
 
         // If a range was requested, compute bounds and stream only that range using StreamRangeHelper
         if (rangeSpec.IsRangeRequested)
@@ -110,7 +113,7 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
                 bounds.Start,
                 bounds.End,
                 bounds.Length,
-                resp.Headers?.ContentType
+                responseContentType
             );
             httpResponse.StatusCode = 206;
 
@@ -135,7 +138,7 @@ public class S3Get(IS3ClientFactory clientFactory, IParquetReader parquetReader)
         httpResponse.ContentLength = contentLength;
         return Results.File(
             outputStream,
-            resp.Headers?.ContentType ?? "application/octet-stream",
+            responseContentType,
             fileDownloadName: key
         );
     }

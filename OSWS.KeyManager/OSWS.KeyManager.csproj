@@ -5,6 +5,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.13.2" />
+    <PackageReference Include="Azure.Security.KeyVault.Keys" Version="4.7.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.2">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -13,5 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\OSWS.Models\OSWS.Models.csproj" />
+    <ProjectReference Include="..\OSWS.Common\OSWS.Common.csproj" />
   </ItemGroup>
 </Project>

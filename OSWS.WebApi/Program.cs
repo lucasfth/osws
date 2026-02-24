@@ -34,10 +34,8 @@ builder.Services.AddTransient<IS3Put, S3Put>();
 // Configure from appsettings.json "KeyVault" section or environment variables.
 // Set Provider to "Azure" for production (requires VaultUri), or "Internal" for dev/testing though not yet set fully up
 var kvSettings =
-    builder.Configuration.GetSection("KeyVault").Get<KeyVaultSettings>() ?? new KeyVaultSettings
-    {
-        Provider = "Internal",
-    };
+    builder.Configuration.GetSection("KeyVault").Get<KeyVaultSettings>()
+    ?? new KeyVaultSettings { Provider = "Internal" };
 
 builder.Services.AddSingleton(kvSettings);
 

@@ -8,29 +8,44 @@ namespace OSWS.ParquetSolver.Helpers;
 public static class Cryptography
 {
     /// <summary>
-    /// Build encryption properties using envelope encryption via an <see cref="IKeyVaultProvider"/>.
-    /// A random AES-128 DEK is generated locally, wrapped by the vault, and stored in parquet key metadata.
+    /// Algorithm identifier stored in metadata so the vault knows how to decrypt later.
+    /// </summary>
+    private const string EncryptionAlgorithm = "RSA-OAEP-256";
+
+    /// <summary>
+    /// Build encryption properties for a parquet file.
+    /// An ephemeral AES-128 DEK is generated in-memory, encrypted by the vault (which holds the key),
+    /// and the encrypted DEK + key reference are stored in parquet metadata. No plaintext keys are persisted.
     /// </summary>
     public static FileEncryptionProperties BuildEncryptionProperties(
         SchemaDescriptor schema,
         string[]? columnsToEncrypt,
         IKeyVaultProvider keyVaultProvider,
         string role,
-        string providerType)
+        string providerType
+    )
     {
-        // Generate random AES-128 footer DEK
+        // Generate ephemeral AES-128 footer DEK (in-memory only, never persisted)
         var footerDek = RandomNumberGenerator.GetBytes(16);
         var footerKeyName = $"{role}-footer";
 
-        // Ensure the KEK exists in the vault, then wrap the footer DEK
-        keyVaultProvider.CreateKeyAsync(footerKeyName, role).GetAwaiter().GetResult();
-        var wrappedFooterDek = keyVaultProvider.WrapKeyAsync(footerKeyName, footerDek).GetAwaiter().GetResult();
+        // Create the encryption key in the vault and encrypt the ephemeral DEK
+        var footerKeyId = keyVaultProvider
+            .CreateKeyAsync(footerKeyName, role)
+            .GetAwaiter()
+            .GetResult();
+        var encryptedFooterDek = keyVaultProvider
+            .EncryptAsync(footerKeyName, footerDek)
+            .GetAwaiter()
+            .GetResult();
 
-        var footerMetadata = new WrappedKeyMetadata
+        var footerMetadata = new KeyMetadata
         {
+            KeyId = footerKeyId,
             KeyName = footerKeyName,
             Role = role,
-            WrappedKey = Convert.ToBase64String(wrappedFooterDek),
+            EncryptedKey = Convert.ToBase64String(encryptedFooterDek),
+            Algorithm = EncryptionAlgorithm,
             ProviderType = providerType,
         };
 
@@ -38,18 +53,26 @@ public static class Cryptography
         builder.FooterKeyMetadata(footerMetadata.Serialize());
         builder.SetPlaintextFooter();
 
-        // Generate a separate DEK for columns
+        // Generate a separate ephemeral DEK for columns
         var columnDek = RandomNumberGenerator.GetBytes(16);
         var columnKeyName = $"{role}-column";
 
-        keyVaultProvider.CreateKeyAsync(columnKeyName, role).GetAwaiter().GetResult();
-        var wrappedColumnDek = keyVaultProvider.WrapKeyAsync(columnKeyName, columnDek).GetAwaiter().GetResult();
+        var columnKeyId = keyVaultProvider
+            .CreateKeyAsync(columnKeyName, role)
+            .GetAwaiter()
+            .GetResult();
+        var encryptedColumnDek = keyVaultProvider
+            .EncryptAsync(columnKeyName, columnDek)
+            .GetAwaiter()
+            .GetResult();
 
-        var columnMetadata = new WrappedKeyMetadata
+        var columnMetadata = new KeyMetadata
         {
+            KeyId = columnKeyId,
             KeyName = columnKeyName,
             Role = role,
-            WrappedKey = Convert.ToBase64String(wrappedColumnDek),
+            EncryptedKey = Convert.ToBase64String(encryptedColumnDek),
+            Algorithm = EncryptionAlgorithm,
             ProviderType = providerType,
         };
 
@@ -85,9 +108,12 @@ public static class Cryptography
     }
 
     /// <summary>
-    /// Build decryption properties using an <see cref="IKeyVaultProvider"/> to unwrap DEKs.
+    /// Build decryption properties using an <see cref="IKeyVaultProvider"/> to decrypt DEKs.
+    /// The vault decrypts the encrypted DEK stored in parquet metadata using the referenced key.
     /// </summary>
-    public static FileDecryptionProperties BuildDecryptionProperties(IKeyVaultProvider keyVaultProvider)
+    public static FileDecryptionProperties BuildDecryptionProperties(
+        IKeyVaultProvider keyVaultProvider
+    )
     {
         using var builder = new FileDecryptionPropertiesBuilder();
         builder.KeyRetriever(new KeyRetriever(keyVaultProvider));

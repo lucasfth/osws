@@ -1,0 +1,6 @@
+{
+  "dev": {
+    "S3_BUCKET": "test-storage",
+    "BASE_URL": "http://localhost:5161"
+  }
+}

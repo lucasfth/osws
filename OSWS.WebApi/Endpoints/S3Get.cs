@@ -127,10 +127,6 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
             httpResponse.Headers.LastModified = resp.LastModified.GetValueOrDefault().ToString("R");
         httpResponse.Headers.AcceptRanges = "bytes";
         httpResponse.ContentLength = contentLength;
-        return Results.File(
-            outputStream,
-            responseContentType,
-            fileDownloadName: key
-        );
+        return Results.File(outputStream, responseContentType, fileDownloadName: key);
     }
 }

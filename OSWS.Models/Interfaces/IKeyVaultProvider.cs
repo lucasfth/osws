@@ -1,31 +1,32 @@
 namespace OSWS.Models.Interfaces;
 
 /// <summary>
-/// Provider-agnostic interface for key management and envelope encryption.
+/// Provider-agnostic interface for key management and encryption-at-rest.
 /// Implementations can target Azure Key Vault, AWS KMS, Cloudflare, or an internal KMS.
+/// The vault holds the data encryption key (DEK); no keys are stored locally.
 /// </summary>
 public interface IKeyVaultProvider
 {
     /// <summary>
-    /// Create (or ensure existence of) a key encryption key (KEK) in the vault.
+    /// Create (or ensure existence of) a data encryption key (DEK) in the vault.
     /// The key is logically associated with the given role for access control.
     /// </summary>
     /// <param name="keyName">Unique name for the key (e.g. "role-admin-footer").</param>
     /// <param name="role">The role that owns/can access this key.</param>
-    /// <returns>The key identifier (vault URI or name) for later reference.</returns>
+    /// <returns>The full key identifier (vault URI including version) for later reference.</returns>
     Task<string> CreateKeyAsync(string keyName, string role);
 
     /// <summary>
-    /// Wrap (encrypt) a locally-generated data encryption key (DEK) using
-    /// the named KEK stored in the vault. Used during parquet encryption.
+    /// Encrypt plaintext bytes using the named key held in the vault.
+    /// Used during parquet encryption to protect an ephemeral DEK.
     /// </summary>
-    Task<byte[]> WrapKeyAsync(string keyName, byte[] plainKey);
+    Task<byte[]> EncryptAsync(string keyName, byte[] plaintext);
 
     /// <summary>
-    /// Unwrap (decrypt) a previously wrapped DEK using the named KEK.
+    /// Decrypt ciphertext bytes using the named key held in the vault.
     /// Used during parquet decryption to recover the original DEK.
     /// </summary>
-    Task<byte[]> UnwrapKeyAsync(string keyName, byte[] wrappedKey);
+    Task<byte[]> DecryptAsync(string keyName, byte[] ciphertext);
 
     /// <summary>
     /// Retrieve metadata about a key in the vault.

@@ -51,7 +51,7 @@ public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter) : IS3Put
             MemoryStream? seekableStream = null;
             try
             {
-                // Role determines which KEK in Azure Key Vault wraps the DEK
+                // Role determines which key in the vault encrypts the DEK
                 var role = httpRequest.Headers["x-osws-role"].FirstOrDefault() ?? "default";
 
                 // Copy to MemoryStream to make it seekable for Parquet library

@@ -8,7 +8,8 @@ namespace OSWS.KeyManager.Providers;
 
 /// <summary>
 /// Azure Key Vault implementation of <see cref="IKeyVaultProvider"/>.
-/// Uses envelope encryption: KEKs live in Azure KV, DEKs are wrapped/unwrapped via the vault.
+/// Azure holds the encryption key (DEK); encrypt/decrypt operations are performed server-side.
+/// No plaintext keys are stored locally - only the encrypted DEK is persisted in parquet metadata.
 /// </summary>
 public class AzureKeyVaultProvider : IKeyVaultProvider
 {
@@ -25,54 +26,53 @@ public class AzureKeyVaultProvider : IKeyVaultProvider
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
         if (string.IsNullOrWhiteSpace(settings.VaultUri))
-            throw new ArgumentException("KeyVault VaultUri is required for Azure provider.", nameof(settings));
+            throw new ArgumentException(
+                "KeyVault VaultUri is required for Azure provider.",
+                nameof(settings)
+            );
 
         var credential = BuildCredential(settings);
         _keyClient = new KeyClient(new Uri(settings.VaultUri), credential);
     }
-    
+
     public async Task<string> CreateKeyAsync(string keyName, string role)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(keyName);
         ArgumentException.ThrowIfNullOrWhiteSpace(role);
 
-        // Create an RSA key in Azure KV (used as KEK for wrapping DEKs but could probably be created by KV itself)
+        // Create an RSA key in Azure KV used to encrypt/decrypt ephemeral DEKs
         var options = new CreateRsaKeyOptions(keyName)
         {
             KeySize = 2048,
-            KeyOperations =
-            {
-                KeyOperation.WrapKey,
-                KeyOperation.UnwrapKey,
-            },
+            KeyOperations = { KeyOperation.Encrypt, KeyOperation.Decrypt },
         };
-        
+
         options.Tags[RoleTagKey] = role;
 
         var response = await _keyClient.CreateRsaKeyAsync(options);
         return response.Value.Id.ToString();
     }
-    
-    public async Task<byte[]> WrapKeyAsync(string keyName, byte[] plainKey)
+
+    public async Task<byte[]> EncryptAsync(string keyName, byte[] plaintext)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(keyName);
-        ArgumentNullException.ThrowIfNull(plainKey);
+        ArgumentNullException.ThrowIfNull(plaintext);
 
         var cryptoClient = _keyClient.GetCryptographyClient(keyName);
-        var result = await cryptoClient.WrapKeyAsync(KeyWrapAlgorithm.RsaOaep256, plainKey);
-        return result.EncryptedKey;
+        var result = await cryptoClient.EncryptAsync(EncryptionAlgorithm.RsaOaep256, plaintext);
+        return result.Ciphertext;
     }
-    
-    public async Task<byte[]> UnwrapKeyAsync(string keyName, byte[] wrappedKey)
+
+    public async Task<byte[]> DecryptAsync(string keyName, byte[] ciphertext)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(keyName);
-        ArgumentNullException.ThrowIfNull(wrappedKey);
+        ArgumentNullException.ThrowIfNull(ciphertext);
 
         var cryptoClient = _keyClient.GetCryptographyClient(keyName);
-        var result = await cryptoClient.UnwrapKeyAsync(KeyWrapAlgorithm.RsaOaep256, wrappedKey);
-        return result.Key;
+        var result = await cryptoClient.DecryptAsync(EncryptionAlgorithm.RsaOaep256, ciphertext);
+        return result.Plaintext;
     }
-    
+
     public async Task<KeyVaultKeyInfo?> GetKeyInfoAsync(string keyName)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(keyName);
@@ -88,7 +88,7 @@ public class AzureKeyVaultProvider : IKeyVaultProvider
             return null;
         }
     }
-    
+
     public async Task<IReadOnlyList<KeyVaultKeyInfo>> ListKeysAsync(string? role = null)
     {
         var keys = new List<KeyVaultKeyInfo>();
@@ -97,23 +97,27 @@ public class AzureKeyVaultProvider : IKeyVaultProvider
         {
             if (role != null)
             {
-                if (!keyProperties.Tags.TryGetValue(RoleTagKey, out var tagRole)
-                    || !string.Equals(tagRole, role, StringComparison.OrdinalIgnoreCase))
+                if (
+                    !keyProperties.Tags.TryGetValue(RoleTagKey, out var tagRole)
+                    || !string.Equals(tagRole, role, StringComparison.OrdinalIgnoreCase)
+                )
                 {
                     continue;
                 }
             }
 
             keyProperties.Tags.TryGetValue(RoleTagKey, out var roleTag);
-            keys.Add(new KeyVaultKeyInfo
-            {
-                KeyName = keyProperties.Name,
-                KeyId = keyProperties.Id.ToString(),
-                Role = roleTag,
-                CreatedOn = keyProperties.CreatedOn,
-                ExpiresOn = keyProperties.ExpiresOn,
-                Enabled = keyProperties.Enabled ?? true,
-            });
+            keys.Add(
+                new KeyVaultKeyInfo
+                {
+                    KeyName = keyProperties.Name,
+                    KeyId = keyProperties.Id.ToString(),
+                    Role = roleTag,
+                    CreatedOn = keyProperties.CreatedOn,
+                    ExpiresOn = keyProperties.ExpiresOn,
+                    Enabled = keyProperties.Enabled ?? true,
+                }
+            );
         }
 
         return keys;

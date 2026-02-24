@@ -3,9 +3,9 @@ namespace OSWS.ParquetSolver.Interfaces;
 public interface IParquetWriter
 {
     /// <summary>
-    /// Read an unencrypted parquet file and write an encrypted version using envelope encryption.
-    /// Keys are created/wrapped via the configured key vault provider and associated with the given role.
-    /// The wrapped DEK is stored in parquet footer metadata for later decryption.
+    /// Read an unencrypted parquet file and write an encrypted version.
+    /// Keys are created in the vault and associated with the given role.
+    /// The encrypted DEK and vault key reference are stored in parquet footer metadata for later decryption.
     /// </summary>
     /// <param name="input">Stream containing plaintext parquet data.</param>
     /// <param name="role">The role to associate encryption keys with.</param>

@@ -6,14 +6,16 @@ namespace OSWS.KeyManager.Providers;
 /// <summary>
 /// In-memory key vault provider for development, testing, and self-hosted scenarios.
 /// Keys are generated locally and stored in memory (not persisted across restarts).
-/// NOT suitable for production — use <see cref="AzureKeyVaultProvider"/> or another
+/// NOT suitable for production - use <see cref="AzureKeyVaultProvider"/> or another
 /// cloud-backed implementation in production environments.
 /// </summary>
 public class InternalKeyVaultProvider : IKeyVaultProvider
 {
     public const string ProviderTypeName = "Internal";
 
-    private readonly Dictionary<string, InternalKeyEntry> _keys = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, InternalKeyEntry> _keys = new(
+        StringComparer.OrdinalIgnoreCase
+    );
     private readonly Lock _lock = new();
 
     public Task<string> CreateKeyAsync(string keyName, string role)
@@ -34,31 +36,31 @@ public class InternalKeyVaultProvider : IKeyVaultProvider
         return Task.FromResult(keyName);
     }
 
-    public Task<byte[]> WrapKeyAsync(string keyName, byte[] plainKey)
+    public Task<byte[]> EncryptAsync(string keyName, byte[] plaintext)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(keyName);
-        ArgumentNullException.ThrowIfNull(plainKey);
+        ArgumentNullException.ThrowIfNull(plaintext);
 
         var entry = GetEntryOrThrow(keyName);
 
-        // AES key-wrap (RFC 3394)
+        // Encrypt the DEK using the vault key (AES-CBC for dev/testing)
         using var aes = Aes.Create();
         aes.Key = entry.WrappingKey;
-        var wrapped = aes.EncryptCbc(plainKey, new byte[16], PaddingMode.PKCS7);
-        return Task.FromResult(wrapped);
+        var encrypted = aes.EncryptCbc(plaintext, new byte[16], PaddingMode.PKCS7);
+        return Task.FromResult(encrypted);
     }
 
-    public Task<byte[]> UnwrapKeyAsync(string keyName, byte[] wrappedKey)
+    public Task<byte[]> DecryptAsync(string keyName, byte[] ciphertext)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(keyName);
-        ArgumentNullException.ThrowIfNull(wrappedKey);
+        ArgumentNullException.ThrowIfNull(ciphertext);
 
         var entry = GetEntryOrThrow(keyName);
 
         using var aes = Aes.Create();
         aes.Key = entry.WrappingKey;
-        var plainKey = aes.DecryptCbc(wrappedKey, new byte[16], PaddingMode.PKCS7);
-        return Task.FromResult(plainKey);
+        var plaintext = aes.DecryptCbc(ciphertext, new byte[16], PaddingMode.PKCS7);
+        return Task.FromResult(plaintext);
     }
 
     public Task<KeyVaultKeyInfo?> GetKeyInfoAsync(string keyName)
@@ -67,14 +69,16 @@ public class InternalKeyVaultProvider : IKeyVaultProvider
         {
             if (_keys.TryGetValue(keyName, out var entry))
             {
-                return Task.FromResult<KeyVaultKeyInfo?>(new KeyVaultKeyInfo
-                {
-                    KeyName = entry.KeyName,
-                    KeyId = entry.KeyName,
-                    Role = entry.Role,
-                    CreatedOn = entry.CreatedOn,
-                    Enabled = true,
-                });
+                return Task.FromResult<KeyVaultKeyInfo?>(
+                    new KeyVaultKeyInfo
+                    {
+                        KeyName = entry.KeyName,
+                        KeyId = entry.KeyName,
+                        Role = entry.Role,
+                        CreatedOn = entry.CreatedOn,
+                        Enabled = true,
+                    }
+                );
             }
         }
 
@@ -85,8 +89,10 @@ public class InternalKeyVaultProvider : IKeyVaultProvider
     {
         lock (_lock)
         {
-            var result = _keys.Values
-                .Where(e => role == null || string.Equals(e.Role, role, StringComparison.OrdinalIgnoreCase))
+            var result = _keys
+                .Values.Where(e =>
+                    role == null || string.Equals(e.Role, role, StringComparison.OrdinalIgnoreCase)
+                )
                 .Select(e => new KeyVaultKeyInfo
                 {
                     KeyName = e.KeyName,
@@ -116,8 +122,10 @@ public class InternalKeyVaultProvider : IKeyVaultProvider
         string KeyName,
         string Role,
         byte[] WrappingKey,
-        DateTimeOffset CreatedOn = default)
+        DateTimeOffset CreatedOn = default
+    )
     {
-        public DateTimeOffset CreatedOn { get; } = CreatedOn == default ? DateTimeOffset.UtcNow : CreatedOn;
+        public DateTimeOffset CreatedOn { get; } =
+            CreatedOn == default ? DateTimeOffset.UtcNow : CreatedOn;
     }
 }

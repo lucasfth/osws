@@ -8,7 +8,8 @@ namespace OSWS.ParquetSolver;
 
 public class ParquetReader(IKeyVaultProvider keyVaultProvider) : IParquetReader
 {
-    private readonly IKeyVaultProvider _keyVaultProvider = keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
+    private readonly IKeyVaultProvider _keyVaultProvider =
+        keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
 
     /// <summary>
     /// Read and recreate a parquet file, decrypting columns via the configured

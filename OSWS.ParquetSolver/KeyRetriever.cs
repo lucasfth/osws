@@ -12,7 +12,8 @@ namespace OSWS.ParquetSolver;
 /// </summary>
 public sealed class KeyRetriever(IKeyVaultProvider keyVaultProvider) : DecryptionKeyRetriever
 {
-    private readonly IKeyVaultProvider _keyVaultProvider = keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
+    private readonly IKeyVaultProvider _keyVaultProvider =
+        keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
 
     /// <summary>
     /// Retrieves the DEK by deserializing the Parquet footer metadata and calling the key vault provider to decrypt it.

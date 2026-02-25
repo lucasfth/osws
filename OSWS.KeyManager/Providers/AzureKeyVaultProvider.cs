@@ -35,10 +35,32 @@ public class AzureKeyVaultProvider : IKeyVaultProvider
         _keyClient = new KeyClient(new Uri(settings.VaultUri), credential);
     }
 
+    /// <summary>
+    /// Create a new RSA key in Azure Key Vault with the given name and role tag, or return the existing key if it already exists.
+    ///
+    /// TODO: At some point we have to handle that files which already exists are probably not allowed to be written
+    /// TODO: instead only updates (which creates a new version of the same file) should be allowed.
+    /// TODO: This means that we also have to ensure that the key naming strategy is changed. Currently the name is fixed
+    /// TODO: by if it is footer or column and then the role (which does not make sense to use after using Azure RBAC)
+    /// </summary>
+    /// <param name="keyName"></param>
+    /// <param name="role"></param>
+    /// <returns></returns>
     public async Task<string> CreateKeyAsync(string keyName, string role)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(keyName);
         ArgumentException.ThrowIfNullOrWhiteSpace(role);
+
+        // Check if already exists
+        try
+        {
+            var existingKey = await _keyClient.GetKeyAsync(keyName);
+            return existingKey.Value.Id.ToString();
+        }
+        catch (Azure.RequestFailedException ex) when (ex.Status == 404)
+        {
+            // Key does not exist, continue to create
+        }
 
         // Create an RSA key in Azure KV used to encrypt/decrypt ephemeral DEKs
         var options = new CreateRsaKeyOptions(keyName)

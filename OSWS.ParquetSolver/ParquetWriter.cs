@@ -9,7 +9,8 @@ namespace OSWS.ParquetSolver;
 public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerType = "Azure")
     : IParquetWriter
 {
-    private readonly IKeyVaultProvider _keyVaultProvider = keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
+    private readonly IKeyVaultProvider _keyVaultProvider =
+        keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
 
     /// <summary>
     /// Read an unencrypted parquet file and write an encrypted version.

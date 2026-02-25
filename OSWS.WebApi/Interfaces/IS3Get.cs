@@ -23,7 +23,7 @@ public interface IS3Get
     /// <remarks>https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html</remarks>
     Task<IResult> GetObject(
         string bucket,
-        string? key,
+        string key,
         [FromQuery] Params prms,
         HttpRequest httpRequest,
         HttpResponse httpResponse,

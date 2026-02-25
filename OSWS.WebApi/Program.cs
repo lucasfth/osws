@@ -19,6 +19,10 @@ builder.Services.ConfigureHttpJsonOptions(options =>
     // options.SerializerOptions.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
 });
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Services.AddHttpLogging(o => { });
+
 // Configure DatabaseSettings from appsettings.json
 builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddDbContext<OswsContext>(opts =>
@@ -29,6 +33,8 @@ builder.Services.Configure<S3Settings>(builder.Configuration.GetSection("S3Setti
 
 builder.Services.AddTransient<IS3Get, S3Get>();
 builder.Services.AddTransient<IS3Put, S3Put>();
+builder.Services.AddTransient<IS3List, S3List>();
+builder.Services.AddTransient<IS3Head, S3Head>();
 
 // --- Key Vault Provider ---
 // Configure from appsettings.json "KeyVault" section or environment variables.
@@ -87,6 +93,8 @@ builder.Services.AddSingleton<IAmazonS3>(sp =>
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
+
+app.UseHttpLogging();
 
 app.MapGet("/health", () => "OSWS Web API running");
 

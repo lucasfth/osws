@@ -1,9 +1,10 @@
-using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
+using System.Xml.Linq;
 using Amazon.S3;
 using Amazon.S3.Model;
 using OSWS.Library;
+using OSWS.Library.Extensions;
 using OSWS.Library.Helpers;
 using OSWS.WebApi.Interfaces;
 
@@ -13,7 +14,7 @@ namespace OSWS.WebApi.Endpoints;
 
 public class S3List(IAmazonS3 s3Client) : IS3List
 {
-    private static readonly JsonSerializerOptions _reflectionSerializerOptions = new()
+    private static readonly JsonSerializerOptions ReflectionSerializerOptions = new()
     {
         TypeInfoResolver = new DefaultJsonTypeInfoResolver(),
     };
@@ -28,16 +29,10 @@ public class S3List(IAmazonS3 s3Client) : IS3List
         try
         {
             var resp = await s3Client.ListBucketsAsync(cancellationToken).ConfigureAwait(false);
-            var dto = new
-            {
-                Buckets = resp
-                    .Buckets?.Select(b => new { Name = b.BucketName, Created = b.CreationDate })
-                    .ToList(),
-                Owner = resp.Owner is null ? null : new { resp.Owner.DisplayName, resp.Owner.Id },
-            };
 
-            var json = JsonSerializer.Serialize(dto, _reflectionSerializerOptions);
-            return Results.Text(json, "application/json");
+            var doc = resp.ToListBucketsXml();
+
+            return Results.Text(doc.ToString(SaveOptions.DisableFormatting), "application/xml");
         }
         catch (AmazonS3Exception e)
         {
@@ -77,28 +72,10 @@ public class S3List(IAmazonS3 s3Client) : IS3List
             var resp = await s3Client
                 .ListObjectsV2Async(req, cancellationToken)
                 .ConfigureAwait(false);
-            var dto = new
-            {
-                Bucket = bucket,
-                resp.IsTruncated,
-                resp.MaxKeys,
-                resp.KeyCount,
-                resp.NextContinuationToken,
-                Objects = resp
-                    .S3Objects?.Select(o => new
-                    {
-                        Key = o.Key,
-                        Size = o.Size,
-                        LastModified = o.LastModified,
-                        ETag = o.ETag,
-                        StorageClass = o.StorageClass,
-                    })
-                    .ToList(),
-            };
-            return Results.Text(
-                JsonSerializer.Serialize(dto, _reflectionSerializerOptions),
-                "application/json"
-            );
+
+            var doc = resp.ToListObjectsV2Xml(bucket);
+
+            return Results.Text(doc.ToString(SaveOptions.DisableFormatting), "application/xml");
         }
         catch (AmazonS3Exception e)
         {
@@ -138,7 +115,7 @@ public class S3List(IAmazonS3 s3Client) : IS3List
             var resp = await s3Client
                 .ListMultipartUploadsAsync(req, cancellationToken)
                 .ConfigureAwait(false);
-            var json = JsonSerializer.Serialize(resp, _reflectionSerializerOptions);
+            var json = JsonSerializer.Serialize(resp, ReflectionSerializerOptions);
             return Results.Text(json, "application/json");
         }
         catch (AmazonS3Exception e)
@@ -195,7 +172,7 @@ public class S3List(IAmazonS3 s3Client) : IS3List
         try
         {
             var resp = await s3Client.ListPartsAsync(req, cancellationToken).ConfigureAwait(false);
-            var json = JsonSerializer.Serialize(resp, _reflectionSerializerOptions);
+            var json = JsonSerializer.Serialize(resp, ReflectionSerializerOptions);
             return Results.Text(json, "application/json");
         }
         catch (AmazonS3Exception e)

@@ -12,7 +12,7 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
 {
     public async Task<IResult> GetObject(
         string bucket,
-        string? key,
+        string key,
         Params prms,
         HttpRequest httpRequest,
         HttpResponse httpResponse,
@@ -82,7 +82,25 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
             }
         }
 
+        if (isParquetFile && !outputStream.CanSeek)
+        {
+            var buffered = new MemoryStream();
+            await outputStream.CopyToAsync(buffered, cancellationToken).ConfigureAwait(false);
+            buffered.Position = 0;
+            outputStream = buffered;
+        }
+
         var contentLength = outputStream.CanSeek ? outputStream.Length : resp.ContentLength;
+        if (rangeSpec.IsRangeRequested && (contentLength <= 0 || !outputStream.CanSeek))
+        {
+            // Buffer to get a reliable length and enable seeking for ranged reads.
+            var buffered = new MemoryStream();
+            await outputStream.CopyToAsync(buffered, cancellationToken).ConfigureAwait(false);
+            buffered.Position = 0;
+            outputStream = buffered;
+            contentLength = buffered.Length;
+        }
+
         var responseContentType = string.IsNullOrWhiteSpace(resp.Headers?.ContentType)
             ? "application/octet-stream"
             : resp.Headers.ContentType;
@@ -103,6 +121,7 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
                 httpResponse,
                 bounds.Start,
                 bounds.End,
+                contentLength,
                 bounds.Length,
                 responseContentType
             );
@@ -117,7 +136,8 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
                     cancellationToken
                 )
                 .ConfigureAwait(false);
-            return Results.StatusCode(206);
+
+            return Results.Empty;
         }
 
         // Full object

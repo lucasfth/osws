@@ -156,14 +156,16 @@ public static class HttpHeaderHelper
     /// <param name="to"></param>
     /// <param name="contentRangeStart"></param>
     /// <param name="contentRangeEnd"></param>
-    /// <param name="contentLength"></param>
+    /// <param name="totalLength"></param>
+    /// <param name="rangeLength"></param>
     /// <param name="contentType"></param>
     /// <returns></returns>
     public static Task ForwardS3ContentRelatedHeaders(
         HttpResponse to,
         long contentRangeStart,
         long contentRangeEnd,
-        long contentLength,
+        long totalLength,
+        long rangeLength,
         string? contentType
     )
     {
@@ -172,8 +174,8 @@ public static class HttpHeaderHelper
             : contentType;
 
         to.Headers.AcceptRanges = "bytes";
-        to.Headers.ContentRange = $"bytes {contentRangeStart}-{contentRangeEnd}/{contentLength}";
-        to.Headers.ContentLength = contentLength;
+        to.Headers.ContentRange = $"bytes {contentRangeStart}-{contentRangeEnd}/{totalLength}";
+        to.Headers.ContentLength = rangeLength;
         to.Headers.ContentType = resolvedContentType;
         return Task.CompletedTask;
     }

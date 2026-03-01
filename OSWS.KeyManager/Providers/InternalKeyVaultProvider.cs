@@ -25,12 +25,10 @@ public class InternalKeyVaultProvider : IKeyVaultProvider
 
         lock (_lock)
         {
-            if (!_keys.ContainsKey(keyName))
-            {
-                // Generate a 256-bit wrapping key for AES-KW
-                var wrappingKey = RandomNumberGenerator.GetBytes(32);
-                _keys[keyName] = new InternalKeyEntry(keyName, role, wrappingKey);
-            }
+            if (_keys.ContainsKey(keyName)) return Task.FromResult(keyName);
+            // Generate a 256-bit wrapping key for AES-KW
+            var wrappingKey = RandomNumberGenerator.GetBytes(32);
+            _keys[keyName] = new InternalKeyEntry(keyName, role, wrappingKey);
         }
 
         return Task.FromResult(keyName);

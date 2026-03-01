@@ -3,12 +3,13 @@ using Amazon.S3.Model;
 using OSWS.Library;
 using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
+using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Interfaces;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter) : IS3Put
+public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter, EncryptedFileCache fileCache) : IS3Put
 {
     public async Task<IResult> PutObject(
         string bucket,
@@ -63,6 +64,29 @@ public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter) : IS3Put
 
                 // Ensure stream is at position 0 and set content length
                 uploadStream.Position = 0;
+
+                // Cache the encrypted parquet stream asynchronously
+                // Create a copy for caching to avoid stream position conflicts with S3 upload
+                var cacheKey = EncryptedFileCache.GenerateCacheKey(bucket, key);
+                var cacheStream = new MemoryStream();
+                uploadStream.Position = 0;
+                await uploadStream.CopyToAsync(cacheStream, cancellationToken);
+                cacheStream.Position = 0;
+                uploadStream.Position = 0;
+
+                // Cache asynchronously (don't await to avoid blocking the upload)
+                _ = fileCache.SetAsync(cacheKey, cacheStream, cancellationToken).ContinueWith(
+                    task =>
+                    {
+                        if (task.IsFaulted)
+                        {
+                            // Log cache failure but don't block the upload
+                            Console.WriteLine($"[OSWS] Cache failure for {cacheKey}: {task.Exception?.InnerException?.Message}");
+                        }
+                        cacheStream.Dispose();
+                    },
+                    TaskScheduler.Default
+                );
 
                 // For parquet files, we already have a seekable stream, so set it directly
                 req.InputStream = uploadStream;

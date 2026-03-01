@@ -14,6 +14,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSWS.ParquetSolver", "OSWS.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSWS.WebApi.Tests", "OSWS.WebApi.Tests\OSWS.WebApi.Tests.csproj", "{B3624B33-CD73-4559-8E07-8438BC319C23}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSWS.Performance.Tests", "OSWS.Performance.Tests\OSWS.Performance.Tests.csproj", "{A8492522-34D8-46F0-82C6-39EADA882516}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -108,6 +110,18 @@ Global
 		{B3624B33-CD73-4559-8E07-8438BC319C23}.Release|x64.Build.0 = Release|Any CPU
 		{B3624B33-CD73-4559-8E07-8438BC319C23}.Release|x86.ActiveCfg = Release|Any CPU
 		{B3624B33-CD73-4559-8E07-8438BC319C23}.Release|x86.Build.0 = Release|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Debug|x64.Build.0 = Debug|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Debug|x86.Build.0 = Debug|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Release|x64.ActiveCfg = Release|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Release|x64.Build.0 = Release|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Release|x86.ActiveCfg = Release|Any CPU
+		{A8492522-34D8-46F0-82C6-39EADA882516}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

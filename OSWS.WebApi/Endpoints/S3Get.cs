@@ -3,12 +3,13 @@ using Amazon.S3.Model;
 using OSWS.Library;
 using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
+using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Interfaces;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
+public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFileCache fileCache) : IS3Get
 {
     public async Task<IResult> GetObject(
         string bucket,
@@ -45,30 +46,60 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
         // Instead, we'll handle range slicing in-memory after fetching (and potentially decrypting) the full object.
         // This allows us to support range requests even for encrypted objects without needing to know the content length or encryption details upfront.
 
-        GetObjectResponse resp;
-        try
+        // Check cache first for encrypted parquet files
+        var cacheKey = EncryptedFileCache.GenerateCacheKey(bucket, key);
+        var isParquetFile = TypeCheck.IsParquetFile(key, httpRequest.ContentType);
+        GetObjectResponse? resp = null;
+        Stream? encryptedStream = null;
+
+        if (isParquetFile && fileCache.TryGet(cacheKey, out var cachedStream))
         {
-            resp = await s3Client.GetObjectAsync(req, cancellationToken).ConfigureAwait(false);
+            // Cache hit - use cached encrypted stream
+            encryptedStream = cachedStream;
         }
-        catch (AmazonS3Exception e)
+        else
         {
-            return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
+            // Cache miss - fetch from S3
+            try
+            {
+                resp = await s3Client.GetObjectAsync(req, cancellationToken).ConfigureAwait(false);
+            }
+            catch (AmazonS3Exception e)
+            {
+                return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
+            }
+
+            if (isParquetFile)
+            {
+                // Copy encrypted stream to memory for caching and decryption
+                var memStream = new MemoryStream();
+                await resp.ResponseStream.CopyToAsync(memStream, cancellationToken);
+                memStream.Position = 0;
+                encryptedStream = memStream;
+
+                // Cache the encrypted stream asynchronously (don't await to avoid blocking)
+                _ = fileCache.SetAsync(cacheKey, memStream, cancellationToken).ContinueWith(
+                    task =>
+                    {
+                        if (task.IsFaulted)
+                        {
+                            // Log cache failure but don't block the response
+                            Console.WriteLine($"[OSWS] Cache failure for {cacheKey}: {task.Exception?.InnerException?.Message}");
+                        }
+                    },
+                    TaskScheduler.Default
+                );
+            }
         }
 
-        // Decrypt parquet files after retrieving from S3
-        var isParquetFile = TypeCheck.IsParquetFile(key, resp.Headers?.ContentType);
-        var outputStream = resp.ResponseStream;
+        // Decrypt parquet files
+        var outputStream = resp?.ResponseStream ?? encryptedStream;
 
-        if (isParquetFile)
+        if (isParquetFile && encryptedStream != null)
         {
             try
             {
-                // Copy to MemoryStream to make it seekable for Parquet library
-                var seekableStream = new MemoryStream();
-                await resp.ResponseStream.CopyToAsync(seekableStream, cancellationToken);
-                seekableStream.Position = 0;
-
-                outputStream = await parquetReader.ReadParquetAsync(seekableStream);
+                outputStream = await parquetReader.ReadParquetAsync(encryptedStream);
             }
             catch (Exception ex)
             {
@@ -90,7 +121,7 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
             outputStream = buffered;
         }
 
-        var contentLength = outputStream.CanSeek ? outputStream.Length : resp.ContentLength;
+        var contentLength = outputStream.CanSeek ? outputStream.Length : (resp?.ContentLength ?? 0);
         if (rangeSpec.IsRangeRequested && (contentLength <= 0 || !outputStream.CanSeek))
         {
             // Buffer to get a reliable length and enable seeking for ranged reads.
@@ -101,7 +132,7 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
             contentLength = buffered.Length;
         }
 
-        var responseContentType = string.IsNullOrWhiteSpace(resp.Headers?.ContentType)
+        var responseContentType = string.IsNullOrWhiteSpace(resp?.Headers?.ContentType)
             ? "application/octet-stream"
             : resp.Headers.ContentType;
 
@@ -115,8 +146,11 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
                 return Results.StatusCode(416);
             }
 
-            await HttpHeaderHelper.ForwardS3ETag(resp, httpResponse);
-            await HttpHeaderHelper.ForwardS3LastModified(resp, httpResponse);
+            if (resp != null)
+            {
+                await HttpHeaderHelper.ForwardS3ETag(resp, httpResponse);
+                await HttpHeaderHelper.ForwardS3LastModified(resp, httpResponse);
+            }
             await HttpHeaderHelper.ForwardS3ContentRelatedHeaders(
                 httpResponse,
                 bounds.Start,
@@ -141,10 +175,13 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Get
         }
 
         // Full object
-        if (!string.IsNullOrEmpty(resp.ETag))
-            httpResponse.Headers.ETag = resp.ETag;
-        if (resp.LastModified != null)
-            httpResponse.Headers.LastModified = resp.LastModified.GetValueOrDefault().ToString("R");
+        if (resp != null)
+        {
+            if (!string.IsNullOrEmpty(resp.ETag))
+                httpResponse.Headers.ETag = resp.ETag;
+            if (resp.LastModified != null)
+                httpResponse.Headers.LastModified = resp.LastModified.GetValueOrDefault().ToString("R");
+        }
         httpResponse.Headers.AcceptRanges = "bytes";
         httpResponse.ContentLength = contentLength;
         return Results.File(outputStream, responseContentType, fileDownloadName: key);

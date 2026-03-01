@@ -36,40 +36,33 @@ public class AzureKeyVaultProvider : IKeyVaultProvider
     }
 
     /// <summary>
-    /// Create a new RSA key in Azure Key Vault with the given name and role tag, or return the existing key if it already exists.
-    ///
-    /// TODO: At some point we have to handle that files which already exists are probably not allowed to be written
-    /// TODO: instead only updates (which creates a new version of the same file) should be allowed.
-    /// TODO: This means that we also have to ensure that the key naming strategy is changed. Currently the name is fixed
-    /// TODO: by if it is footer or column and then the role (which does not make sense to use after using Azure RBAC)
+    /// Create a new RSA key in Azure Key Vault with a unique GUID-based name and role tag.
+    /// Each column and footer encryption uses a fresh key - no key reuse across parquet files or versions.
+    /// The keyName parameter is ignored; a GUID is generated as the actual key name.
+    /// The role tag is preserved for access control via Azure RBAC.
     /// </summary>
-    /// <param name="keyName"></param>
-    /// <param name="role"></param>
-    /// <returns></returns>
+    /// <param name="keyName">Ignored; a fresh GUID is used instead</param>
+    /// <param name="role">Role tag for access control and key organization</param>
+    /// <returns>The full Key ID (URI) of the newly created key</returns>
     public async Task<string> CreateKeyAsync(string keyName, string role)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(keyName);
         ArgumentException.ThrowIfNullOrWhiteSpace(role);
 
-        // Check if already exists
-        try
-        {
-            var existingKey = await _keyClient.GetKeyAsync(keyName);
-            return existingKey.Value.Id.ToString();
-        }
-        catch (Azure.RequestFailedException ex) when (ex.Status == 404)
-        {
-            // Key does not exist, continue to create
-        }
+        // Generate a unique GUID-based key name for this encryption key.
+        // Each call creates a new key - no reuse across file versions or columns.
+        var uniqueKeyName = Guid.NewGuid().ToString("N");
 
         // Create an RSA key in Azure KV used to encrypt/decrypt ephemeral DEKs
-        var options = new CreateRsaKeyOptions(keyName)
+        var options = new CreateRsaKeyOptions(uniqueKeyName)
         {
             KeySize = 2048,
             KeyOperations = { KeyOperation.Encrypt, KeyOperation.Decrypt },
+            Tags =
+            {
+                [RoleTagKey] = role
+            }
         };
-
-        options.Tags[RoleTagKey] = role;
 
         var response = await _keyClient.CreateRsaKeyAsync(options);
         return response.Value.Id.ToString();
@@ -80,7 +73,9 @@ public class AzureKeyVaultProvider : IKeyVaultProvider
         ArgumentException.ThrowIfNullOrWhiteSpace(keyName);
         ArgumentNullException.ThrowIfNull(plaintext);
 
-        var cryptoClient = _keyClient.GetCryptographyClient(keyName);
+        // If keyName is a full URI, extract just the key name part
+        var actualKeyName = ExtractKeyNameFromUri(keyName);
+        var cryptoClient = _keyClient.GetCryptographyClient(actualKeyName);
         var result = await cryptoClient.EncryptAsync(EncryptionAlgorithm.RsaOaep256, plaintext);
         return result.Ciphertext;
     }
@@ -90,7 +85,9 @@ public class AzureKeyVaultProvider : IKeyVaultProvider
         ArgumentException.ThrowIfNullOrWhiteSpace(keyName);
         ArgumentNullException.ThrowIfNull(ciphertext);
 
-        var cryptoClient = _keyClient.GetCryptographyClient(keyName);
+        // If keyName is a full URI, extract just the key name part
+        var actualKeyName = ExtractKeyNameFromUri(keyName);
+        var cryptoClient = _keyClient.GetCryptographyClient(actualKeyName);
         var result = await cryptoClient.DecryptAsync(EncryptionAlgorithm.RsaOaep256, ciphertext);
         return result.Plaintext;
     }
@@ -171,5 +168,35 @@ public class AzureKeyVaultProvider : IKeyVaultProvider
         // or you can use ClientSecretCredential directly. DefaultAzureCredential
         // also supports managed identity, CLI, VS, etc.
         return new DefaultAzureCredential(options);
+    }
+
+    /// <summary>
+    /// Extract the key name from a full Key URI.
+    /// URI format: https://vault-name.vault.azure.net/keys/key-name/version-id
+    /// Returns just the key-name part.
+    /// If the input is not a URI, returns it as-is (assumes it's already a key name).
+    /// </summary>
+    private static string ExtractKeyNameFromUri(string keyIdentifier)
+    {
+        // If it's already a simple key name (not a URI), return as-is
+        if (!keyIdentifier.Contains("/"))
+        {
+            return keyIdentifier;
+        }
+
+        // Parse as URI: https://vault.net/keys/key-name/version
+        if (Uri.TryCreate(keyIdentifier, UriKind.Absolute, out var uri))
+        {
+            var segments = uri.Segments;
+            // Segments would be: "/", "keys/", "key-name/", "version"
+            // We want the key-name segment (index 2), trimming the trailing slash
+            if (segments.Length >= 3)
+            {
+                return segments[2].TrimEnd('/');
+            }
+        }
+
+        // Fallback: return as-is
+        return keyIdentifier;
     }
 }

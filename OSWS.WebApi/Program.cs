@@ -8,6 +8,7 @@ using OSWS.KeyManager.Providers;
 using OSWS.Library;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver;
+using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Endpoints;
 using OSWS.WebApi.Interfaces;
@@ -30,6 +31,17 @@ builder.Services.AddDbContext<OswsContext>(opts =>
 );
 
 builder.Services.Configure<S3Settings>(builder.Configuration.GetSection("S3Settings"));
+
+// --- Cache Settings ---
+// Configure from appsettings.json "Cache" section or use defaults
+var cacheSettings =
+    builder.Configuration.GetSection("Cache").Get<CacheSettings>()
+    ?? new CacheSettings { EnableFileCache = false };
+
+builder.Services.AddSingleton(cacheSettings);
+
+// Register encrypted file cache as singleton - shared across all operations
+builder.Services.AddSingleton<EncryptedFileCache>();
 
 builder.Services.AddTransient<IS3Get, S3Get>();
 builder.Services.AddTransient<IS3Put, S3Put>();
@@ -55,6 +67,9 @@ builder.Services.AddSingleton<IKeyVaultProvider>(sp =>
     };
 });
 
+// Register DEK cache as singleton - shared across all parquet read operations
+builder.Services.AddSingleton<DekCache>();
+
 builder.Services.AddTransient<IParquetWriter>(sp =>
 {
     var provider = sp.GetRequiredService<IKeyVaultProvider>();
@@ -64,7 +79,8 @@ builder.Services.AddTransient<IParquetWriter>(sp =>
 builder.Services.AddTransient<IParquetReader>(sp =>
 {
     var provider = sp.GetRequiredService<IKeyVaultProvider>();
-    return new ParquetReader(provider);
+    var dekCache = sp.GetRequiredService<DekCache>();
+    return new ParquetReader(provider, dekCache);
 });
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
@@ -97,6 +113,12 @@ var app = builder.Build();
 app.UseHttpLogging();
 
 app.MapGet("/health", () => "OSWS Web API running");
+
+// Cache debug endpoint - useful for verifying cache is working
+app.MapGet("/cache-stats", (EncryptedFileCache fileCache) =>
+{
+    return Results.Text(fileCache.GetDebugInfo());
+});
 
 // Map S3 routes (GET, PUT) to their handlers
 app.MapS3Routes();

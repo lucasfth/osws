@@ -6,10 +6,12 @@ using ParquetSharp.IO;
 
 namespace OSWS.ParquetSolver;
 
-public class ParquetReader(IKeyVaultProvider keyVaultProvider) : IParquetReader
+public class ParquetReader(IKeyVaultProvider keyVaultProvider, DekCache dekCache) : IParquetReader
 {
     private readonly IKeyVaultProvider _keyVaultProvider =
         keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
+    private readonly DekCache _dekCache =
+        dekCache ?? throw new ArgumentNullException(nameof(dekCache));
 
     /// <summary>
     /// Read and recreate a parquet file, decrypting columns via the configured
@@ -23,8 +25,8 @@ public class ParquetReader(IKeyVaultProvider keyVaultProvider) : IParquetReader
     private MemoryStream ReadParquetInternal(Stream input)
     {
         // Build decryption properties - the KeyRetriever will call IKeyVaultProvider
-        // to decrypt DEKs stored in the parquet footer metadata
-        using var decryptionProperties = Cryptography.BuildDecryptionProperties(_keyVaultProvider);
+        // to decrypt DEKs stored in the parquet footer metadata, with caching to avoid repeated calls
+        using var decryptionProperties = Cryptography.BuildDecryptionProperties(_keyVaultProvider, _dekCache);
         using var readerProperties = ReaderProperties.GetDefaultReaderProperties();
         readerProperties.FileDecryptionProperties = decryptionProperties;
 

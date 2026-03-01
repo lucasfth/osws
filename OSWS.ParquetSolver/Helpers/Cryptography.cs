@@ -34,8 +34,9 @@ public static class Cryptography
             .CreateKeyAsync(footerKeyName, role)
             .GetAwaiter()
             .GetResult();
+        // Use KeyId (full URI with GUID) not KeyName (formatted name) since keys are created with GUID-based names
         var encryptedFooterDek = keyVaultProvider
-            .EncryptAsync(footerKeyName, footerDek)
+            .EncryptAsync(footerKeyId, footerDek)
             .GetAwaiter()
             .GetResult();
 
@@ -53,29 +54,7 @@ public static class Cryptography
         builder.FooterKeyMetadata(footerMetadata.Serialize());
         builder.SetPlaintextFooter();
 
-        // Generate a separate ephemeral DEK for columns
-        var columnDek = RandomNumberGenerator.GetBytes(16);
-        var columnKeyName = $"{role}-column";
-
-        var columnKeyId = keyVaultProvider
-            .CreateKeyAsync(columnKeyName, role)
-            .GetAwaiter()
-            .GetResult();
-        var encryptedColumnDek = keyVaultProvider
-            .EncryptAsync(columnKeyName, columnDek)
-            .GetAwaiter()
-            .GetResult();
-
-        var columnMetadata = new KeyMetadata
-        {
-            KeyId = columnKeyId,
-            KeyName = columnKeyName,
-            Role = role,
-            EncryptedKey = Convert.ToBase64String(encryptedColumnDek),
-            Algorithm = EncryptionAlgorithm,
-            ProviderType = providerType,
-        };
-
+        // Each column gets its own unique ephemeral DEK and KEK in Azure Key Vault
         var numColumns = schema.NumColumns;
         var columnProperties = new ColumnEncryptionProperties[numColumns];
 
@@ -91,6 +70,31 @@ public static class Cryptography
 
             if (!shouldEncrypt)
                 continue;
+
+            // Generate a unique ephemeral AES-128 DEK for this specific column (in-memory only, never persisted)
+            var columnDek = RandomNumberGenerator.GetBytes(16);
+            var columnKeyName = $"{role}-column-{colName}";
+
+            // Create a unique KEK in Azure Key Vault for this column and encrypt the ephemeral DEK
+            var columnKeyId = keyVaultProvider
+                .CreateKeyAsync(columnKeyName, role)
+                .GetAwaiter()
+                .GetResult();
+            // Use KeyId (full URI with GUID) not KeyName (formatted name) since keys are created with GUID-based names
+            var encryptedColumnDek = keyVaultProvider
+                .EncryptAsync(columnKeyId, columnDek)
+                .GetAwaiter()
+                .GetResult();
+
+            var columnMetadata = new KeyMetadata
+            {
+                KeyId = columnKeyId,
+                KeyName = columnKeyName,
+                Role = role,
+                EncryptedKey = Convert.ToBase64String(encryptedColumnDek),
+                Algorithm = EncryptionAlgorithm,
+                ProviderType = providerType,
+            };
 
             using var colBuilder = new ColumnEncryptionPropertiesBuilder(colName);
             colBuilder.Key(columnDek);
@@ -108,15 +112,17 @@ public static class Cryptography
     }
 
     /// <summary>
-    /// Build decryption properties using an <see cref="IKeyVaultProvider"/> to decrypt DEKs.
+    /// Build decryption properties using an <see cref="IKeyVaultProvider"/> and a <see cref="DekCache"/> to decrypt DEKs.
     /// The vault decrypts the encrypted DEK stored in parquet metadata using the referenced key.
+    /// Decrypted DEKs are cached to avoid repeated vault calls for the same key.
     /// </summary>
     public static FileDecryptionProperties BuildDecryptionProperties(
-        IKeyVaultProvider keyVaultProvider
+        IKeyVaultProvider keyVaultProvider,
+        DekCache dekCache
     )
     {
         using var builder = new FileDecryptionPropertiesBuilder();
-        builder.KeyRetriever(new KeyRetriever(keyVaultProvider));
+        builder.KeyRetriever(new KeyRetriever(keyVaultProvider, dekCache));
         return builder.Build();
     }
 }

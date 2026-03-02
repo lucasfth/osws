@@ -1,6 +1,5 @@
 using Amazon.S3;
 using Amazon.S3.Model;
-using OSWS.Library;
 using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
 using OSWS.ParquetSolver.Helpers;
@@ -9,7 +8,8 @@ using OSWS.WebApi.Interfaces;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFileCache fileCache) : IS3Get
+public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFileCache fileCache)
+    : IS3Get
 {
     public async Task<IResult> GetObject(
         string bucket,
@@ -78,17 +78,21 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFi
                 encryptedStream = memStream;
 
                 // Cache the encrypted stream asynchronously (don't await to avoid blocking)
-                _ = fileCache.SetAsync(cacheKey, memStream, cancellationToken).ContinueWith(
-                    task =>
-                    {
-                        if (task.IsFaulted)
+                _ = fileCache
+                    .SetAsync(cacheKey, memStream, cancellationToken)
+                    .ContinueWith(
+                        task =>
                         {
-                            // Log cache failure but don't block the response
-                            Console.WriteLine($"[OSWS] Cache failure for {cacheKey}: {task.Exception?.InnerException?.Message}");
-                        }
-                    },
-                    TaskScheduler.Default
-                );
+                            if (task.IsFaulted)
+                            {
+                                // Log cache failure but don't block the response
+                                Console.WriteLine(
+                                    $"[OSWS] Cache failure for {cacheKey}: {task.Exception?.InnerException?.Message}"
+                                );
+                            }
+                        },
+                        TaskScheduler.Default
+                    );
             }
         }
 
@@ -113,7 +117,7 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFi
             }
         }
 
-        if (isParquetFile && !outputStream.CanSeek)
+        if (isParquetFile && outputStream is { CanSeek: false })
         {
             var buffered = new MemoryStream();
             await outputStream.CopyToAsync(buffered, cancellationToken).ConfigureAwait(false);
@@ -121,13 +125,22 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFi
             outputStream = buffered;
         }
 
-        var contentLength = outputStream.CanSeek ? outputStream.Length : (resp?.ContentLength ?? 0);
-        if (rangeSpec.IsRangeRequested && (contentLength <= 0 || !outputStream.CanSeek))
+        var contentLength = outputStream is { CanSeek: true }
+            ? outputStream.Length
+            : (resp?.ContentLength ?? 0);
+        if (
+            rangeSpec.IsRangeRequested
+            && (contentLength <= 0 || outputStream is not { CanSeek: true })
+        )
         {
             // Buffer to get a reliable length and enable seeking for ranged reads.
             var buffered = new MemoryStream();
-            await outputStream.CopyToAsync(buffered, cancellationToken).ConfigureAwait(false);
-            buffered.Position = 0;
+            if (outputStream != null)
+            {
+                await outputStream.CopyToAsync(buffered, cancellationToken).ConfigureAwait(false);
+                buffered.Position = 0;
+            }
+
             outputStream = buffered;
             contentLength = buffered.Length;
         }
@@ -161,15 +174,16 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFi
             );
             httpResponse.StatusCode = 206;
 
-            await StreamRangeHelper
-                .CopyRangeAsync(
-                    outputStream,
-                    httpResponse.Body,
-                    bounds.Start,
-                    bounds.Length,
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
+            if (outputStream != null)
+                await StreamRangeHelper
+                    .CopyRangeAsync(
+                        outputStream,
+                        httpResponse.Body,
+                        bounds.Start,
+                        bounds.Length,
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
 
             return Results.Empty;
         }
@@ -180,10 +194,14 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFi
             if (!string.IsNullOrEmpty(resp.ETag))
                 httpResponse.Headers.ETag = resp.ETag;
             if (resp.LastModified != null)
-                httpResponse.Headers.LastModified = resp.LastModified.GetValueOrDefault().ToString("R");
+                httpResponse.Headers.LastModified = resp
+                    .LastModified.GetValueOrDefault()
+                    .ToString("R");
         }
         httpResponse.Headers.AcceptRanges = "bytes";
         httpResponse.ContentLength = contentLength;
-        return Results.File(outputStream, responseContentType, fileDownloadName: key);
+        if (outputStream != null)
+            return Results.File(outputStream, responseContentType, fileDownloadName: key);
+        return Results.NoContent();
     }
 }

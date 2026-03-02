@@ -31,7 +31,9 @@ public class EncryptedFileCache : IDisposable
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
         // Determine cache directory
-        _cacheDirectory = string.IsNullOrWhiteSpace(_settings.CacheDirectory) ? Path.Combine(Path.GetTempPath(), "osws-cache") : _settings.CacheDirectory;
+        _cacheDirectory = string.IsNullOrWhiteSpace(_settings.CacheDirectory)
+            ? Path.Combine(Path.GetTempPath(), "osws-cache")
+            : _settings.CacheDirectory;
 
         // Create cache directory if it doesn't exist
         if (_settings.EnableFileCache && !Directory.Exists(_cacheDirectory))
@@ -105,7 +107,11 @@ public class EncryptedFileCache : IDisposable
     /// <param name="cacheKey">The cache key (generated from bucket+key)</param>
     /// <param name="stream">The encrypted file stream to cache</param>
     /// <param name="cancellationToken"></param>
-    public async Task SetAsync(string cacheKey, Stream stream, CancellationToken cancellationToken = default)
+    public async Task SetAsync(
+        string cacheKey,
+        Stream stream,
+        CancellationToken cancellationToken = default
+    )
     {
         if (_settings.EnableFileCache)
             return;
@@ -133,7 +139,14 @@ public class EncryptedFileCache : IDisposable
             var filePath = Path.Combine(_cacheDirectory, $"{cacheKey}.parquet");
 
             // Write stream to disk
-            await using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            await using (
+                var fileStream = new FileStream(
+                    filePath,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None
+                )
+            )
             {
                 var originalPosition = stream.Position;
                 stream.Position = 0;
@@ -156,7 +169,7 @@ public class EncryptedFileCache : IDisposable
                 FilePath = filePath,
                 FileSize = fileSize,
                 LastAccessTime = DateTime.UtcNow,
-                CacheKey = cacheKey
+                CacheKey = cacheKey,
             };
 
             _entries.TryAdd(cacheKey, entry);
@@ -174,9 +187,7 @@ public class EncryptedFileCache : IDisposable
     private async Task EvictLruAsync()
     {
         // Find LRU entry
-        var lruEntry = _entries.Values
-            .OrderBy(e => e.LastAccessTime)
-            .FirstOrDefault();
+        var lruEntry = _entries.Values.OrderBy(e => e.LastAccessTime).FirstOrDefault();
 
         if (lruEntry == null)
             return;
@@ -260,7 +271,7 @@ public class EncryptedFileCache : IDisposable
                     FilePath = filePath,
                     FileSize = fileInfo.Length,
                     LastAccessTime = fileInfo.LastAccessTimeUtc,
-                    CacheKey = cacheKey
+                    CacheKey = cacheKey,
                 };
 
                 _entries.TryAdd(cacheKey, entry);
@@ -289,7 +300,9 @@ public class EncryptedFileCache : IDisposable
             sb.AppendLine($"Enabled: {_settings.EnableFileCache}");
             sb.AppendLine($"Directory: {_cacheDirectory}");
             sb.AppendLine($"Files Cached: {_entries.Count}");
-            sb.AppendLine($"Cache Size: {_currentCacheSize / (1024 * 1024):N2} MB / {_settings.MaxCacheSizeBytes / (1024 * 1024 * 1024):N2} GB");
+            sb.AppendLine(
+                $"Cache Size: {_currentCacheSize / (1024 * 1024):N2} MB / {_settings.MaxCacheSizeBytes / (1024 * 1024 * 1024):N2} GB"
+            );
             sb.AppendLine($"Directory Exists: {Directory.Exists(_cacheDirectory)}");
 
             if (_entries.Count > 0)
@@ -300,7 +313,9 @@ public class EncryptedFileCache : IDisposable
                     var filePath = Path.Combine(_cacheDirectory, entry.Key + ".parquet");
                     var fileSize = File.Exists(filePath) ? new FileInfo(filePath).Length : 0;
                     sb.AppendLine($"  - {entry.Key}");
-                    sb.AppendLine($"    Size: {fileSize / (1024 * 1024):N2} MB, Last Access: {entry.Value.LastAccessTime:O}");
+                    sb.AppendLine(
+                        $"    Size: {fileSize / (1024 * 1024):N2} MB, Last Access: {entry.Value.LastAccessTime:O}"
+                    );
                 }
             }
 

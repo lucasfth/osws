@@ -1,6 +1,6 @@
 using OSWS.ParquetSolver.Helpers;
 
-namespace OSWS.Performance.Tests.Fixtures;
+namespace OSWS.Performance.Benchmarks.Fixtures;
 
 /// <summary>
 /// Test fixture for cold-start scenarios.
@@ -10,11 +10,14 @@ public class ColdStartFixture : IDisposable
 {
     public DekCache DekCache { get; } = new();
 
-    private EncryptedFileCache FileCache { get; } = new(new Common.Configuration.CacheSettings
-    {
-        EnableFileCache = true,
-        MaxCacheSizeBytes = 10L * 1024 * 1024 * 1024 // 10GB
-    });
+    private EncryptedFileCache FileCache { get; } =
+        new(
+            new Common.Configuration.CacheSettings
+            {
+                EnableFileCache = true,
+                MaxCacheSizeBytes = 10L * 1024 * 1024 * 1024, // 10GB
+            }
+        );
 
     /// <summary>
     /// Clear all caches to simulate cold start.

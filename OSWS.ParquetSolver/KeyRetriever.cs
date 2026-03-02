@@ -14,7 +14,8 @@ namespace OSWS.ParquetSolver;
 /// Decrypted DEKs are cached by their unique Key Encryption Key (KEK) ID to avoid
 /// repeated calls to Azure Key Vault for the same key.
 /// </summary>
-public sealed class KeyRetriever(IKeyVaultProvider keyVaultProvider, DekCache dekCache) : DecryptionKeyRetriever
+public sealed class KeyRetriever(IKeyVaultProvider keyVaultProvider, DekCache dekCache)
+    : DecryptionKeyRetriever
 {
     private readonly IKeyVaultProvider _keyVaultProvider =
         keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));

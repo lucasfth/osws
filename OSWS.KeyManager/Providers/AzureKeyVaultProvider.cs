@@ -58,10 +58,7 @@ public class AzureKeyVaultProvider : IKeyVaultProvider
         {
             KeySize = 2048,
             KeyOperations = { KeyOperation.Encrypt, KeyOperation.Decrypt },
-            Tags =
-            {
-                [RoleTagKey] = role
-            }
+            Tags = { [RoleTagKey] = role },
         };
 
         var response = await _keyClient.CreateRsaKeyAsync(options);

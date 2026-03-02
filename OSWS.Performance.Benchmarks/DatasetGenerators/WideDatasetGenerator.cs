@@ -1,17 +1,17 @@
 using ParquetSharp;
 using ParquetSharp.IO;
 
-namespace OSWS.Performance.Tests.DatasetGenerators;
+namespace OSWS.Performance.Benchmarks.DatasetGenerators;
 
 /// <summary>
-/// Generates small parquet datasets to stress request overhead and key retrieval.
-/// Default: 5 columns × 5,000 rows (~1MB)
+/// Generates wide parquet datasets with many columns to stress footer parsing and key retrieval.
+/// Default: 2,000 columns × 10,000 rows (~150MB)
 /// </summary>
-public static class SmallDatasetGenerator
+public static class WideDatasetGenerator
 {
     public static async Task<Stream> GenerateAsync(
-        int columns = 5,
-        int rows = 5000,
+        int columns = 2000,
+        int rows = 10000,
         CancellationToken cancellationToken = default
     )
     {
@@ -19,27 +19,31 @@ public static class SmallDatasetGenerator
 
         var outputStream = new MemoryStream();
 
-        // Create schema
+        // Create schema with many columns
         var schemaColumns = new List<Column>();
         for (var i = 0; i < columns; i++)
         {
-            schemaColumns.Add(new Column<int>($"col_{i}"));
+            schemaColumns.Add(new Column<double>($"col_{i}"));
         }
 
         using var outputMos = new ManagedOutputStream(outputStream, leaveOpen: true);
         using var writerProperties = WriterProperties.GetDefaultWriterProperties();
-        using var writer = new ParquetFileWriter(outputMos, schemaColumns.ToArray(), writerProperties);
+        using var writer = new ParquetFileWriter(
+            outputMos,
+            schemaColumns.ToArray(),
+            writerProperties
+        );
 
         // Write data
         using var rowGroup = writer.AppendRowGroup();
 
         for (var i = 0; i < columns; i++)
         {
-            using var colWriter = rowGroup.NextColumn().LogicalWriter<int>();
-            var data = new int[rows];
+            using var colWriter = rowGroup.NextColumn().LogicalWriter<double>();
+            var data = new double[rows];
             for (var j = 0; j < rows; j++)
             {
-                data[j] = i * rows + j;
+                data[j] = (i * rows + j) * 0.123; // Some deterministic data
             }
             colWriter.WriteBatch(data);
         }

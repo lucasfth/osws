@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace OSWS.Performance.Tests.Helpers;
+namespace OSWS.Performance.Benchmarks.Helpers;
 
 /// <summary>
 /// Collects performance metrics for measurement tests.
@@ -64,10 +64,14 @@ public class MetricsCollector
             MemoryIncreaseMb = (_peakMemoryBytes - _initialMemoryBytes) / (1024.0 * 1024.0),
             AzureKvCallCount = _azureKvCallCount,
             S3CallCount = _s3CallCount,
-            AzureKvAvgLatencyMs = _azureKvLatencies.Any() ? _azureKvLatencies.Average(l => l.TotalMilliseconds) : 0,
-            S3AvgLatencyMs = _s3Latencies.Any() ? _s3Latencies.Average(l => l.TotalMilliseconds) : 0,
+            AzureKvAvgLatencyMs = _azureKvLatencies.Any()
+                ? _azureKvLatencies.Average(l => l.TotalMilliseconds)
+                : 0,
+            S3AvgLatencyMs = _s3Latencies.Any()
+                ? _s3Latencies.Average(l => l.TotalMilliseconds)
+                : 0,
             AzureKvTotalLatencyMs = _azureKvLatencies.Sum(l => l.TotalMilliseconds),
-            S3TotalLatencyMs = _s3Latencies.Sum(l => l.TotalMilliseconds)
+            S3TotalLatencyMs = _s3Latencies.Sum(l => l.TotalMilliseconds),
         };
     }
 

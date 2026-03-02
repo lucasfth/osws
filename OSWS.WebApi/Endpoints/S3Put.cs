@@ -9,7 +9,8 @@ using OSWS.WebApi.Interfaces;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter, EncryptedFileCache fileCache) : IS3Put
+public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter, EncryptedFileCache fileCache)
+    : IS3Put
 {
     public async Task<IResult> PutObject(
         string bucket,
@@ -75,18 +76,22 @@ public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter, EncryptedFi
                 uploadStream.Position = 0;
 
                 // Cache asynchronously (don't await to avoid blocking the upload)
-                _ = fileCache.SetAsync(cacheKey, cacheStream, cancellationToken).ContinueWith(
-                    task =>
-                    {
-                        if (task.IsFaulted)
+                _ = fileCache
+                    .SetAsync(cacheKey, cacheStream, cancellationToken)
+                    .ContinueWith(
+                        task =>
                         {
-                            // Log cache failure but don't block the upload
-                            Console.WriteLine($"[OSWS] Cache failure for {cacheKey}: {task.Exception?.InnerException?.Message}");
-                        }
-                        cacheStream.Dispose();
-                    },
-                    TaskScheduler.Default
-                );
+                            if (task.IsFaulted)
+                            {
+                                // Log cache failure but don't block the upload
+                                Console.WriteLine(
+                                    $"[OSWS] Cache failure for {cacheKey}: {task.Exception?.InnerException?.Message}"
+                                );
+                            }
+                            cacheStream.Dispose();
+                        },
+                        TaskScheduler.Default
+                    );
 
                 // For parquet files, we already have a seekable stream, so set it directly
                 req.InputStream = uploadStream;

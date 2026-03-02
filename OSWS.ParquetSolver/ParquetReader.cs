@@ -26,7 +26,10 @@ public class ParquetReader(IKeyVaultProvider keyVaultProvider, DekCache dekCache
     {
         // Build decryption properties - the KeyRetriever will call IKeyVaultProvider
         // to decrypt DEKs stored in the parquet footer metadata, with caching to avoid repeated calls
-        using var decryptionProperties = Cryptography.BuildDecryptionProperties(_keyVaultProvider, _dekCache);
+        using var decryptionProperties = Cryptography.BuildDecryptionProperties(
+            _keyVaultProvider,
+            _dekCache
+        );
         using var readerProperties = ReaderProperties.GetDefaultReaderProperties();
         readerProperties.FileDecryptionProperties = decryptionProperties;
 

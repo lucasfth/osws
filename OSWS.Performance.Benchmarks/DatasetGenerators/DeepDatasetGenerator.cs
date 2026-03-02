@@ -1,7 +1,7 @@
 using ParquetSharp;
 using ParquetSharp.IO;
 
-namespace OSWS.Performance.Tests.DatasetGenerators;
+namespace OSWS.Performance.Benchmarks.DatasetGenerators;
 
 /// <summary>
 /// Generates deep parquet datasets with many rows to stress cryptographic operations.
@@ -28,7 +28,11 @@ public static class DeepDatasetGenerator
 
         using var outputMos = new ManagedOutputStream(outputStream, leaveOpen: true);
         using var writerProperties = WriterProperties.GetDefaultWriterProperties();
-        using var writer = new ParquetFileWriter(outputMos, schemaColumns.ToArray(), writerProperties);
+        using var writer = new ParquetFileWriter(
+            outputMos,
+            schemaColumns.ToArray(),
+            writerProperties
+        );
 
         // Write data in chunks to avoid memory issues
         const int chunkSize = 100_000;

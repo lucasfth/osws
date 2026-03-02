@@ -1,6 +1,6 @@
 using OSWS.ParquetSolver.Helpers;
 
-namespace OSWS.Performance.Tests.Fixtures;
+namespace OSWS.Performance.Benchmarks.Fixtures;
 
 /// <summary>
 /// Test fixture for warm-start scenarios.
@@ -9,11 +9,14 @@ namespace OSWS.Performance.Tests.Fixtures;
 public class WarmStartFixture : IDisposable
 {
     public DekCache DekCache { get; } = new();
-    public EncryptedFileCache FileCache { get; } = new(new OSWS.Common.Configuration.CacheSettings
-    {
-        EnableFileCache = true,
-        MaxCacheSizeBytes = 10L * 1024 * 1024 * 1024 // 10GB
-    });
+    public EncryptedFileCache FileCache { get; } =
+        new(
+            new OSWS.Common.Configuration.CacheSettings
+            {
+                EnableFileCache = true,
+                MaxCacheSizeBytes = 10L * 1024 * 1024 * 1024, // 10GB
+            }
+        );
 
     /// <summary>
     /// Pre-populate caches for warm start scenarios.

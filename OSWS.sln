@@ -14,7 +14,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSWS.ParquetSolver", "OSWS.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSWS.WebApi.Tests", "OSWS.WebApi.Tests\OSWS.WebApi.Tests.csproj", "{B3624B33-CD73-4559-8E07-8438BC319C23}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSWS.Performance.Tests", "OSWS.Performance.Tests\OSWS.Performance.Tests.csproj", "{A8492522-34D8-46F0-82C6-39EADA882516}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OSWS.Performance.Benchmarks", "OSWS.Performance.Benchmarks\OSWS.Performance.Benchmarks.csproj", "{A8492522-34D8-46F0-82C6-39EADA882516}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

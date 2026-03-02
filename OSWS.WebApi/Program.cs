@@ -115,10 +115,13 @@ app.UseHttpLogging();
 app.MapGet("/health", () => "OSWS Web API running");
 
 // Cache debug endpoint - useful for verifying cache is working
-app.MapGet("/cache-stats", (EncryptedFileCache fileCache) =>
-{
-    return Results.Text(fileCache.GetDebugInfo());
-});
+app.MapGet(
+    "/cache-stats",
+    (EncryptedFileCache fileCache) =>
+    {
+        return Results.Text(fileCache.GetDebugInfo());
+    }
+);
 
 // Map S3 routes (GET, PUT) to their handlers
 app.MapS3Routes();

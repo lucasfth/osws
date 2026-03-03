@@ -35,8 +35,7 @@ builder.Services.Configure<S3Settings>(builder.Configuration.GetSection("S3Setti
 // --- Cache Settings ---
 // Configure from appsettings.json "Cache" section or use defaults
 var cacheSettings =
-    builder.Configuration.GetSection("Cache").Get<CacheSettings>()
-    ?? new CacheSettings { EnableFileCache = false };
+    builder.Configuration.GetSection("Cache").Get<CacheSettings>() ?? new CacheSettings();
 
 builder.Services.AddSingleton(cacheSettings);
 

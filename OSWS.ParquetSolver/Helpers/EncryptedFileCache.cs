@@ -70,7 +70,7 @@ public class EncryptedFileCache : IDisposable
     {
         stream = null;
 
-        if (_settings.EnableFileCache)
+        if (!_settings.EnableFileCache)
             return false;
 
         if (!_entries.TryGetValue(cacheKey, out var entry))
@@ -113,7 +113,7 @@ public class EncryptedFileCache : IDisposable
         CancellationToken cancellationToken = default
     )
     {
-        if (_settings.EnableFileCache)
+        if (!_settings.EnableFileCache)
             return;
 
         ArgumentNullException.ThrowIfNull(stream);

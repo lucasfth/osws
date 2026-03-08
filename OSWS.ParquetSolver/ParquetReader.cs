@@ -6,19 +6,33 @@ using ParquetSharp.IO;
 
 namespace OSWS.ParquetSolver;
 
-public class ParquetReader(IKeyVaultProvider keyVaultProvider, DekCache dekCache) : IParquetReader
+public class ParquetReader(
+    IKeyVaultProvider keyVaultProvider,
+    DekCache dekCache,
+    Action<TimeSpan>? onKeyOperationLatency = null
+) : IParquetReader
 {
-    private readonly IKeyVaultProvider _keyVaultProvider =
-        keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
-    private readonly DekCache _dekCache =
-        dekCache ?? throw new ArgumentNullException(nameof(dekCache));
+    /// <summary>
+    /// Controls behavior when a column cannot be decrypted.
+    /// Defaults to writing dummy values for that column so the remaining columns can still be read.
+    /// </summary>
+    public ColumnDecryptionFailureBehavior ColumnDecryptionFailureBehavior { get; init; } =
+        ColumnDecryptionFailureBehavior.DummyValues;
+
+    /// <summary>
+    /// Optional callback invoked when a column decryption/read operation fails and fallback behaviour is applied.
+    /// </summary>
+    public Action<string, Exception>? OnColumnDecryptionError { get; set; }
 
     /// <summary>
     /// Read and recreate a parquet file, decrypting columns via the configured
     /// <see cref="IKeyVaultProvider"/>. Returns a Stream containing the recreated
     /// parquet content (positioned at 0).
     /// </summary>
-    /// <remarks>ParquetSharp operates synchronously via native C++ calls, so we wrap in Task.Run to avoid blocking.</remarks>
+    /// <remarks>
+    /// Columns are processed one at a time. If decrypting a specific column fails,
+    /// behaviour is controlled by <see cref="ColumnDecryptionFailureBehavior"/>.
+    /// </remarks>
     public Task<MemoryStream> ReadParquetAsync(Stream input) =>
         Task.Run(() => ReadParquetInternal(input));
 
@@ -27,8 +41,9 @@ public class ParquetReader(IKeyVaultProvider keyVaultProvider, DekCache dekCache
         // Build decryption properties - the KeyRetriever will call IKeyVaultProvider
         // to decrypt DEKs stored in the parquet footer metadata, with caching to avoid repeated calls
         using var decryptionProperties = Cryptography.BuildDecryptionProperties(
-            _keyVaultProvider,
-            _dekCache
+            keyVaultProvider,
+            dekCache,
+            onKeyOperationLatency
         );
         using var readerProperties = ReaderProperties.GetDefaultReaderProperties();
         readerProperties.FileDecryptionProperties = decryptionProperties;
@@ -53,7 +68,14 @@ public class ParquetReader(IKeyVaultProvider keyVaultProvider, DekCache dekCache
             keyValueMetadata
         );
 
-        Copy.CopyRowGroups(writer, reader, numColumns, numRowGroups);
+        Copy.CopyRowGroups(
+            writer,
+            reader,
+            numColumns,
+            numRowGroups,
+            ColumnDecryptionFailureBehavior,
+            OnColumnDecryptionError
+        );
 
         writer.Close();
         reader.Close();

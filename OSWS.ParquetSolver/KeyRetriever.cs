@@ -14,14 +14,12 @@ namespace OSWS.ParquetSolver;
 /// Decrypted DEKs are cached by their unique Key Encryption Key (KEK) ID to avoid
 /// repeated calls to Azure Key Vault for the same key.
 /// </summary>
-public sealed class KeyRetriever(IKeyVaultProvider keyVaultProvider, DekCache dekCache)
-    : DecryptionKeyRetriever
+public sealed class KeyRetriever(
+    IKeyVaultProvider keyVaultProvider,
+    DekCache dekCache,
+    Action<TimeSpan>? onKeyOperationLatency = null
+) : DecryptionKeyRetriever
 {
-    private readonly IKeyVaultProvider _keyVaultProvider =
-        keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
-    private readonly DekCache _dekCache =
-        dekCache ?? throw new ArgumentNullException(nameof(dekCache));
-
     /// <summary>
     /// Retrieves the DEK by deserializing the Parquet footer metadata and calling the key vault provider to decrypt it.
     /// Checks the cache first; if the DEK has been decrypted before (by KEK ID), returns the cached value.
@@ -39,7 +37,7 @@ public sealed class KeyRetriever(IKeyVaultProvider keyVaultProvider, DekCache de
             );
 
         // Try to retrieve from cache first using the KEK ID
-        if (_dekCache.TryGet(metadata.KeyId, out var cachedDek))
+        if (dekCache.TryGet(metadata.KeyId, out var cachedDek))
         {
             return cachedDek!;
         }
@@ -48,13 +46,21 @@ public sealed class KeyRetriever(IKeyVaultProvider keyVaultProvider, DekCache de
 
         // ParquetSharp's GetKey is synchronous but IKeyVaultProvider is async.
         // Use KeyId (full URI with GUID) not KeyName (formatted name) since keys are created with GUID-based names
-        var decryptedDek = _keyVaultProvider
+        var stopwatch = onKeyOperationLatency is not null
+            ? System.Diagnostics.Stopwatch.StartNew()
+            : null;
+        var decryptedDek = keyVaultProvider
             .DecryptAsync(metadata.KeyId, encryptedKey)
             .GetAwaiter()
             .GetResult();
 
+        stopwatch?.Stop();
+
+        // Record latency for this Azure KV decrypt operation
+        onKeyOperationLatency?.Invoke(stopwatch.Elapsed);
+
         // Cache the decrypted DEK for future use
-        _dekCache.Set(metadata.KeyId, decryptedDek);
+        dekCache.Set(metadata.KeyId, decryptedDek);
 
         return decryptedDek;
     }

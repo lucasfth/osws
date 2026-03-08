@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.DependencyInjection;
 using OSWS.Models.Interfaces;
@@ -10,93 +9,127 @@ using OSWS.Performance.Benchmarks.Helpers;
 namespace OSWS.Performance.Benchmarks.Measurements;
 
 /// <summary>
-/// Benchmark for Measurement 1: cold start with a wide dataset.
-/// Supports selecting the key‑vault provider via configuration just like
-/// the WebApi's service registration.
+/// Measurement 1: Cold Start Latency Breakdown
+/// Measures decryption latency with empty caches for Small, Wide, and Deep datasets.
+/// Captures per-operation latencies (footer, columns) to understand which operations are bottlenecks.
 /// </summary>
-[MemoryDiagnoser]
 [Config(typeof(SharedBenchmarkConfig))]
 public class Measurement1ColdWideRangeRequestBenchmark
 {
     private ServiceProvider? _services;
     private IKeyVaultProvider? _keyVaultProvider;
-    private ParquetWriter? _parquetWriter;
-    private ParquetReader? _parquetReader;
-    private Stream? _encryptedStream;
+    private ColdStartFixture? _fixture;
 
-    // range offsets will be computed per invocation based on the decrypted stream length
-    private const int RequestedSize = 2 * 1024 * 1024;
+    private Stream? _smallEncrypted;
+    private Stream? _wideEncrypted;
+    private Stream? _deepEncrypted;
 
-    // metrics collector used by the decorators
     private readonly MetricsCollector _metrics = new();
+    private ParquetWriter? _parquetWriter;
+
+    // Accumulate results across all iterations to write once in GlobalCleanup
+    private readonly Dictionary<string, PerformanceMetrics> _accumulatedResults = new();
 
     [GlobalSetup]
     public async Task GlobalSetupAsync()
     {
         _services = BenchmarkServiceFactory.BuildServiceProvider();
         _keyVaultProvider = _services.GetRequiredService<IKeyVaultProvider>();
+        _fixture = new ColdStartFixture();
+        _parquetWriter = new ParquetWriter(_keyVaultProvider, "Internal");
 
-        var fixture = new ColdStartFixture();
-        await fixture.ClearCachesAsync();
+        // Generate and encrypt three dataset types once, reused for all iterations
+        var smallUnencrypted = await SmallDatasetGenerator.GenerateAsync(
+            5,
+            5000,
+            CancellationToken.None
+        );
+        _smallEncrypted = await _parquetWriter.WriteParquetAsync(smallUnencrypted, "default");
 
-        _parquetWriter = new ParquetWriter(_keyVaultProvider, "azure");
-        _parquetReader = new ParquetReader(_keyVaultProvider, fixture.DekCache);
-
-        var unencrypted = await WideDatasetGenerator.GenerateAsync(
+        var wideUnencrypted = await WideDatasetGenerator.GenerateAsync(
             2000,
             10000,
             CancellationToken.None
         );
+        _wideEncrypted = await _parquetWriter.WriteParquetAsync(wideUnencrypted, "default");
 
-        _encryptedStream = await _parquetWriter.WriteParquetAsync(unencrypted, "default");
-        // range start/end are determined later when the decrypted length is known
+        var deepUnencrypted = await DeepDatasetGenerator.GenerateAsync(
+            10,
+            10_000_000,
+            CancellationToken.None
+        );
+        _deepEncrypted = await _parquetWriter.WriteParquetAsync(deepUnencrypted, "default");
     }
 
-    [Benchmark]
-    [Description("Measurement 1: Cold start with wide dataset (2MB range request)")]
-    public async Task ColdStart_WideDataset_RangeRequest_2MB()
+    [IterationSetup]
+    public void IterationSetup()
     {
+        // Cold start: clear all caches before each iteration
+        _fixture?.ClearCachesAsync().GetAwaiter().GetResult();
+    }
+
+    [Benchmark(Description = "Cold Start - Small Dataset (5 cols × 5K rows)")]
+    public async Task ColdStart_SmallDataset()
+    {
+        await RunColdStartBenchmark(_smallEncrypted, "SmallDataset");
+    }
+
+    [Benchmark(Description = "Cold Start - Wide Dataset (2000 cols × 10K rows)")]
+    public async Task ColdStart_WideDataset()
+    {
+        await RunColdStartBenchmark(_wideEncrypted, "WideDataset");
+    }
+
+    [Benchmark(Description = "Cold Start - Deep Dataset (10 cols × 10M rows)")]
+    public async Task ColdStart_DeepDataset()
+    {
+        await RunColdStartBenchmark(_deepEncrypted, "DeepDataset");
+    }
+
+    private async Task RunColdStartBenchmark(Stream? encryptedStream, string datasetType)
+    {
+        if (encryptedStream == null || _keyVaultProvider == null || _fixture == null)
+            throw new InvalidOperationException("Benchmark not properly initialized");
+
         _metrics.StartMeasurement();
 
-        _encryptedStream?.Position = 0;
-        if (_encryptedStream == null)
-            throw new InvalidOperationException("Encrypted stream is not initialized.");
-        if (_parquetReader == null)
-            throw new InvalidOperationException("Parquet reader is not initialized.");
-        var decrypted = await _parquetReader.ReadParquetAsync(_encryptedStream);
+        encryptedStream.Position = 0;
 
-        // compute range relative to decrypted length
-        var decryptedLen = decrypted.Length;
-        var start = Math.Max(0, decryptedLen - RequestedSize);
-        var bytesToRead = (int)(decryptedLen - start);
-        decrypted.Position = start;
-        var buffer = new byte[bytesToRead];
-        var totalRead = 0;
-        while (totalRead < bytesToRead)
-        {
-            var read = await decrypted.ReadAsync(
-                buffer.AsMemory(totalRead, bytesToRead - totalRead),
-                CancellationToken.None
-            );
-            if (read == 0)
-                break;
-            totalRead += read;
-        }
+        // Create reader with latency tracking callback
+        var reader = new ParquetReader(
+            _keyVaultProvider,
+            _fixture.DekCache,
+            (latency) =>
+                _metrics.RecordOperationLatency(
+                    $"Measurement1_ColdStart_Decrypt_{datasetType}",
+                    latency
+                )
+        );
+        _ = await reader.ReadParquetAsync(encryptedStream);
 
         _metrics.StopMeasurement();
         var metrics = _metrics.GetMetrics();
-        ResultsRecorder.Record(
-            nameof(Measurement1ColdWideRangeRequestBenchmark)
-                + ".ColdStart_WideDataset_RangeRequest_2MB",
-            metrics
-        );
+
+        // Store for later writing in GlobalCleanup
+        var resultKey = $"Measurement1_ColdStart_{datasetType}_{DateTime.UtcNow.Ticks}";
+        _accumulatedResults[resultKey] = metrics;
+
         _metrics.Reset();
     }
 
     [GlobalCleanup]
     public void GlobalCleanup()
     {
-        _encryptedStream?.Dispose();
+        // Write all accumulated results to CSV once at the end
+        foreach (var (resultKey, metrics) in _accumulatedResults)
+        {
+            ResultsRecorder.Record(resultKey, metrics);
+        }
+
+        _smallEncrypted?.Dispose();
+        _wideEncrypted?.Dispose();
+        _deepEncrypted?.Dispose();
+        _fixture?.Dispose();
         _services?.Dispose();
     }
 }

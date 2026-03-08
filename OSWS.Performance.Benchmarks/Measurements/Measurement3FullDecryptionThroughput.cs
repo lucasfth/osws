@@ -9,84 +9,92 @@ using OSWS.Performance.Benchmarks.Helpers;
 namespace OSWS.Performance.Benchmarks.Measurements;
 
 /// <summary>
-/// Benchmark for Measurement 3: full decryption throughput with multi‑core scaling.
-/// This simulates a scenario where the service needs to decrypt an entire large dataset,
-/// which is the worst‑case scenario for performance.
-/// By varying the number of cores used we can also see how well the decryption process scales with parallelism,
-/// which is important for understanding how it will perform under heavy load.
+/// Measurement 3: Per-Column Decryption Latency Analysis
+/// Measures how decryption latency is distributed across columns in the wide dataset.
+/// Shows if early columns have different latency than late columns due to cache effects.
+/// Uses cold start (no cache) to isolate per-column Azure KV decrypt time.
 /// </summary>
-[MemoryDiagnoser]
 [Config(typeof(SharedBenchmarkConfig))]
 public class Measurement3FullDecryptionThroughputBenchmark
 {
-    private readonly WarmStartFixture _fixture = new();
-    private readonly MetricsCollector _metrics = new();
-
     private ServiceProvider? _services;
     private IKeyVaultProvider? _keyVaultProvider;
+    private ColdStartFixture? _fixture;
+    private Stream? _wideEncrypted;
+    private readonly MetricsCollector _metrics = new();
     private ParquetWriter? _parquetWriter;
-    private ParquetReader? _parquetReader;
-    private Stream? _encryptedStream;
-    private int _originalMaxWorkerThreads;
-    private int _originalMaxIoThreads;
 
-    [Params(1, 4, 8)]
-    public int CoreCount { get; set; }
+    // Accumulate results across all iterations to write once in GlobalCleanup
+    private readonly Dictionary<string, PerformanceMetrics> _accumulatedResults = new();
 
     [GlobalSetup]
     public async Task SetupAsync()
     {
-        // Save original thread pool settings
-        ThreadPool.GetMaxThreads(out _originalMaxWorkerThreads, out _originalMaxIoThreads);
-
         _services = BenchmarkServiceFactory.BuildServiceProvider();
         _keyVaultProvider = _services.GetRequiredService<IKeyVaultProvider>();
+        _fixture = new ColdStartFixture();
+        _parquetWriter = new ParquetWriter(_keyVaultProvider, "Internal");
 
-        _fixture.PrepopulateCaches();
-
-        // generate and encrypt a deep dataset once
-        _parquetWriter = new ParquetWriter(_keyVaultProvider, "azure");
-        var unencrypted = await DeepDatasetGenerator.GenerateAsync(
-            10,
-            10_000_000,
+        // Generate the wide dataset once - 2000 columns provides sufficient granularity
+        var unencrypted = await WideDatasetGenerator.GenerateAsync(
+            2000,
+            10000,
             CancellationToken.None
         );
-        _encryptedStream = await _parquetWriter.WriteParquetAsync(unencrypted, "default");
+        _wideEncrypted = await _parquetWriter.WriteParquetAsync(unencrypted, "default");
     }
 
-    [Benchmark]
-    public async Task FullDecryption_DeepDataset_MultiCore()
+    [IterationSetup]
+    public void IterationSetup()
     {
+        // Cold start: clear caches before each iteration
+        _fixture?.ClearCachesAsync().GetAwaiter().GetResult();
+    }
+
+    [Benchmark(Description = "Per-Column Latency - Wide Dataset (2000 cols × 10K rows)")]
+    public async Task PerColumnLatency_WideDataset()
+    {
+        if (_wideEncrypted == null || _keyVaultProvider == null || _fixture == null)
+            throw new InvalidOperationException("Benchmark not properly initialized");
+
         _metrics.StartMeasurement();
 
-        // hint thread pool to use requested core count
-        ThreadPool.SetMaxThreads(CoreCount, CoreCount);
+        _wideEncrypted.Position = 0;
 
-        _encryptedStream!.Position = 0;
-        _parquetReader ??= new ParquetReader(_keyVaultProvider!, _fixture.DekCache);
+        // Create reader with latency tracking - will record latency for each column
+        var reader = new ParquetReader(
+            _keyVaultProvider,
+            _fixture.DekCache,
+            (latency) =>
+                _metrics.RecordOperationLatency(
+                    $"Measurement3_PerColumnLatency_WideDataset_Decrypt",
+                    latency
+                )
+        );
 
-        var decrypted = await _parquetReader.ReadParquetAsync(_encryptedStream);
-        // consume stream fully
-        var buffer = new byte[8192];
-        while (await decrypted.ReadAsync(buffer) > 0) { }
+        var decrypted = await reader.ReadParquetAsync(_wideEncrypted);
 
         _metrics.StopMeasurement();
         var metrics = _metrics.GetMetrics();
-        ResultsRecorder.Record(
-            nameof(Measurement3FullDecryptionThroughputBenchmark)
-                + $".FullDecryption_MultiCore_{CoreCount}cores",
-            metrics
-        );
+
+        // Store for later writing in GlobalCleanup
+        var resultKey = $"Measurement3_PerColumnLatency_WideDataset_{DateTime.UtcNow.Ticks}";
+        _accumulatedResults[resultKey] = metrics;
+
         _metrics.Reset();
     }
 
     [GlobalCleanup]
     public void GlobalCleanup()
     {
-        // Restore original thread pool settings
-        ThreadPool.SetMaxThreads(_originalMaxWorkerThreads, _originalMaxIoThreads);
-        _encryptedStream?.Dispose();
+        // Write all accumulated results to CSV once at the end
+        foreach (var (resultKey, metrics) in _accumulatedResults)
+        {
+            ResultsRecorder.Record(resultKey, metrics);
+        }
+
+        _wideEncrypted?.Dispose();
+        _fixture?.Dispose();
         _services?.Dispose();
-        _fixture.Dispose();
     }
 }

@@ -50,7 +50,7 @@ namespace OSWS.Performance.Benchmarks.Helpers
             services.AddSingleton<IKeyVaultProvider>(sp =>
             {
                 var settings = sp.GetRequiredService<IOptions<KeyVaultSettings>>().Value;
-                return (settings.Provider?.ToLowerInvariant() ?? "internal") switch
+                return settings.Provider.ToLowerInvariant() switch
                 {
                     "azure" when !string.IsNullOrWhiteSpace(settings.VaultUri) =>
                         new AzureKeyVaultProvider(settings),

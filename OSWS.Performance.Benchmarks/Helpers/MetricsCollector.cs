@@ -5,6 +5,7 @@ namespace OSWS.Performance.Benchmarks.Helpers;
 /// <summary>
 /// Collects performance metrics for measurement tests.
 /// Tracks latency, throughput, memory usage, and external service calls.
+/// Supports per-operation latency tracking and percentile calculations.
 /// </summary>
 public class MetricsCollector
 {
@@ -15,6 +16,7 @@ public class MetricsCollector
     private int _s3CallCount;
     private readonly List<TimeSpan> _azureKvLatencies = new();
     private readonly List<TimeSpan> _s3Latencies = new();
+    private readonly Dictionary<string, List<TimeSpan>> _operationLatencies = new();
 
     public void StartMeasurement()
     {
@@ -45,6 +47,16 @@ public class MetricsCollector
         _s3Latencies.Add(latency);
     }
 
+    public void RecordOperationLatency(string operation, TimeSpan latency)
+    {
+        if (!_operationLatencies.ContainsKey(operation))
+        {
+            _operationLatencies[operation] = new List<TimeSpan>();
+        }
+
+        _operationLatencies[operation].Add(latency);
+    }
+
     private void UpdatePeakMemory()
     {
         var currentMemory = GC.GetTotalMemory(false);
@@ -72,7 +84,52 @@ public class MetricsCollector
                 : 0,
             AzureKvTotalLatencyMs = _azureKvLatencies.Sum(l => l.TotalMilliseconds),
             S3TotalLatencyMs = _s3Latencies.Sum(l => l.TotalMilliseconds),
+            OperationLatencies = new Dictionary<string, OperationLatencyStats>(
+                _operationLatencies.ToDictionary(
+                    kvp => kvp.Key,
+                    kvp => CalculateStatistics(kvp.Value)
+                )
+            ),
         };
+    }
+
+    private static OperationLatencyStats CalculateStatistics(List<TimeSpan> latencies)
+    {
+        if (latencies.Count == 0)
+        {
+            return new OperationLatencyStats();
+        }
+
+        var sortedLatencies = latencies.OrderBy(l => l.TotalMilliseconds).ToList();
+        var count = sortedLatencies.Count;
+        var sum = latencies.Sum(l => l.TotalMilliseconds);
+        var mean = sum / count;
+        var variance = latencies.Sum(l => Math.Pow(l.TotalMilliseconds - mean, 2)) / count;
+        var stdDev = Math.Sqrt(variance);
+
+        return new OperationLatencyStats
+        {
+            Count = count,
+            MinMs = sortedLatencies[0].TotalMilliseconds,
+            MaxMs = sortedLatencies[count - 1].TotalMilliseconds,
+            MeanMs = mean,
+            MedianMs =
+                count % 2 == 0
+                    ? (
+                        sortedLatencies[count / 2 - 1].TotalMilliseconds
+                        + sortedLatencies[count / 2].TotalMilliseconds
+                    ) / 2
+                    : sortedLatencies[count / 2].TotalMilliseconds,
+            P99Ms = sortedLatencies[(int)Math.Ceiling(count * 0.99) - 1].TotalMilliseconds,
+            StdDevMs = stdDev,
+        };
+    }
+
+    public Dictionary<string, OperationLatencyStats> GetAggregatedLatencies()
+    {
+        return new Dictionary<string, OperationLatencyStats>(
+            _operationLatencies.ToDictionary(kvp => kvp.Key, kvp => CalculateStatistics(kvp.Value))
+        );
     }
 
     public void Reset()
@@ -84,7 +141,19 @@ public class MetricsCollector
         _s3CallCount = 0;
         _azureKvLatencies.Clear();
         _s3Latencies.Clear();
+        _operationLatencies.Clear();
     }
+}
+
+public class OperationLatencyStats
+{
+    public int Count { get; init; }
+    public double MinMs { get; init; }
+    public double MaxMs { get; init; }
+    public double MeanMs { get; init; }
+    public double MedianMs { get; init; }
+    public double P99Ms { get; init; }
+    public double StdDevMs { get; init; }
 }
 
 public class PerformanceMetrics
@@ -99,6 +168,7 @@ public class PerformanceMetrics
     public double S3AvgLatencyMs { get; init; }
     public double AzureKvTotalLatencyMs { get; init; }
     public double S3TotalLatencyMs { get; init; }
+    public Dictionary<string, OperationLatencyStats> OperationLatencies { get; init; } = new();
 
     public override string ToString()
     {

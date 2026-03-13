@@ -55,7 +55,8 @@ public class Measurement5S3DirectVsOSWSBenchmark
         _fixture = new ColdStartFixture();
         await _fixture.ClearCachesAsync();
 
-        _parquetWriter = new ParquetWriter(_keyVaultProvider, "azure");
+        var providerType = config.GetValue<string>("KeyVault:Provider") ?? "Internal";
+        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType);
         _parquetReader = new ParquetReader(_keyVaultProvider, _fixture.DekCache);
 
         // Generate and encrypt a wide dataset

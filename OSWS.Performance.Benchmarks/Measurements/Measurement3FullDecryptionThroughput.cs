@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver;
@@ -15,25 +16,25 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 /// Uses cold start (no cache) to isolate per-column Azure KV decrypt time.
 /// </summary>
 [Config(typeof(SharedBenchmarkConfig))]
-public class Measurement3FullDecryptionThroughputBenchmark
+public class Measurement3FullDecryptionThroughputBenchmark : ScenarioMeasurementBenchmarkBase
 {
     private ServiceProvider? _services;
     private IKeyVaultProvider? _keyVaultProvider;
     private ColdStartFixture? _fixture;
-    private Stream? _wideEncrypted;
+    private byte[]? _wideEncryptedBytes;
+
     private readonly MetricsCollector _metrics = new();
     private ParquetWriter? _parquetWriter;
-
-    // Accumulate results across all iterations to write once in GlobalCleanup
-    private readonly Dictionary<string, PerformanceMetrics> _accumulatedResults = new();
 
     [GlobalSetup]
     public async Task SetupAsync()
     {
         _services = BenchmarkServiceFactory.BuildServiceProvider();
+        var config = _services.GetRequiredService<IConfiguration>();
         _keyVaultProvider = _services.GetRequiredService<IKeyVaultProvider>();
         _fixture = new ColdStartFixture();
-        _parquetWriter = new ParquetWriter(_keyVaultProvider, "Internal");
+        var providerType = config.GetValue<string>("KeyVault:Provider") ?? "Internal";
+        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType);
 
         // Generate the wide dataset once - 2000 columns provides sufficient granularity
         var unencrypted = await WideDatasetGenerator.GenerateAsync(
@@ -41,7 +42,18 @@ public class Measurement3FullDecryptionThroughputBenchmark
             10000,
             CancellationToken.None
         );
-        _wideEncrypted = await _parquetWriter.WriteParquetAsync(unencrypted, "default");
+        await using (var temp = await _parquetWriter.WriteParquetAsync(unencrypted, "default"))
+        {
+            _wideEncryptedBytes = ((MemoryStream)temp).ToArray();
+        }
+    }
+
+    /// <summary>
+    /// Creates a safe MemoryStream from encrypted bytes that won't be affected by GC relocation.
+    /// </summary>
+    private static MemoryStream CreateSafeStream(byte[] bytes)
+    {
+        return new MemoryStream(bytes, writable: false);
     }
 
     [IterationSetup]
@@ -54,46 +66,49 @@ public class Measurement3FullDecryptionThroughputBenchmark
     [Benchmark(Description = "Per-Column Latency - Wide Dataset (2000 cols × 10K rows)")]
     public async Task PerColumnLatency_WideDataset()
     {
-        if (_wideEncrypted == null || _keyVaultProvider == null || _fixture == null)
+        _metrics.Reset();
+
+        if (_wideEncryptedBytes == null || _keyVaultProvider == null || _fixture == null)
             throw new InvalidOperationException("Benchmark not properly initialized");
 
-        _metrics.StartMeasurement();
+        const string scenarioKey = "PerColumnLatency_WideDataset";
+        var measure = ShouldMeasure("Measurement3", scenarioKey);
 
-        _wideEncrypted.Position = 0;
+        if (measure)
+            _metrics.StartMeasurement();
+
+        using var stream = CreateSafeStream(_wideEncryptedBytes);
 
         // Create reader with latency tracking - will record latency for each column
         var reader = new ParquetReader(
             _keyVaultProvider,
             _fixture.DekCache,
             (latency) =>
+            {
+                _metrics.RecordKvCall(latency);
                 _metrics.RecordOperationLatency(
-                    $"Measurement3_PerColumnLatency_WideDataset_Decrypt",
+                    "Measurement3_PerColumnLatency_WideDataset_Decrypt",
                     latency
-                )
+                );
+            },
+            latency => _metrics.RecordCachedKvCall(latency)
         );
 
-        var decrypted = await reader.ReadParquetAsync(_wideEncrypted);
+        _ = await reader.ReadParquetAsync(stream);
 
-        _metrics.StopMeasurement();
-        var metrics = _metrics.GetMetrics();
-
-        // Store for later writing in GlobalCleanup
-        var resultKey = $"Measurement3_PerColumnLatency_WideDataset_{DateTime.UtcNow.Ticks}";
-        _accumulatedResults[resultKey] = metrics;
-
-        _metrics.Reset();
+        RecordIfMeasured(
+            scenarioKey,
+            "Measurement3_PerColumnLatency_WideDataset",
+            _metrics,
+            measure
+        );
     }
 
     [GlobalCleanup]
     public void GlobalCleanup()
     {
-        // Write all accumulated results to CSV once at the end
-        foreach (var (resultKey, metrics) in _accumulatedResults)
-        {
-            ResultsRecorder.Record(resultKey, metrics);
-        }
+        FlushRecordedResults();
 
-        _wideEncrypted?.Dispose();
         _fixture?.Dispose();
         _services?.Dispose();
     }

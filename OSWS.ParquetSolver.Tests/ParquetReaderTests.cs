@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using OSWS.Models.Interfaces;
-using OSWS.ParquetSolver;
 using OSWS.ParquetSolver.Helpers;
 using ParquetSharp;
 using ParquetSharp.IO;
@@ -12,6 +11,17 @@ namespace OSWS.ParquetSolver.Tests;
 public class ParquetReaderTests
 {
     [Fact]
+    public void DekCacheCapacityCanBeSet()
+    {
+        // capacity small ensures evictions occur
+        var cache = new DekCache(2);
+        cache.Set("a", new byte[] { 1 });
+        cache.Set("b", new byte[] { 2 });
+        cache.Set("c", new byte[] { 3 });
+        Assert.True(cache.Count <= 2, "Cache exceeded specified capacity");
+    }
+
+    [Fact]
     public async Task ReadParquetAsync_WithAllKeysAvailable_DecryptsAllColumns()
     {
         var inputA = new[] { 10, 20, 30, 40 };
@@ -21,7 +31,62 @@ public class ParquetReaderTests
         var keyVaultProvider = new InMemoryKeyVaultProvider();
         var parquetWriter = new ParquetWriter(keyVaultProvider, providerType: "InMemory");
 
-        await using var encrypted = await parquetWriter.WriteParquetAsync(plaintext, role: "test-role");
+        await using var encrypted = await parquetWriter.WriteParquetAsync(
+            plaintext,
+            role: "test-role"
+        );
+
+        var keys = await keyVaultProvider.ListKeysAsync();
+
+        encrypted.Position = 0;
+
+        var parquetReader = new ParquetReader(keyVaultProvider, new DekCache());
+        using var decrypted = await parquetReader.ReadParquetAsync(encrypted);
+
+        var (actualA, actualB) = ReadTwoIntColumns(decrypted);
+
+        Assert.Equal(inputA, actualA);
+        Assert.Equal(inputB, actualB);
+        Assert.Single(keys);
+    }
+
+    [Fact]
+    public async Task WriteParquetAsync_WithEncryptedColumns_LeavesFooterPlaintext()
+    {
+        using var plaintext = CreateTwoColumnParquet([10, 20], [30, 40]);
+
+        var keyVaultProvider = new InMemoryKeyVaultProvider();
+        var parquetWriter = new ParquetWriter(keyVaultProvider, providerType: "InMemory");
+
+        await using var encrypted = await parquetWriter.WriteParquetAsync(
+            plaintext,
+            role: "test-role"
+        );
+        encrypted.Position = 0;
+
+        using var inputRaf = new ManagedRandomAccessFile(encrypted, leaveOpen: true);
+        using var reader = new ParquetFileReader(inputRaf);
+
+        Assert.Equal(2, reader.FileMetaData.NumColumns);
+    }
+
+    [Fact]
+    public async Task ReadParquetAsync_InternalProvider_DecryptsAllColumns()
+    {
+        var inputA = new[] { 5, 6, 7, 8 };
+        var inputB = new[] { 9, 10, 11, 12 };
+        using var plaintext = CreateTwoColumnParquet(inputA, inputB);
+
+        var keyVaultProvider = new KeyManager.Providers.InternalKeyVaultProvider();
+        var parquetWriter = new ParquetWriter(
+            keyVaultProvider,
+            providerType: KeyManager.Providers.InternalKeyVaultProvider.ProviderTypeName
+        );
+
+        await using var encrypted = await parquetWriter.WriteParquetAsync(
+            plaintext,
+            role: "test-role"
+        );
         encrypted.Position = 0;
 
         var parquetReader = new ParquetReader(keyVaultProvider, new DekCache());
@@ -34,7 +99,113 @@ public class ParquetReaderTests
     }
 
     [Fact]
-    public async Task ReadParquetAsync_WithMissingColumnKey_WritesDummyValuesForThatColumn()
+    public async Task ReadParquetAsync_InternalProvider_WithSmallDatasetGenerator_Succeeds()
+    {
+        // regress the failure seen in benchmark global setup when warming up
+        using var plaintext = await GenerateParquetAsync(columns: 5, rows: 5000);
+
+        var keyVaultProvider = new KeyManager.Providers.InternalKeyVaultProvider();
+        var parquetWriter = new ParquetWriter(
+            keyVaultProvider,
+            providerType: KeyManager.Providers.InternalKeyVaultProvider.ProviderTypeName
+        );
+
+        await using var encrypted = await parquetWriter.WriteParquetAsync(
+            plaintext,
+            role: "test-role"
+        );
+        encrypted.Position = 0;
+
+        var parquetReader = new ParquetReader(keyVaultProvider, new DekCache());
+        using var decrypted = await parquetReader.ReadParquetAsync(encrypted);
+
+        // just ensure we can read a few bytes from the decrypted output
+        Assert.True(decrypted.Length > 0);
+    }
+
+    [Fact]
+    public async Task ReadParquetAsync_InternalProvider_SecondFileWithSameCache_Succeeds()
+    {
+        // Reproduces benchmark warmup behavior: decrypt file A, then file B
+        // with the same DEK cache and overlapping key names.
+        var keyVaultProvider = new KeyManager.Providers.InternalKeyVaultProvider();
+        var parquetWriter = new ParquetWriter(
+            keyVaultProvider,
+            providerType: KeyManager.Providers.InternalKeyVaultProvider.ProviderTypeName
+        );
+        var dekCache = new DekCache();
+
+        using var firstPlain = await GenerateParquetAsync(columns: 5, rows: 250);
+        using var secondPlain = await GenerateParquetAsync(columns: 5, rows: 300);
+
+        await using var firstEncrypted = await parquetWriter.WriteParquetAsync(
+            firstPlain,
+            role: "test-role"
+        );
+        await using var secondEncrypted = await parquetWriter.WriteParquetAsync(
+            secondPlain,
+            role: "test-role"
+        );
+
+        firstEncrypted.Position = 0;
+        var firstReader = new ParquetReader(keyVaultProvider, dekCache);
+        using var firstDecrypted = await firstReader.ReadParquetAsync(firstEncrypted);
+        Assert.True(firstDecrypted.Length > 0);
+
+        secondEncrypted.Position = 0;
+        var secondReader = new ParquetReader(keyVaultProvider, dekCache);
+        using var secondDecrypted = await secondReader.ReadParquetAsync(secondEncrypted);
+        Assert.True(secondDecrypted.Length > 0);
+    }
+
+    [Fact]
+    public async Task WriteMultipleEncryptedStreams_ThenReadFirst_Fails()
+    {
+        // simulate benchmark global setup: write small, wide, deep then read small
+        var keyVaultProvider = new KeyManager.Providers.InternalKeyVaultProvider();
+        var parquetWriter = new ParquetWriter(
+            keyVaultProvider,
+            providerType: KeyManager.Providers.InternalKeyVaultProvider.ProviderTypeName
+        );
+
+        using var smallPlain = await GenerateParquetAsync(columns: 5, rows: 5000);
+        var smallEncrypted = await parquetWriter.WriteParquetAsync(smallPlain, role: "test-role");
+
+        // generate a large "wide" dataset similar to benchmark dimensions
+        using var widePlain = await GenerateParquetAsync(columns: 2000, rows: 10000);
+        var wideEncrypted = await parquetWriter.WriteParquetAsync(widePlain, role: "test-role");
+
+        using var deepPlain = await GenerateParquetAsync(columns: 10, rows: 1000000);
+        var deepEncrypted = await parquetWriter.WriteParquetAsync(deepPlain, role: "test-role");
+
+        // simulate potential GC/LOH compaction that could move the underlying
+        // buffer of the smallEncrypted MemoryStream. ParquetSharp's
+        // ManagedRandomAccessFile holds an unsafe pointer; if the buffer is not
+        // pinned the pointer becomes stale and crypto operations can fail.
+        // Our benchmark suffered "Parquet crypto signature verification failed"
+        // after writing large datasets, so force a compaction here to reproduce.
+        System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System
+            .Runtime
+            .GCLargeObjectHeapCompactionMode
+            .CompactOnce;
+        GC.Collect(GC.MaxGeneration, GCCollectionMode.Forced, true, true);
+        GC.WaitForPendingFinalizers();
+        System.Runtime.GCSettings.LargeObjectHeapCompactionMode = System
+            .Runtime
+            .GCLargeObjectHeapCompactionMode
+            .Default;
+
+        smallEncrypted.Position = 0;
+
+        var parquetReader = new ParquetReader(keyVaultProvider, new DekCache());
+        using var decrypted = await parquetReader.ReadParquetAsync(smallEncrypted);
+
+        // if we reach here without exception we consider success
+        Assert.True(decrypted.Length > 0);
+    }
+
+    [Fact]
+    public async Task ReadParquetAsync_WithMissingFileKey_ThrowsBeforeColumnFallback()
     {
         var inputA = new[] { 10, 20, 30, 40 };
         var inputB = new[] { 1, 2, 3, 4 };
@@ -43,10 +214,14 @@ public class ParquetReaderTests
         var keyVaultProvider = new InMemoryKeyVaultProvider();
         var parquetWriter = new ParquetWriter(keyVaultProvider, providerType: "InMemory");
 
-        await using var encrypted = await parquetWriter.WriteParquetAsync(plaintext, role: "test-role");
+        await using var encrypted = await parquetWriter.WriteParquetAsync(
+            plaintext,
+            role: "test-role"
+        );
         encrypted.Position = 0;
 
-        keyVaultProvider.ForgetKeyByName("test-role-column-B");
+        var fileKey = Assert.Single(await keyVaultProvider.ListKeysAsync());
+        keyVaultProvider.ForgetKeyByName(fileKey.KeyName);
 
         var errors = new List<string>();
         var parquetReader = new ParquetReader(keyVaultProvider, new DekCache())
@@ -55,12 +230,8 @@ public class ParquetReaderTests
             OnColumnDecryptionError = (columnName, _) => errors.Add(columnName),
         };
 
-        using var decrypted = await parquetReader.ReadParquetAsync(encrypted);
-        var (actualA, actualB) = ReadTwoIntColumns(decrypted);
-
-        Assert.Equal(inputA, actualA);
-        Assert.Equal([0, 0, 0, 0], actualB);
-        Assert.Contains("B", errors);
+        await Assert.ThrowsAnyAsync<Exception>(() => parquetReader.ReadParquetAsync(encrypted));
+        Assert.Empty(errors);
     }
 
     private static MemoryStream CreateTwoColumnParquet(int[] columnA, int[] columnB)
@@ -85,6 +256,41 @@ public class ParquetReaderTests
         }
 
         return new MemoryStream(output.ToArray());
+    }
+
+    private static async Task<MemoryStream> GenerateParquetAsync(int columns, int rows)
+    {
+        await Task.CompletedTask; // preserve async signature
+        var outputStream = new MemoryStream();
+        var schemaColumns = new List<Column>();
+        for (var i = 0; i < columns; i++)
+        {
+            schemaColumns.Add(new Column<int>($"col_{i}"));
+        }
+
+        using var outputMos = new ManagedOutputStream(outputStream, leaveOpen: true);
+        using var writerProperties = WriterProperties.GetDefaultWriterProperties();
+        using var writer = new ParquetFileWriter(
+            outputMos,
+            schemaColumns.ToArray(),
+            writerProperties
+        );
+
+        using var rowGroup = writer.AppendRowGroup();
+        for (var i = 0; i < columns; i++)
+        {
+            using var colWriter = rowGroup.NextColumn().LogicalWriter<int>();
+            var data = new int[rows];
+            for (var j = 0; j < rows; j++)
+            {
+                data[j] = i * rows + j;
+            }
+            colWriter.WriteBatch(data);
+        }
+
+        writer.Close();
+        outputStream.Position = 0;
+        return outputStream;
     }
 
     private static (int[] columnA, int[] columnB) ReadTwoIntColumns(Stream input)

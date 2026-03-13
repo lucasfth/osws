@@ -5,7 +5,8 @@ public interface IParquetWriter
     /// <summary>
     /// Read an unencrypted parquet file and write an encrypted version.
     /// Keys are created in the vault and associated with the given role.
-    /// The encrypted DEK and vault key reference are stored in parquet footer metadata for later decryption.
+    /// Each encrypted column gets its own DEK, and all column DEKs for a file are wrapped by a single KEK.
+    /// The parquet footer remains plaintext.
     /// </summary>
     /// <param name="input">Stream containing plaintext parquet data.</param>
     /// <param name="role">The role to associate encryption keys with.</param>

@@ -1,13 +1,13 @@
 # OSWS
 
-Object Storage Web Service — an S3-compatible API with Parquet Modular Encryption backed by Azure Key Vault.
+Object Storage Web Service - an S3-compatible API with Parquet Modular Encryption backed by Azure Key Vault.
 
 ## Architecture
 
 | Project | Role |
 | --- | --- |
 | **OSWS.WebApi** | ASP.NET minimal API host. Registers S3 endpoints, Parquet services, and the key vault provider. |
-| **OSWS.Library** | S3 client infrastructure — `S3ClientFactory` dynamically creates `IAmazonS3` clients from per-request options. |
+| **OSWS.Library** | S3 client infrastructure - `S3ClientFactory` dynamically creates `IAmazonS3` clients from per-request options. |
 | **OSWS.Models** | Shared DTOs and EF Core entities (`User`, `Role`, `RoleAssignment`). Defines `IKeyVaultProvider` interface. |
 | **OSWS.KeyManager** | EF Core DbContext (PostgreSQL) and key vault provider implementations (Azure, Internal). |
 | **OSWS.ParquetSolver** | Parquet Modular Encryption via ParquetSharp. Uses envelope encryption through `IKeyVaultProvider`. |
@@ -17,10 +17,10 @@ Object Storage Web Service — an S3-compatible API with Parquet Modular Encrypt
 
 OSWS uses **envelope encryption** for Parquet column-level encryption:
 
-1. **Encrypt**: A random AES-128 data encryption key (DEK) is generated locally. The DEK is wrapped (encrypted) by a key encryption key (KEK) stored in Azure Key Vault. The wrapped DEK is stored in the parquet footer metadata. ParquetSharp encrypts columns with the raw DEK.
-2. **Decrypt**: The wrapped DEK is read from parquet footer metadata. Azure Key Vault unwraps it. ParquetSharp decrypts columns with the recovered DEK.
+1. **Encrypt**: The parquet footer remains plaintext. For each parquet file, OSWS creates a single KEK in the vault. Each encrypted column gets its own random AES-128 DEK, and that DEK is wrapped by the file-level KEK. A wrapped footer key is also stored in metadata because Parquet crypto still requires footer key metadata even when the footer itself is plaintext.
+2. **Decrypt**: The wrapped footer key and wrapped column DEKs are read from parquet metadata. Azure Key Vault unwraps them using the referenced file-level KEK. ParquetSharp uses the recovered footer key to initialize crypto and the recovered column DEKs to decrypt data.
 
-Raw keys never leave Azure Key Vault. Each role gets its own KEK, so access control is enforced at the vault level.
+Raw keys never leave Azure Key Vault. Access control is enforced at the vault level, while a single file-level KEK can protect multiple column DEKs within the same parquet file.
 
 ### Key vault providers
 
@@ -28,8 +28,8 @@ The `IKeyVaultProvider` interface allows swapping providers:
 
 | Provider | Config value | Use case |
 | --- | --- | --- |
-| **Azure Key Vault** | `"Azure"` | Production — RSA-2048 KEKs, RSA-OAEP-256 wrapping |
-| **Internal (in-memory)** | `"Internal"` | Development/testing only — keys lost on restart |
+| **Azure Key Vault** | `"Azure"` | Production - RSA-2048 KEKs, RSA-OAEP-256 wrapping |
+| **Internal (in-memory)** | `"Internal"` | Development/testing only - keys lost on restart |
 
 ## Prerequisites
 

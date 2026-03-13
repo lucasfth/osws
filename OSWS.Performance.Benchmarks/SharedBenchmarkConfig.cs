@@ -14,20 +14,63 @@ namespace OSWS.Performance.Benchmarks
     [MemoryDiagnoser]
     public class SharedBenchmarkConfig : ManualConfig
     {
+        public static int DefaultIterationCount => 5;
+
+        /// <summary>
+        /// Number of warmup iterations to use for all jobs.  Benchmarks can reference
+        /// this value when deciding whether a particular run should be recorded.
+        /// </summary>
+        public static int DefaultWarmupCount => 1;
+
+        /// <summary>
+        /// Resolve iteration count from BENCH_ITERATIONS or BenchmarkDotNet CLI args.
+        /// </summary>
+        public static int GetConfiguredIterationCount()
+        {
+            if (
+                int.TryParse(
+                    Environment.GetEnvironmentVariable("BENCH_ITERATIONS"),
+                    out var envIter
+                )
+                && envIter > 0
+            )
+            {
+                return envIter;
+            }
+
+            var args = Environment.GetCommandLineArgs();
+            for (var i = 0; i < args.Length; i++)
+            {
+                if (
+                    string.Equals(args[i], "--iterationCount", StringComparison.OrdinalIgnoreCase)
+                    && i + 1 < args.Length
+                    && int.TryParse(args[i + 1], out var argIter)
+                    && argIter > 0
+                )
+                {
+                    return argIter;
+                }
+
+                const string prefix = "--iterationCount=";
+                if (
+                    args[i].StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                    && int.TryParse(args[i][prefix.Length..], out var inlineArgIter)
+                    && inlineArgIter > 0
+                )
+                {
+                    return inlineArgIter;
+                }
+            }
+
+            return DefaultIterationCount;
+        }
+
         public SharedBenchmarkConfig()
         {
             // Default: 5 iterations for statistical reliability
             // Override via BENCH_ITERATIONS environment variable or --iterationCount CLI flag
-            var defaultIterations = 5;
-            var warmupCount = 1;
-
-            if (
-                int.TryParse(Environment.GetEnvironmentVariable("BENCH_ITERATIONS"), out var iter)
-                && iter > 0
-            )
-            {
-                defaultIterations = iter;
-            }
+            var defaultIterations = GetConfiguredIterationCount();
+            var warmupCount = DefaultWarmupCount;
 
             var defaultJob = Job
                 .Default.WithWarmupCount(warmupCount)

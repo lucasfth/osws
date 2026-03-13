@@ -15,8 +15,7 @@ namespace OSWS.Performance.Benchmarks.Helpers
 
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
-            if (targetMethod == null)
-                throw new ArgumentNullException(nameof(targetMethod));
+            ArgumentNullException.ThrowIfNull(targetMethod);
 
             if (_decorated == null)
                 throw new InvalidOperationException("Proxy not initialized");
@@ -26,26 +25,20 @@ namespace OSWS.Performance.Benchmarks.Helpers
             {
                 var result = targetMethod.Invoke(_decorated, args);
                 // if the result is a Task, we need to await it to capture latency
-                if (result is System.Threading.Tasks.Task task)
-                {
-                    var taskType = task.GetType();
-                    if (taskType.IsGenericType)
-                    {
-                        // Task<TResult>
-                        var genericArg = taskType.GetGenericArguments()[0];
-                        var handler = typeof(MetricsProxy<T>)
-                            .GetMethod(
-                                nameof(HandleGenericTask),
-                                BindingFlags.NonPublic | BindingFlags.Instance
-                            )!
-                            .MakeGenericMethod(genericArg);
-                        return handler.Invoke(this, new object[] { task, sw });
-                    }
-
+                if (result is not Task task)
+                    return result;
+                var taskType = task.GetType();
+                if (!taskType.IsGenericType)
                     return AwaitAndRecordAsync(task, sw);
-                }
-
-                return result;
+                // Task<TResult>
+                var genericArg = taskType.GetGenericArguments()[0];
+                var handler = typeof(MetricsProxy<T>)
+                    .GetMethod(
+                        nameof(HandleGenericTask),
+                        BindingFlags.NonPublic | BindingFlags.Instance
+                    )!
+                    .MakeGenericMethod(genericArg);
+                return handler.Invoke(this, [task, sw]);
             }
             catch (TargetInvocationException tie)
             {
@@ -54,10 +47,7 @@ namespace OSWS.Performance.Benchmarks.Helpers
             }
         }
 
-        private async System.Threading.Tasks.Task AwaitAndRecordAsync(
-            System.Threading.Tasks.Task task,
-            Stopwatch sw
-        )
+        private async Task AwaitAndRecordAsync(Task task, Stopwatch sw)
         {
             try
             {
@@ -70,10 +60,7 @@ namespace OSWS.Performance.Benchmarks.Helpers
             }
         }
 
-        private async System.Threading.Tasks.Task<TResult> HandleGenericTask<TResult>(
-            System.Threading.Tasks.Task<TResult> task,
-            Stopwatch sw
-        )
+        private async Task<TResult> HandleGenericTask<TResult>(Task<TResult> task, Stopwatch sw)
         {
             try
             {
@@ -90,9 +77,9 @@ namespace OSWS.Performance.Benchmarks.Helpers
         {
             // decide which counter to increment based on interface type
             var type = typeof(T);
-            if (type == typeof(OSWS.Models.Interfaces.IKeyVaultProvider))
+            if (type == typeof(Models.Interfaces.IKeyVaultProvider))
             {
-                _metrics?.RecordAzureKvCall(elapsed);
+                _metrics?.RecordKvCall(elapsed);
             }
             else if (type == typeof(Amazon.S3.IAmazonS3))
             {

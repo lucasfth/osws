@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 namespace OSWS.Models.DTOs;
 
 /// <summary>
-/// Serialized into the parquet footer key-metadata string.
+/// Serialized into parquet key-metadata strings.
 /// Contains everything needed to decrypt the DEK during decryption:
 /// the vault key identifier, algorithm, and the encrypted data encryption key.
 /// No plaintext key material is stored - the vault holds the key.

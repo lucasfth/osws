@@ -56,6 +56,10 @@ Located in `Measurements/`:
 - Tests footer parsing overhead with 2,000 column parquet file
 - Simulates client requesting final 2MB via byte-range
 - Fully in-memory (no S3 I/O)
+- Datasets are generated lazily; only the files needed by the selected
+  benchmarks are created and uploaded.
+- Warm‑up iterations are executed but not recorded in the CSV output,
+  so you will see exactly one line per measured iteration.
 - **File**: `Measurement1ColdWideRangeRequest.cs`
 
 #### Measurement 2: Warm DEK Cache Column Selection
@@ -63,21 +67,25 @@ Located in `Measurements/`:
 - Tests I/O efficiency with deep dataset (10 cols × 100K rows)
 - DEK cache is warm, file cache is cold
 - Fully in-memory (no S3 I/O)
+- Benchmarks automatically warm the DEK cache per dataset type on the
+  first call; capacity has been increased to avoid evictions during wide
+  dataset runs.
 - **File**: `Measurement2WarmDekColumnSelect.cs`
 
 #### Measurement 3: Full Decryption Throughput
 
-- Tests maximum decryption throughput with warm caches
-- Runs on 1, 4, and 8 CPU cores to verify linear scaling
-- Measures throughput in MB/s
+- Measures per-column key retrieval latency distribution on a wide dataset
+- Runs with cold-start cache behavior to isolate external vs cached key access
+- Records exactly N workload rows (warmups are excluded from CSV)
 - Fully in-memory (no S3 I/O)
 - **File**: `Measurement3FullDecryptionThroughput.cs`
 
 #### Measurement 4: DEK Cache Stress Test
 
-- Reads 100 distinct parquet files in parallel
-- Forces cache eviction and KEK unwrapping
-- Tests concurrent cache access patterns
+- Measures initial key retrieval latency for small/wide/deep datasets in both cold and warm cache modes
+- Includes a parallel cache-stress scenario across many small files
+- No longer models footer encryption specifically; focuses on key retrieval and cache behavior
+- Records exactly N workload rows per benchmark method (warmups excluded)
 - Fully in-memory (no S3 I/O)
 - **File**: `Measurement4DekCacheStressTest.cs`
 

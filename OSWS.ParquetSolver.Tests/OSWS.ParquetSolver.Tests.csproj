@@ -17,5 +17,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\OSWS.ParquetSolver\OSWS.ParquetSolver.csproj" />
+    <ProjectReference Include="..\OSWS.KeyManager\OSWS.KeyManager.csproj" />
   </ItemGroup>
 </Project>

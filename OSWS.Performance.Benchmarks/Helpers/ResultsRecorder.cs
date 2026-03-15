@@ -128,14 +128,29 @@ namespace OSWS.Performance.Benchmarks.Helpers
             );
 
             using var writer = new StreamWriter(csvPath, append: true);
-            WriteHeaderIfNeeded(writer, aggregated);
+            WriteHeaderIfNeeded(csvPath, writer, aggregated);
             WriteRow(writer, benchmarkName, aggregated);
         }
 
-        private static void WriteHeaderIfNeeded(StreamWriter writer, PerformanceMetrics metrics)
+        private static void WriteHeaderIfNeeded(
+            string csvPath,
+            StreamWriter writer,
+            PerformanceMetrics metrics
+        )
         {
             if (_headerWritten)
                 return;
+
+            // If the file already exists and contains a header, avoid writing it again.
+            if (File.Exists(csvPath) && new FileInfo(csvPath).Length > 0)
+            {
+                var firstLine = File.ReadLines(csvPath).FirstOrDefault();
+                if (!string.IsNullOrWhiteSpace(firstLine) && firstLine.StartsWith("Benchmark,"))
+                {
+                    _headerWritten = true;
+                    return;
+                }
+            }
 
             var headerFields = new List<string>
             {

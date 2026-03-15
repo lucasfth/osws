@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 
 namespace OSWS.Performance.Benchmarks.Helpers
 {
@@ -127,119 +128,66 @@ namespace OSWS.Performance.Benchmarks.Helpers
                 $"[ResultsRecorder] Writing aggregate for {benchmarkName} from {samples.Count}/{ExpectedRunCount} iterations (min: {aggregated.TotalElapsedMinMs:F2}ms, median: {aggregated.TotalElapsedMedianMs:F2}ms, max: {aggregated.TotalElapsedMaxMs:F2}ms, variance: {(aggregated.TotalElapsedMaxMs - aggregated.TotalElapsedMinMs):F2}ms) to {Path.GetFullPath(csvPath)}"
             );
 
+            var headerFields = BuildHeaderFields();
+            EnsureHeader(csvPath, headerFields);
+
             using var writer = new StreamWriter(csvPath, append: true);
-            WriteHeaderIfNeeded(csvPath, writer, aggregated);
             WriteRow(writer, benchmarkName, aggregated);
         }
 
-        private static void WriteHeaderIfNeeded(
-            string csvPath,
-            StreamWriter writer,
-            PerformanceMetrics metrics
-        )
+        private static List<string> BuildHeaderFields()
         {
-            if (_headerWritten)
-                return;
-
-            // If the file already exists and contains a header, avoid writing it again.
-            if (File.Exists(csvPath) && new FileInfo(csvPath).Length > 0)
-            {
-                var firstLine = File.ReadLines(csvPath).FirstOrDefault();
-                if (!string.IsNullOrWhiteSpace(firstLine) && firstLine.StartsWith("Benchmark,"))
-                {
-                    _headerWritten = true;
-                    return;
-                }
-            }
-
             var headerFields = new List<string>
             {
                 "Benchmark",
                 "SampleCount",
-                // TotalElapsed time
                 "TotalElapsedMs_Avg",
                 "TotalElapsedMs_Min",
                 "TotalElapsedMs_Max",
                 "TotalElapsedMs_Median",
                 "TotalElapsedMs_P99",
                 "TotalElapsedMs_StdDev",
-                // Memory
-                "InitialMemoryMb_Avg",
-                "InitialMemoryMb_Min",
-                "InitialMemoryMb_Max",
-                "InitialMemoryMb_Median",
-                "InitialMemoryMb_P99",
-                "InitialMemoryMb_StdDev",
-                "PeakMemoryMb_Avg",
-                "PeakMemoryMb_Min",
-                "PeakMemoryMb_Max",
-                "PeakMemoryMb_Median",
-                "PeakMemoryMb_P99",
-                "PeakMemoryMb_StdDev",
-                "MemoryIncreaseMb_Avg",
-                "MemoryIncreaseMb_Min",
-                "MemoryIncreaseMb_Max",
-                "MemoryIncreaseMb_Median",
-                "MemoryIncreaseMb_P99",
-                "MemoryIncreaseMb_StdDev",
-                // Call counts
-                "KvCallCount_Avg",
-                "KvCallCount_Min",
-                "KvCallCount_Max",
-                "KvCallCount_Median",
-                "KvCallCount_P99",
-                "KvCallCount_StdDev",
-                "CachedKvCallCount_Avg",
-                "CachedKvCallCount_Min",
-                "CachedKvCallCount_Max",
-                "CachedKvCallCount_Median",
-                "CachedKvCallCount_P99",
-                "CachedKvCallCount_StdDev",
-                "S3CallCount_Avg",
-                "S3CallCount_Min",
-                "S3CallCount_Max",
-                "S3CallCount_Median",
-                "S3CallCount_P99",
-                "S3CallCount_StdDev",
-                // Latencies
-                "KvAvgLatencyMs_Avg",
-                "KvAvgLatencyMs_Min",
-                "KvAvgLatencyMs_Max",
-                "KvAvgLatencyMs_Median",
-                "KvAvgLatencyMs_P99",
-                "KvAvgLatencyMs_StdDev",
-                "CachedKvAvgLatencyMs_Avg",
-                "CachedKvAvgLatencyMs_Min",
-                "CachedKvAvgLatencyMs_Max",
-                "CachedKvAvgLatencyMs_Median",
-                "CachedKvAvgLatencyMs_P99",
-                "CachedKvAvgLatencyMs_StdDev",
-                "S3AvgLatencyMs_Avg",
-                "S3AvgLatencyMs_Min",
-                "S3AvgLatencyMs_Max",
-                "S3AvgLatencyMs_Median",
-                "S3AvgLatencyMs_P99",
-                "S3AvgLatencyMs_StdDev",
+                "MemoryStatsJson",
+                "CallCountStatsJson",
+                "LatencyStatsJson",
+                "OperationStatsJson",
             };
 
-            var operationNames = new SortedSet<string>();
-            foreach (var opName in metrics.OperationLatencies.Keys)
+            return headerFields;
+        }
+
+        private static void EnsureHeader(string csvPath, List<string> desiredHeaderFields)
+        {
+            if (_headerWritten)
+                return;
+
+            var desiredHeaderLine = string.Join(",", desiredHeaderFields);
+
+            // Clean schema: keep one stable compact header. If file has old schema, back it up.
+            if (File.Exists(csvPath) && new FileInfo(csvPath).Length > 0)
             {
-                operationNames.Add(opName);
+                var firstLine = File.ReadLines(csvPath).FirstOrDefault();
+                if (string.Equals(firstLine, desiredHeaderLine, StringComparison.Ordinal))
+                {
+                    _headerWritten = true;
+                    return;
+                }
+
+                var dir = Path.GetDirectoryName(csvPath) ?? ".";
+                var name = Path.GetFileNameWithoutExtension(csvPath);
+                var ext = Path.GetExtension(csvPath);
+                var backupPath = Path.Combine(
+                    dir,
+                    $"{name}.legacy-{DateTime.UtcNow:yyyyMMddHHmmss}{ext}"
+                );
+
+                File.Move(csvPath, backupPath, overwrite: false);
+                Console.WriteLine(
+                    $"[ResultsRecorder] Existing CSV had an expanded schema. Backed it up to {backupPath} and started a compact schema file."
+                );
             }
 
-            foreach (var opName in operationNames)
-            {
-                headerFields.Add($"{opName}_Count");
-                headerFields.Add($"{opName}_MinMs");
-                headerFields.Add($"{opName}_MaxMs");
-                headerFields.Add($"{opName}_MeanMs");
-                headerFields.Add($"{opName}_MedianMs");
-                headerFields.Add($"{opName}_P99Ms");
-                headerFields.Add($"{opName}_StdDevMs");
-            }
-
-            writer.WriteLine(string.Join(",", headerFields));
+            File.WriteAllText(csvPath, desiredHeaderLine + Environment.NewLine);
             _headerWritten = true;
         }
 
@@ -249,96 +197,50 @@ namespace OSWS.Performance.Benchmarks.Helpers
             PerformanceMetrics metrics
         )
         {
+            var memoryStats = new Dictionary<string, MetricStats>
+            {
+                ["InitialMemoryMb"] = metrics.InitialMemoryStats,
+                ["PeakMemoryMb"] = metrics.PeakMemoryStats,
+                ["MemoryIncreaseMb"] = metrics.MemoryIncreaseStats,
+            };
+
+            var callCountStats = new Dictionary<string, MetricStats>
+            {
+                ["KvCallCount"] = metrics.KvCallCountStats,
+                ["CachedKvCallCount"] = metrics.CachedKvCallCountStats,
+                ["S3CallCount"] = metrics.S3CallCountStats,
+            };
+
+            var latencyStats = new Dictionary<string, MetricStats>
+            {
+                ["KvAvgLatencyMs"] = metrics.KvAvgLatencyStats,
+                ["CachedKvAvgLatencyMs"] = metrics.CachedKvAvgLatencyStats,
+                ["S3AvgLatencyMs"] = metrics.S3AvgLatencyStats,
+            };
+
             var values = new List<string>
             {
                 benchmarkName,
                 metrics.SampleCount.ToString(CultureInfo.InvariantCulture),
-                // TotalElapsed
                 metrics.TotalElapsedMs.ToString(CultureInfo.InvariantCulture),
                 metrics.TotalElapsedMinMs.ToString(CultureInfo.InvariantCulture),
                 metrics.TotalElapsedMaxMs.ToString(CultureInfo.InvariantCulture),
                 metrics.TotalElapsedMedianMs.ToString(CultureInfo.InvariantCulture),
                 metrics.TotalElapsedP99Ms.ToString(CultureInfo.InvariantCulture),
                 metrics.TotalElapsedStdDevMs.ToString(CultureInfo.InvariantCulture),
-                // Memory stats
-                metrics.InitialMemoryStats.Avg.ToString(CultureInfo.InvariantCulture),
-                metrics.InitialMemoryStats.Min.ToString(CultureInfo.InvariantCulture),
-                metrics.InitialMemoryStats.Max.ToString(CultureInfo.InvariantCulture),
-                metrics.InitialMemoryStats.Median.ToString(CultureInfo.InvariantCulture),
-                metrics.InitialMemoryStats.P99.ToString(CultureInfo.InvariantCulture),
-                metrics.InitialMemoryStats.StdDev.ToString(CultureInfo.InvariantCulture),
-                metrics.PeakMemoryStats.Avg.ToString(CultureInfo.InvariantCulture),
-                metrics.PeakMemoryStats.Min.ToString(CultureInfo.InvariantCulture),
-                metrics.PeakMemoryStats.Max.ToString(CultureInfo.InvariantCulture),
-                metrics.PeakMemoryStats.Median.ToString(CultureInfo.InvariantCulture),
-                metrics.PeakMemoryStats.P99.ToString(CultureInfo.InvariantCulture),
-                metrics.PeakMemoryStats.StdDev.ToString(CultureInfo.InvariantCulture),
-                metrics.MemoryIncreaseStats.Avg.ToString(CultureInfo.InvariantCulture),
-                metrics.MemoryIncreaseStats.Min.ToString(CultureInfo.InvariantCulture),
-                metrics.MemoryIncreaseStats.Max.ToString(CultureInfo.InvariantCulture),
-                metrics.MemoryIncreaseStats.Median.ToString(CultureInfo.InvariantCulture),
-                metrics.MemoryIncreaseStats.P99.ToString(CultureInfo.InvariantCulture),
-                metrics.MemoryIncreaseStats.StdDev.ToString(CultureInfo.InvariantCulture),
-                // Call counts
-                metrics.KvCallCountStats.Avg.ToString(CultureInfo.InvariantCulture),
-                metrics.KvCallCountStats.Min.ToString(CultureInfo.InvariantCulture),
-                metrics.KvCallCountStats.Max.ToString(CultureInfo.InvariantCulture),
-                metrics.KvCallCountStats.Median.ToString(CultureInfo.InvariantCulture),
-                metrics.KvCallCountStats.P99.ToString(CultureInfo.InvariantCulture),
-                metrics.KvCallCountStats.StdDev.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvCallCountStats.Avg.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvCallCountStats.Min.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvCallCountStats.Max.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvCallCountStats.Median.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvCallCountStats.P99.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvCallCountStats.StdDev.ToString(CultureInfo.InvariantCulture),
-                metrics.S3CallCountStats.Avg.ToString(CultureInfo.InvariantCulture),
-                metrics.S3CallCountStats.Min.ToString(CultureInfo.InvariantCulture),
-                metrics.S3CallCountStats.Max.ToString(CultureInfo.InvariantCulture),
-                metrics.S3CallCountStats.Median.ToString(CultureInfo.InvariantCulture),
-                metrics.S3CallCountStats.P99.ToString(CultureInfo.InvariantCulture),
-                metrics.S3CallCountStats.StdDev.ToString(CultureInfo.InvariantCulture),
-                // Latencies
-                metrics.KvAvgLatencyStats.Avg.ToString(CultureInfo.InvariantCulture),
-                metrics.KvAvgLatencyStats.Min.ToString(CultureInfo.InvariantCulture),
-                metrics.KvAvgLatencyStats.Max.ToString(CultureInfo.InvariantCulture),
-                metrics.KvAvgLatencyStats.Median.ToString(CultureInfo.InvariantCulture),
-                metrics.KvAvgLatencyStats.P99.ToString(CultureInfo.InvariantCulture),
-                metrics.KvAvgLatencyStats.StdDev.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvAvgLatencyStats.Avg.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvAvgLatencyStats.Min.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvAvgLatencyStats.Max.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvAvgLatencyStats.Median.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvAvgLatencyStats.P99.ToString(CultureInfo.InvariantCulture),
-                metrics.CachedKvAvgLatencyStats.StdDev.ToString(CultureInfo.InvariantCulture),
-                metrics.S3AvgLatencyStats.Avg.ToString(CultureInfo.InvariantCulture),
-                metrics.S3AvgLatencyStats.Min.ToString(CultureInfo.InvariantCulture),
-                metrics.S3AvgLatencyStats.Max.ToString(CultureInfo.InvariantCulture),
-                metrics.S3AvgLatencyStats.Median.ToString(CultureInfo.InvariantCulture),
-                metrics.S3AvgLatencyStats.P99.ToString(CultureInfo.InvariantCulture),
-                metrics.S3AvgLatencyStats.StdDev.ToString(CultureInfo.InvariantCulture),
+                EscapeCsv(JsonSerializer.Serialize(memoryStats)),
+                EscapeCsv(JsonSerializer.Serialize(callCountStats)),
+                EscapeCsv(JsonSerializer.Serialize(latencyStats)),
+                EscapeCsv(JsonSerializer.Serialize(metrics.OperationLatencies)),
             };
 
-            var operationNamesForValues = new SortedSet<string>();
-            foreach (var opName in metrics.OperationLatencies.Keys)
-            {
-                operationNamesForValues.Add(opName);
-            }
-
-            foreach (var opName in operationNamesForValues)
-            {
-                if (!metrics.OperationLatencies.TryGetValue(opName, out var stats))
-                    continue;
-                values.Add(stats.Count.ToString(CultureInfo.InvariantCulture));
-                values.Add(stats.MinMs.ToString(CultureInfo.InvariantCulture));
-                values.Add(stats.MaxMs.ToString(CultureInfo.InvariantCulture));
-                values.Add(stats.MeanMs.ToString(CultureInfo.InvariantCulture));
-                values.Add(stats.MedianMs.ToString(CultureInfo.InvariantCulture));
-                values.Add(stats.P99Ms.ToString(CultureInfo.InvariantCulture));
-                values.Add(stats.StdDevMs.ToString(CultureInfo.InvariantCulture));
-            }
-
             writer.WriteLine(string.Join(",", values));
+        }
+
+        private static string EscapeCsv(string value)
+        {
+            var escaped = value.Replace("\"", "\"\"");
+            return $"\"{escaped}\"";
         }
 
         private static PerformanceMetrics Aggregate(List<PerformanceMetrics> samples)

@@ -14,7 +14,7 @@ namespace OSWS.Performance.Benchmarks
     [MemoryDiagnoser]
     public class SharedBenchmarkConfig : ManualConfig
     {
-        public static int DefaultIterationCount => 5;
+        private static int DefaultIterationCount => 5;
 
         /// <summary>
         /// Number of warmup iterations to use for all jobs.  Benchmarks can reference

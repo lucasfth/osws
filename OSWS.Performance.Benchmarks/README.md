@@ -1,299 +1,124 @@
-# OSWS Performance Tests
+# OSWS Performance Benchmarks
 
-This project contains comprehensive performance tests for the OSWS (Object Storage Web Service) system, testing both in-memory encryption/decryption performance and real-world S3/R2 integration scenarios.
+This project measures OSWS performance across six benchmark measurements.
 
-## Benchmark Types
+It exists to answer three practical questions:
 
-### 📦 In-Memory Benchmarks (Measurements 1-4)
+- How expensive are cold-start key and decrypt operations?
+- How much do warm caches help?
+- What is the end-to-end overhead versus direct S3 reads?
 
-Test pure crypto performance without network/storage overhead:
+## What Is Benchmarked
 
-- Encryption/decryption throughput
-- DEK cache effectiveness
-- Memory usage patterns
+The benchmark runner supports six measurements (1-6):
 
-### 🌐 S3/R2 Integration Benchmarks (Measurements 5-6)
+| Measurement | Name | Why it exists |
+| --- | --- | --- |
+| 1 | Cold start latency breakdown | Finds cold-path bottlenecks with empty caches across dataset shapes. |
+| 2 | Warm start latency breakdown | Quantifies the gain from warm DEK cache and repeated access paths. |
+| 3 | Per-column decryption latency | Shows how latency is distributed across a very wide schema. |
+| 4 | DEK cache stress test | Measures initial key latency and cache behavior under stress/eviction pressure. |
+| 5 | Direct S3 vs OSWS pipeline | Compares baseline S3 download to S3 + OSWS decrypt pipeline overhead. |
+| 6 | S3 cache effectiveness | Measures first-access (cold) versus cache-hit (warm) behavior. |
 
-Test real-world scenarios with actual storage:
+## Quick Start
 
-- Direct S3 vs OSWS pipeline comparison
-- Cache effectiveness with S3 backend
-- Network latency impact
-
-## Test Structure
-
-### Dataset Generators
-
-Located in `DatasetGenerators/`:
-
-- **WideDatasetGenerator**: Creates parquet files with 2,000 columns × 10,000 rows (~150MB)
-  - Stresses footer parsing and key retrieval with many columns
-  - Each column requires unique KEK from Azure Key Vault
-
-- **DeepDatasetGenerator**: Creates parquet files with 10 columns × 10,000,000 rows (~500MB)
-  - Stresses cryptographic operations on large data volumes
-  - Tests sustained decryption throughput
-
-- **SmallDatasetGenerator**: Creates parquet files with 5 columns × 5,000 rows (~1MB)
-  - Stresses request overhead and key retrieval latency
-  - Used for cache eviction stress tests
-
-### Test Fixtures
-
-Located in `Fixtures/`:
-
-- **ColdStartFixture**: Clears all caches before tests to simulate first-time access
-- **WarmStartFixture**: Pre-populates caches to simulate repeated access patterns
-
-### Measurement Tests
-
-Located in `Measurements/`:
-
-#### 📦 In-Memory Crypto Benchmarks
-
-#### Measurement 1: Cold Start Wide Dataset Range Request
-
-- Tests footer parsing overhead with 2,000 column parquet file
-- Simulates client requesting final 2MB via byte-range
-- Fully in-memory (no S3 I/O)
-- **File**: `Measurement1ColdWideRangeRequest.cs`
-
-#### Measurement 2: Warm DEK Cache Column Selection
-
-- Tests I/O efficiency with deep dataset (10 cols × 100K rows)
-- DEK cache is warm, file cache is cold
-- Fully in-memory (no S3 I/O)
-- **File**: `Measurement2WarmDekColumnSelect.cs`
-
-#### Measurement 3: Full Decryption Throughput
-
-- Tests maximum decryption throughput with warm caches
-- Runs on 1, 4, and 8 CPU cores to verify linear scaling
-- Measures throughput in MB/s
-- Fully in-memory (no S3 I/O)
-- **File**: `Measurement3FullDecryptionThroughput.cs`
-
-#### Measurement 4: DEK Cache Stress Test
-
-- Reads 100 distinct parquet files in parallel
-- Forces cache eviction and KEK unwrapping
-- Tests concurrent cache access patterns
-- Fully in-memory (no S3 I/O)
-- **File**: `Measurement4DekCacheStressTest.cs`
-
-#### 🌐 S3/R2 Integration Benchmarks
-
-#### Measurement 5: Direct S3 vs OSWS Pipeline
-
-- **Baseline**: Direct S3 download (no decryption)
-- **OSWS**: S3 download + decryption pipeline
-- Measures encryption/decryption overhead in real-world scenarios
-- Uses wide dataset (2000 cols × 10K rows)
-- **File**: `Measurement5S3DirectVsOSWSBenchmark.cs`
-
-#### Measurement 6: S3 Cache Effectiveness
-
-- **First access**: Cold cache (S3 download + decrypt)
-- **Second access**: Warm cache (cache hit, no S3 download)
-- Shows cache benefit: reduced S3 API calls and latency
-- Uses deep dataset (10 cols × 100K rows)
-- **File**: `Measurement6S3CacheEffectivenessBenchmark.cs`
-**For All Benchmarks:**
-
-  - Configure Key Vault in `appsettings.json` (defaults to Internal provider)
-  - Ensure sufficient disk space for dataset generation
-
-2. **For S3/R2 Benchmarks (Measurements 5-6):**
-   - Configure S3/R2 credentials in `appsettings.json`
-   - Ensure bucket exists or create it (will be auto-created)
-   - Benchmark requires network access to S3/R2 endpoint
-Benchmarks use a generic `DispatchProxy`‑based decorator to wrap both the
-`IKeyVaultProvider` and, when needed, the `IAmazonS3` client.  The proxy
-records each call’s latency and increments counters in `MetricsCollector`.
-This lets measurements capture Azure Key Vault and S3 interaction costs
-without littering the test methods.
-
-All tests collect comprehensive metrics via `MetricsCollector`:
-
-- **Latency**: Total elapsed time, average per operation
-- **Memory**: Initial, peak, and increase during operation
-- **Azure Key Vault**: Call count, average latency, total latency
-- **S3**: Call count, average latency, total latency
-- **Throughput**: MB/s for data operations
-- **Cache**: Hit rate, entry count, eviction behavior
-
-## Running Tests
-
-### Prerequisites
-
-1. Configure Key Vault connection in `appsettings.json` (defaults to Internal provider)
-2. Configure S3/R2 connection in `appsettings.json` (optional for benchmarking)
-3. Ensure sufficient disk space for dataset generation
-
-### Run All Benchmarks
+From this folder:
 
 ```bash
 cd OSWS.Performance.Benchmarks
+```
+
+Run all benchmarks:
+
+```bash
 dotnet run -c Release
-``In-Memory Crypto Benchmarks
-dotnet run -c Release -- 1  # Cold start wide range request
-dotnet run -c Release -- 2  # Warm DEK column select
-dotnet run -c Release -- 3  # Full decryption throughput
-dotnet run -c Release -- 4  # DEK cache stress test
+```
 
-# S3/R2 Integration Benchmarks (requires S3 config)
-dotnet run -c Release -- 5  # Direct S3 vs OSWS pipeline
-dotnet run -c Release -- 6  # S3 cache effectiveness
-# Run Measurement 3 (full decryption throughput)
+Run one measurement (1-6):
+
+```bash
+dotnet run -c Release -- 1
+dotnet run -c Release -- 2
 dotnet run -c Release -- 3
-
-# Run Measurement 4 (DEK cache stress test)
 dotnet run -c Release -- 4
+dotnet run -c Release -- 5
+dotnet run -c Release -- 6
 ```
 
-Or set the environment variable:
+Alternative selection via environment variable:
 
 ```bash
-BENCH_MEASUREMENT=1 dotnet run -c Release
+BENCH_MEASUREMENT=3 dotnet run -c Release
 ```
 
-### Control Iteration Count
+Control iteration count:
 
 ```bash
-# Set iterations via environment variable
 BENCH_ITERATIONS=10 dotnet run -c Release
-
-# Or pass to BenchmarkDotNet
+# or
 dotnet run -c Release -- --iterationCount 10
 ```
 
-### Output Files
+## Configuration
 
-Benchmark results are saved to:
+Main settings are in `appsettings.json`:
 
-- `BenchmarkDotNet.Artifacts/results/` - Detailed BenchmarkDotNet reports
-- `benchmark-metrics.csv` - Custom metrics CSV for all measurements
+- `KeyVault`: provider and credentials
+- `S3Settings`: endpoint and access keys
+- `BenchmarkSettings`: bucket name and cleanup behavior
+- `ParquetSizes`: small/wide/deep dataset sizes
 
-## Important Notes
+Notes:
 
-### BenchmarkDotNet
+- Measurements 1-4 are crypto/cache focused, but some still use S3-backed data access to keep data handling stable between runs.
+- Measurement 6 currently generates its own deep dataset shape in code for the cache scenario.
 
-### Dataset Sizes
+## Output Files
 
-Default dataset sizes are **reduced for testing**:
-- Wide datasets: 2,000 columns × 10,000 rows (~150MB)
-- Deep datasets: 10 columns × 10,000,000 rows (~500MB)
-- Small datasets: 5 columns × 5,000 rows (~1MB)
+After running benchmarks, you will typically use:
 
-Adjust parameters in dataset generators for different test scenarios.
+- `BenchmarkDotNet.Artifacts/results/` for BenchmarkDotNet reports
+- `benchmark-results.csv` as chart input (generated by the results recorder)
 
-### Cache Configuration
+## Chart Generation
 
-Cache settings can be configured in `appsettings.json`:
+Generate charts from `benchmark-results.csv`:
 
-```json
-{
-  "Cache": {"  // Auto: uses temp directory
-  }
-}
+```bash
+python3 generate_charts.py
 ```
 
-### S3/R2 Configuration
+Generate charts from a custom CSV path:
 
-For Measurements 5-6, configure S3/R2 settings:
-
-```json
-{
-  "S3Settings": {
-    "AccessKeyId": "your-access-key",
-    "SecretAccessKey": "your-secret-key",
-**In-Memory Benchmarks (1-4):**
-- **Measurement 1**: Footer parsing < 500ms for 2,000 columns
-- **Measurement 2**: Warm DEK cache reduces latency by 80%+
-- **Measurement 3**: Throughput scales linearly with CPU cores
-- **Measurement 4**: Zero Azure KV 429 errors, < 1s average latency
-
-**S3/R2 Benchmarks (5-6):**
-- **Measurement 5**: OSWS overhead < 2x vs direct S3 download
-- **Measurement 6**: Cache hit reduces latency by 90%+ (no S3 fetch)
-  },
-  "BenchmarkSettings": {
-    "S3BucketName": "osws-benchmark-test",
-    "CleanupAfterRun": true,
-    "UseExistingFiles": false
-  }
-}
+```bash
+python3 generate_charts.py /path/to/benchmark-results.csv
 ```
 
-**Note for Cloudflare R2:**
-- Use your R2 account subdomain as endpoint
-- Set Region to "auto" or "us-east-1"
-- Bucket will be auto-created if it doesn't exist
-- Files are automatically cleaned up after benchmarks (configurable) "CacheDirectory": "/tmp/osws-cache"
-  }
-}
-```
+This writes `benchmark-charts.html` next to the CSV.
 
-## Expected Results
+### Why the charts are useful
 
-### Performance Targets
+The chart report is designed for comparison-first analysis:
 
-- **Measurement 1**: Footer parsing < 500ms for 2,000 columns
-- **Measurement 2**: Warm DEK cache reduces latency by 80%+
-- **BenchmarkDotNet
+- Aggregated elapsed, memory, call-count, and KV latency views
+- Operation-level latency views for deeper diagnosis
+- Shared-scale and auto-scale toggle for fair side-by-side comparisons
+- Per-chart copy button for quick reporting
+- Typst legend copy button for papers/docs
 
-These benchmarks use BenchmarkDotNet for accurate performance measurement:
+## Troubleshooting
 
-- Multiple warmup iterations before measurement
-- Statistical analysis of results
-- Automatic outlier detection
-- Memory diagnostics with `[MemoryDiagnoser]`
-
-For detailed BenchmarkDotNet configuration, see `SharedBenchmarkConfig.cs`.
-
-### Dataset Sizes
-
-Default dataset sizes balance performance testing with execution time
-
-### Benchmarks Take Too Long
-x] S3/R2 integration benchmarks
-- [x] Cache effectiveness measurements
-- [ ] Implement column-specific byte-range optimization
-- [ ] Add multi-core parallelism in ParquetSharp operations
-- [ ] Add metrics export to Prometheus/Grafana
-- [ ] Add automated performance regression detection
-- [ ] Add benchmarks for different file sizes (1MB, 10MB, 100MB, 1GB)
-- [ ] Add benchmarks for different S3 regions/endpoints
-3. Run individual benchmarks instead of all at once
-
-### Out of Memory
-
-For large datasets:
-
-1. Reduce dataset size parameters (especially row count)
-2. Increase available system memory
-3. Monitor memory usage in BenchmarkDotNet results
-
-### Azure KV Rate Limiting
-
-If encountering 429 errors:
-
-1. Reduce parallel request count in Measurement 4
-2. Increase delay between requests
-3. Consider using Azure KV Premium tier
-
-### Out of Memory
-
-For large datasets:
-
-1. Reduce dataset size parameters
-2. Increase available system memory
-3. Run tests sequentially instead of parallel
+- Missing CSV: run the benchmarks first, then run `python3 generate_charts.py`.
+- S3 failures: verify `S3Settings` endpoint/credentials and bucket access.
+- Slow runs: run a single measurement and/or reduce `BENCH_ITERATIONS`.
 
 ## Future Enhancements
 
 - [ ] Implement column-specific byte-range optimization
 - [ ] Add multi-core parallelism in ParquetSharp operations
 - [ ] Add metrics export to Prometheus/Grafana
-- [ ] Implement direct S3 baseline comparison tests
 - [ ] Add automated performance regression detection
+- [ ] Expand direct S3 baseline comparison coverage
+- [ ] Add benchmark suites for multiple file sizes (1MB, 10MB, 100MB, 1GB)
+- [ ] Add benchmark suites across multiple S3 regions/endpoints

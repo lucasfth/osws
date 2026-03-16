@@ -5,18 +5,29 @@ namespace OSWS.ParquetSolver.Helpers;
 
 /// <summary>
 /// Thread-safe in-memory cache for unwrapped Data Encryption Keys (DEKs).
-/// Unwrapped DEKs are cached by their unique Key Encryption Key (KEK) identifier.
-/// This avoids repeated Key Vault unwrap calls for the same DEK.
-/// Each parquet column and footer has its own unique GUID-based KEK ID.
+/// Unwrapped DEKs are cached by a caller-provided cache key.
+/// In practice this is the KEK identifier plus encrypted DEK identity, which allows
+/// multiple DEKs to share the same file-level KEK without cache collisions.
 /// </summary>
 public class DekCache
 {
-    private readonly ConcurrentLru<string, byte[]> _cache = new(500);
+    private readonly ConcurrentLru<string, byte[]> _cache;
 
     /// <summary>
-    /// Try to retrieve a cached decrypted DEK by its KEK ID.
+    /// Create a new cache capable of holding <paramref name="capacity"/> entries before evicting.
+    /// The wide dataset used in benchmarks has 2 000 columns, so the default capacity was raised
+    /// to avoid evictions during benchmark runs.  Production services may use a smaller value.
     /// </summary>
-    /// <param name="kekId">The unique Key Encryption Key identifier (e.g., Azure KV key ID)</param>
+    /// <param name="capacity">Maximum number of cached DEKs (default 2500).</param>
+    public DekCache(int capacity = 2500)
+    {
+        _cache = new ConcurrentLru<string, byte[]>(capacity);
+    }
+
+    /// <summary>
+    /// Try to retrieve a cached decrypted DEK by its cache key.
+    /// </summary>
+    /// <param name="kekId">The cache key for the decrypted DEK</param>
     /// <param name="dek">The decrypted DEK bytes if found, null otherwise</param>
     /// <returns>True if the DEK was cached, false otherwise</returns>
     public bool TryGet(string kekId, out byte[]? dek)
@@ -26,9 +37,9 @@ public class DekCache
     }
 
     /// <summary>
-    /// Cache a decrypted DEK under its KEK ID.
+    /// Cache a decrypted DEK under its cache key.
     /// </summary>
-    /// <param name="kekId">The unique Key Encryption Key identifier</param>
+    /// <param name="kekId">The cache key for the decrypted DEK</param>
     /// <param name="dek">The decrypted DEK bytes (must not be null)</param>
     public void Set(string kekId, byte[] dek)
     {

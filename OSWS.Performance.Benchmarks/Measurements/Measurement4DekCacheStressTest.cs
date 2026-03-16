@@ -1,7 +1,9 @@
 using BenchmarkDotNet.Attributes;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver;
+using OSWS.ParquetSolver.Helpers;
 using OSWS.Performance.Benchmarks.DatasetGenerators;
 using OSWS.Performance.Benchmarks.Fixtures;
 using OSWS.Performance.Benchmarks.Helpers;
@@ -9,59 +11,433 @@ using OSWS.Performance.Benchmarks.Helpers;
 namespace OSWS.Performance.Benchmarks.Measurements;
 
 /// <summary>
-/// Benchmark for Measurement 4: DEK cache stress test with parallel reads.
-/// This simulates a scenario where the service receives a burst of requests for many different
-/// files that are not in the DEK cache, which should stress test the cache eviction and key
-/// retrieval logic under concurrent access. By using many small files we can also simulate
-/// a common real‑world pattern where clients request metadata or small subsets of data from many
-/// different datasets, which can be challenging for caching strategies.
+/// Measurement 4: Initial Key Retrieval and Cache Stress Analysis
+/// Measures initial key retrieval latency across dataset types.
+/// Also tests DEK cache stress with 100 distinct small files to understand cache eviction impact.
+/// Cold start shows external KV latency; warm start shows cached key retrieval performance.
 /// </summary>
-[MemoryDiagnoser]
 [Config(typeof(SharedBenchmarkConfig))]
-public class Measurement4DekCacheStressTestBenchmark
+public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchmarkBase
 {
-    private readonly ColdStartFixture _fixture = new();
-    private readonly MetricsCollector _metrics = new();
-    private readonly List<Stream> _encryptedFiles = [];
-
     private ServiceProvider? _services;
     private IKeyVaultProvider? _keyVaultProvider;
+    private ColdStartFixture? _coldFixture;
+    private WarmStartFixture? _warmFixture;
+
+    private byte[]? _smallEncryptedBytes;
+    private byte[]? _wideEncryptedBytes;
+    private byte[]? _deepEncryptedBytes;
+    private readonly List<byte[]> _stressTestFilesBytes = [];
+
+    private readonly MetricsCollector _metrics = new();
     private ParquetWriter? _parquetWriter;
+    private int _dekCacheCapacity = 2500;
 
     [GlobalSetup]
     public async Task SetupAsync()
     {
-        await _fixture.ClearCachesAsync();
         _services = BenchmarkServiceFactory.BuildServiceProvider();
+        var config = _services.GetRequiredService<IConfiguration>();
         _keyVaultProvider = _services.GetRequiredService<IKeyVaultProvider>();
+        var providerType = config.GetValue<string>("KeyVault:Provider") ?? "Internal";
 
-        _parquetWriter = new ParquetWriter(_keyVaultProvider, "azure");
-
-        // prepare 100 distinct small encrypted streams with unique master keys
-        for (var i = 0; i < 100; i++)
+        if (
+            int.TryParse(
+                Environment.GetEnvironmentVariable("BENCH_DEK_CACHE_CAPACITY"),
+                out var cap
+            )
+            && cap > 0
+        )
         {
-            var data = await SmallDatasetGenerator.GenerateAsync(5, 5000, CancellationToken.None);
-            var encrypted = await _parquetWriter.WriteParquetAsync(data, $"default-{i}");
-            _encryptedFiles.Add(encrypted);
+            _dekCacheCapacity = cap;
         }
+
+        _coldFixture = new ColdStartFixture();
+        _warmFixture = new WarmStartFixture(_dekCacheCapacity);
+        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType);
+
+        var smallCols = config.GetValue<int>("ParquetSizes:Small:Columns");
+        var smallRows = config.GetValue<int>("ParquetSizes:Small:Rows");
+        var wideCols = config.GetValue<int>("ParquetSizes:Wide:Columns");
+        var wideRows = config.GetValue<int>("ParquetSizes:Wide:Rows");
+        var deepCols = config.GetValue<int>("ParquetSizes:Deep:Columns");
+        var deepRows = config.GetValue<int>("ParquetSizes:Deep:Rows");
+
+        var stressFileCount = 100;
+        if (
+            int.TryParse(
+                Environment.GetEnvironmentVariable("BENCH_STRESS_FILE_COUNT"),
+                out var configuredStressCount
+            )
+            && configuredStressCount > 0
+        )
+        {
+            stressFileCount = configuredStressCount;
+        }
+
+        // Generate and encrypt dataset types for initial key latency tests
+        var smallUnencrypted = await SmallDatasetGenerator.GenerateAsync(
+            smallCols,
+            smallRows,
+            CancellationToken.None
+        );
+        using (var temp = await _parquetWriter.WriteParquetAsync(smallUnencrypted, "default"))
+        {
+            _smallEncryptedBytes = ((MemoryStream)temp).ToArray();
+        }
+
+        var wideUnencrypted = await WideDatasetGenerator.GenerateAsync(
+            wideCols,
+            wideRows,
+            CancellationToken.None
+        );
+        using (var temp = await _parquetWriter.WriteParquetAsync(wideUnencrypted, "default"))
+        {
+            _wideEncryptedBytes = ((MemoryStream)temp).ToArray();
+        }
+
+        var deepUnencrypted = await DeepDatasetGenerator.GenerateAsync(
+            deepCols,
+            deepRows,
+            CancellationToken.None
+        );
+        using (var temp = await _parquetWriter.WriteParquetAsync(deepUnencrypted, "default"))
+        {
+            _deepEncryptedBytes = ((MemoryStream)temp).ToArray();
+        }
+
+        // Prepare distinct small files for stress test (one per role to create multiple cache entries)
+        for (var i = 0; i < stressFileCount; i++)
+        {
+            var data = await SmallDatasetGenerator.GenerateAsync(
+                smallCols,
+                smallRows,
+                CancellationToken.None
+            );
+            using var encrypted = await _parquetWriter.WriteParquetAsync(data, $"default-{i}");
+            _stressTestFilesBytes.Add(((MemoryStream)encrypted).ToArray());
+        }
+
+        // Warm up the warm fixture caches
+        if (_warmFixture != null)
+        {
+            await WarmupCache(_smallEncryptedBytes, _warmFixture.DekCache, "small");
+            await WarmupCache(_wideEncryptedBytes, _warmFixture.DekCache, "wide");
+            await WarmupCache(_deepEncryptedBytes, _warmFixture.DekCache, "deep");
+        }
+
+        Console.WriteLine(
+            $"[Measurement4] Setup complete (DEK cache capacity: {_dekCacheCapacity}, stress files: {_stressTestFilesBytes.Count})"
+        );
     }
 
-    [Benchmark]
-    public async Task ParallelRead_100SmallFiles_CacheStress()
+    /// <summary>
+    /// Creates a safe MemoryStream from encrypted bytes that won't be affected by GC relocation.
+    /// </summary>
+    private static MemoryStream CreateSafeStream(byte[] bytes)
     {
-        _metrics.StartMeasurement();
+        return new MemoryStream(bytes, writable: false);
+    }
 
-        // Use shared DEK cache across all readers to simulate cache contention
-        var tasks = _encryptedFiles
-            .Select(stream =>
+    private async Task WarmupCache(byte[]? encryptedBytes, DekCache cache, string name)
+    {
+        if (encryptedBytes == null || _keyVaultProvider == null)
+            return;
+
+        using var stream = CreateSafeStream(encryptedBytes);
+        var reader = new ParquetReader(_keyVaultProvider, cache);
+        var decrypted = await reader.ReadParquetAsync(stream);
+        var buffer = new byte[8192];
+        while (await decrypted.ReadAsync(buffer) > 0) { }
+    }
+
+    [Benchmark(Description = "Initial Key Latency - Cold Start - Small Dataset")]
+    public async Task InitialKeyLatency_ColdStart_SmallDataset()
+    {
+        if (_coldFixture == null || _keyVaultProvider == null || _smallEncryptedBytes == null)
+            throw new InvalidOperationException("Benchmark not properly initialized");
+
+        _metrics.Reset();
+        var scenarioKey = "InitialKeyLatency_ColdStart_SmallDataset";
+        var measure = ShouldMeasure("Measurement4", scenarioKey);
+
+        await _coldFixture.ClearCachesAsync();
+        if (measure)
+            _metrics.StartMeasurement();
+
+        using var stream = CreateSafeStream(_smallEncryptedBytes);
+        var reader = new ParquetReader(
+            _keyVaultProvider,
+            _coldFixture.DekCache,
+            (latency) =>
+            {
+                _metrics.RecordKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Small_Cold_ExternalKv",
+                    latency
+                );
+            },
+            latency =>
+            {
+                _metrics.RecordCachedKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Small_Cold_CachedKv",
+                    latency
+                );
+            }
+        );
+
+        _ = await reader.ReadParquetAsync(stream);
+        RecordIfMeasured(
+            scenarioKey,
+            "Measurement4_InitialKeyLatency_Small_Cold",
+            _metrics,
+            measure
+        );
+    }
+
+    [Benchmark(Description = "Initial Key Latency - Cold Start - Wide Dataset")]
+    public async Task InitialKeyLatency_ColdStart_WideDataset()
+    {
+        if (_coldFixture == null || _keyVaultProvider == null || _wideEncryptedBytes == null)
+            throw new InvalidOperationException("Benchmark not properly initialized");
+
+        _metrics.Reset();
+        var scenarioKey = "InitialKeyLatency_ColdStart_WideDataset";
+        var measure = ShouldMeasure("Measurement4", scenarioKey);
+
+        await _coldFixture.ClearCachesAsync();
+        if (measure)
+            _metrics.StartMeasurement();
+
+        using var stream = CreateSafeStream(_wideEncryptedBytes);
+        var reader = new ParquetReader(
+            _keyVaultProvider,
+            _coldFixture.DekCache,
+            (latency) =>
+            {
+                _metrics.RecordKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Wide_Cold_ExternalKv",
+                    latency
+                );
+            },
+            latency =>
+            {
+                _metrics.RecordCachedKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Wide_Cold_CachedKv",
+                    latency
+                );
+            }
+        );
+
+        _ = await reader.ReadParquetAsync(stream);
+        RecordIfMeasured(
+            scenarioKey,
+            "Measurement4_InitialKeyLatency_Wide_Cold",
+            _metrics,
+            measure
+        );
+    }
+
+    [Benchmark(Description = "Initial Key Latency - Cold Start - Deep Dataset")]
+    public async Task InitialKeyLatency_ColdStart_DeepDataset()
+    {
+        if (_coldFixture == null || _keyVaultProvider == null || _deepEncryptedBytes == null)
+            throw new InvalidOperationException("Benchmark not properly initialized");
+
+        _metrics.Reset();
+        var scenarioKey = "InitialKeyLatency_ColdStart_DeepDataset";
+        var measure = ShouldMeasure("Measurement4", scenarioKey);
+
+        await _coldFixture.ClearCachesAsync();
+        if (measure)
+            _metrics.StartMeasurement();
+
+        using var stream = CreateSafeStream(_deepEncryptedBytes);
+        var reader = new ParquetReader(
+            _keyVaultProvider,
+            _coldFixture.DekCache,
+            (latency) =>
+            {
+                _metrics.RecordKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Deep_Cold_ExternalKv",
+                    latency
+                );
+            },
+            latency =>
+            {
+                _metrics.RecordCachedKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Deep_Cold_CachedKv",
+                    latency
+                );
+            }
+        );
+
+        _ = await reader.ReadParquetAsync(stream);
+        RecordIfMeasured(
+            scenarioKey,
+            "Measurement4_InitialKeyLatency_Deep_Cold",
+            _metrics,
+            measure
+        );
+    }
+
+    [Benchmark(Description = "Initial Key Latency - Warm Start - Small Dataset")]
+    public async Task InitialKeyLatency_WarmStart_SmallDataset()
+    {
+        if (_warmFixture == null || _keyVaultProvider == null || _smallEncryptedBytes == null)
+            throw new InvalidOperationException("Benchmark not properly initialized");
+
+        _metrics.Reset();
+        var scenarioKey = "InitialKeyLatency_WarmStart_SmallDataset";
+        var measure = ShouldMeasure("Measurement4", scenarioKey);
+        if (measure)
+            _metrics.StartMeasurement();
+
+        using var stream = CreateSafeStream(_smallEncryptedBytes);
+        var reader = new ParquetReader(
+            _keyVaultProvider,
+            _warmFixture.DekCache,
+            (latency) =>
+            {
+                _metrics.RecordKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Small_Warm_ExternalKv",
+                    latency
+                );
+            },
+            latency =>
+            {
+                _metrics.RecordCachedKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Small_Warm_CachedKv",
+                    latency
+                );
+            }
+        );
+
+        _ = await reader.ReadParquetAsync(stream);
+        RecordIfMeasured(
+            scenarioKey,
+            "Measurement4_InitialKeyLatency_Small_Warm",
+            _metrics,
+            measure
+        );
+    }
+
+    [Benchmark(Description = "Initial Key Latency - Warm Start - Wide Dataset")]
+    public async Task InitialKeyLatency_WarmStart_WideDataset()
+    {
+        if (_warmFixture == null || _keyVaultProvider == null || _wideEncryptedBytes == null)
+            throw new InvalidOperationException("Benchmark not properly initialized");
+
+        _metrics.Reset();
+        var scenarioKey = "InitialKeyLatency_WarmStart_WideDataset";
+        var measure = ShouldMeasure("Measurement4", scenarioKey);
+        if (measure)
+            _metrics.StartMeasurement();
+
+        using var stream = CreateSafeStream(_wideEncryptedBytes);
+        var reader = new ParquetReader(
+            _keyVaultProvider,
+            _warmFixture.DekCache,
+            (latency) =>
+            {
+                _metrics.RecordKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Wide_Warm_ExternalKv",
+                    latency
+                );
+            },
+            latency =>
+            {
+                _metrics.RecordCachedKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Wide_Warm_CachedKv",
+                    latency
+                );
+            }
+        );
+
+        _ = await reader.ReadParquetAsync(stream);
+        RecordIfMeasured(
+            scenarioKey,
+            "Measurement4_InitialKeyLatency_Wide_Warm",
+            _metrics,
+            measure
+        );
+    }
+
+    [Benchmark(Description = "Initial Key Latency - Warm Start - Deep Dataset")]
+    public async Task InitialKeyLatency_WarmStart_DeepDataset()
+    {
+        if (_warmFixture == null || _keyVaultProvider == null || _deepEncryptedBytes == null)
+            throw new InvalidOperationException("Benchmark not properly initialized");
+
+        _metrics.Reset();
+        var scenarioKey = "InitialKeyLatency_WarmStart_DeepDataset";
+        var measure = ShouldMeasure("Measurement4", scenarioKey);
+        if (measure)
+            _metrics.StartMeasurement();
+
+        using var stream = CreateSafeStream(_deepEncryptedBytes);
+        var reader = new ParquetReader(
+            _keyVaultProvider,
+            _warmFixture.DekCache,
+            (latency) =>
+            {
+                _metrics.RecordKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Deep_Warm_ExternalKv",
+                    latency
+                );
+            },
+            latency =>
+            {
+                _metrics.RecordCachedKvCall(latency);
+                _metrics.RecordOperationLatency(
+                    "Measurement4_InitialKeyLatency_Deep_Warm_CachedKv",
+                    latency
+                );
+            }
+        );
+
+        _ = await reader.ReadParquetAsync(stream);
+        RecordIfMeasured(
+            scenarioKey,
+            "Measurement4_InitialKeyLatency_Deep_Warm",
+            _metrics,
+            measure
+        );
+    }
+
+    [Benchmark(Description = "Cache Stress - 100 Small Files Parallel (Cold Start)")]
+    public async Task CacheStress_100SmallFiles_Parallel()
+    {
+        if (_keyVaultProvider == null || _coldFixture == null)
+            throw new InvalidOperationException("Benchmark not properly initialized");
+
+        _metrics.Reset();
+        var scenarioKey = "CacheStress_100SmallFiles_Parallel";
+        var measure = ShouldMeasure("Measurement4", scenarioKey);
+
+        await _coldFixture.ClearCachesAsync();
+        if (measure)
+            _metrics.StartMeasurement();
+
+        // Parallel reads with shared DEK cache to stress cache contention
+        var tasks = _stressTestFilesBytes
+            .Select(bytes =>
                 Task.Run(async () =>
                 {
-                    stream.Position = 0;
-                    // Create a new reader for each stream but share the DEK cache
-                    // This simulates concurrent requests hitting the same cache
-                    var reader = new ParquetReader(_keyVaultProvider!, _fixture.DekCache);
+                    using var stream = CreateSafeStream(bytes);
+                    // Avoid parallel writes to MetricsCollector from many tasks.
+                    var reader = new ParquetReader(_keyVaultProvider, _coldFixture.DekCache);
                     var decrypted = await reader.ReadParquetAsync(stream);
-                    // just read a few bytes to simulate a client request
                     var buffer = new byte[1024];
                     _ = await decrypted.ReadAsync(buffer);
                 })
@@ -69,25 +445,21 @@ public class Measurement4DekCacheStressTestBenchmark
             .ToArray();
 
         await Task.WhenAll(tasks);
-
-        _metrics.StopMeasurement();
-        var metrics = _metrics.GetMetrics();
-        ResultsRecorder.Record(
-            nameof(Measurement4DekCacheStressTestBenchmark) + ".ParallelRead_100SmallFiles",
-            metrics
+        RecordIfMeasured(
+            scenarioKey,
+            "Measurement4_CacheStress_100Files_Parallel",
+            _metrics,
+            measure
         );
-        _metrics.Reset();
     }
 
     [GlobalCleanup]
     public void GlobalCleanup()
     {
-        foreach (var stream in _encryptedFiles)
-        {
-            stream.Dispose();
-        }
-        _encryptedFiles.Clear();
+        FlushRecordedResults();
+
+        _coldFixture?.Dispose();
+        _warmFixture?.Dispose();
         _services?.Dispose();
-        _fixture.Dispose();
     }
 }

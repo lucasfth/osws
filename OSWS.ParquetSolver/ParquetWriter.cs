@@ -51,6 +51,10 @@ public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerTy
             providerType
         );
 
+        Console.WriteLine(
+            $"[ParquetWriter] Encrypting columns with role: {role}, columnsToEncrypt: {columnsToEncrypt?.Length.ToString() ?? "all"}"
+        );
+
         using var writerPropertiesBuilder = new WriterPropertiesBuilder();
         writerPropertiesBuilder.Encryption(encryptionProperties);
         using var writerProperties = writerPropertiesBuilder.Build();

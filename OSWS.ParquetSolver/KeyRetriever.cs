@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using OSWS.Models.DTOs;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver.Helpers;
@@ -7,24 +8,23 @@ namespace OSWS.ParquetSolver;
 
 /// <summary>
 /// Key retriever that recovers DEKs via an <see cref="IKeyVaultProvider"/>.
-/// Parquet footer metadata contains a JSON <see cref="KeyMetadata"/> with
+/// Parquet key metadata contains a JSON <see cref="KeyMetadata"/> with
 /// the vault key identifier and the encrypted DEK. This retriever deserializes
 /// the metadata and calls the provider to decrypt the DEK.
 ///
-/// Decrypted DEKs are cached by their unique Key Encryption Key (KEK) ID to avoid
+/// Decrypted DEKs are cached by a composite key derived from the KEK ID and encrypted DEK to avoid
 /// repeated calls to Azure Key Vault for the same key.
 /// </summary>
-public sealed class KeyRetriever(IKeyVaultProvider keyVaultProvider, DekCache dekCache)
-    : DecryptionKeyRetriever
+public sealed class KeyRetriever(
+    IKeyVaultProvider keyVaultProvider,
+    DekCache dekCache,
+    Action<TimeSpan>? onInternalKvOperationLatency = null,
+    Action<TimeSpan>? onCachedKvOperationLatency = null
+) : DecryptionKeyRetriever
 {
-    private readonly IKeyVaultProvider _keyVaultProvider =
-        keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
-    private readonly DekCache _dekCache =
-        dekCache ?? throw new ArgumentNullException(nameof(dekCache));
-
     /// <summary>
-    /// Retrieves the DEK by deserializing the Parquet footer metadata and calling the key vault provider to decrypt it.
-    /// Checks the cache first; if the DEK has been decrypted before (by KEK ID), returns the cached value.
+    /// Retrieves the DEK by deserializing parquet key metadata and calling the key vault provider to decrypt it.
+    /// Checks the cache first; if the DEK has been decrypted before, returns the cached value.
     /// Otherwise, calls the provider's DecryptAsync method, caches the result, and returns it.
     /// </summary>
     /// <param name="keyMetadata">JSON-serialized KeyMetadata containing KEK ID and encrypted DEK</param>
@@ -38,9 +38,22 @@ public sealed class KeyRetriever(IKeyVaultProvider keyVaultProvider, DekCache de
                 $"Failed to deserialize key metadata: {keyMetadata}"
             );
 
-        // Try to retrieve from cache first using the KEK ID
-        if (_dekCache.TryGet(metadata.KeyId, out var cachedDek))
+        // A provider key (KEK) can encrypt many different DEKs over time (across files/columns).
+        // Include encrypted DEK identity in the cache key so we never return a stale DEK.
+        var dekCacheKey = $"{metadata.KeyId}:{metadata.EncryptedKey}";
+
+        Stopwatch? localKeyStopWatch = null;
+        if (onCachedKvOperationLatency is not null)
+            localKeyStopWatch = Stopwatch.StartNew();
+
+        // Try to retrieve from cache first.
+        if (dekCache.TryGet(dekCacheKey, out var cachedDek))
         {
+            if (onCachedKvOperationLatency is null)
+                return cachedDek!;
+
+            localKeyStopWatch?.Stop();
+            onCachedKvOperationLatency?.Invoke(localKeyStopWatch!.Elapsed);
             return cachedDek!;
         }
 
@@ -48,13 +61,20 @@ public sealed class KeyRetriever(IKeyVaultProvider keyVaultProvider, DekCache de
 
         // ParquetSharp's GetKey is synchronous but IKeyVaultProvider is async.
         // Use KeyId (full URI with GUID) not KeyName (formatted name) since keys are created with GUID-based names
-        var decryptedDek = _keyVaultProvider
+        Stopwatch? remoteKeyStopWatch = null;
+        if (onInternalKvOperationLatency is not null)
+            remoteKeyStopWatch = Stopwatch.StartNew();
+        var decryptedDek = keyVaultProvider
             .DecryptAsync(metadata.KeyId, encryptedKey)
             .GetAwaiter()
             .GetResult();
 
+        remoteKeyStopWatch?.Stop();
+        if (remoteKeyStopWatch is not null)
+            onInternalKvOperationLatency?.Invoke(remoteKeyStopWatch.Elapsed);
+
         // Cache the decrypted DEK for future use
-        _dekCache.Set(metadata.KeyId, decryptedDek);
+        dekCache.Set(dekCacheKey, decryptedDek);
 
         return decryptedDek;
     }

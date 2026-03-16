@@ -8,24 +8,19 @@ namespace OSWS.Performance.Benchmarks.Fixtures;
 /// </summary>
 public class WarmStartFixture : IDisposable
 {
-    public DekCache DekCache { get; } = new();
+    public DekCache DekCache { get; }
     public EncryptedFileCache FileCache { get; } =
         new(
-            new OSWS.Common.Configuration.CacheSettings
+            new Common.Configuration.CacheSettings
             {
                 EnableFileCache = true,
                 MaxCacheSizeBytes = 10L * 1024 * 1024 * 1024, // 10GB
             }
         );
 
-    /// <summary>
-    /// Pre-populate caches for warm start scenarios.
-    /// This should be called during test setup after initial operations.
-    /// </summary>
-    public void PrepopulateCaches()
+    public WarmStartFixture(int dekCacheCapacity = 2500)
     {
-        // Caches are populated naturally during first test run
-        // This method is here for completeness and documentation
+        DekCache = new DekCache(dekCacheCapacity);
     }
 
     public void Dispose()

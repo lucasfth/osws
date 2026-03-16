@@ -57,7 +57,8 @@ public class Measurement6S3CacheEffectivenessBenchmark
 
         _fixture = new WarmStartFixture();
 
-        _parquetWriter = new ParquetWriter(_keyVaultProvider, "azure");
+        var providerType = config.GetValue<string>("KeyVault:Provider") ?? "Internal";
+        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType);
         _parquetReader = new ParquetReader(_keyVaultProvider, _fixture.DekCache);
 
         // Generate and encrypt a deep dataset
@@ -85,13 +86,13 @@ public class Measurement6S3CacheEffectivenessBenchmark
     }
 
     [IterationSetup]
-    public async Task IterationSetupAsync()
+    public void IterationSetup()
     {
         // Clear file cache before each iteration to ensure consistent "cold cache" measurements
         // DEK cache remains warm after first iteration
         if (_fixture?.FileCache != null)
         {
-            await _fixture.FileCache.ClearAsync();
+            _fixture.FileCache.ClearAsync().GetAwaiter().GetResult();
         }
     }
 

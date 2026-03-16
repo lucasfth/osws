@@ -348,6 +348,26 @@ def build_legend_items() -> str:
     return html
 
 
+def build_typst_legend() -> str:
+    """Build a Typst snippet for the measurement legend with matching colors."""
+    lines = [
+        "// OSWS benchmark legend",
+        "#let benchmark_legend = [",
+    ]
+
+    for group, (rgb_val, title) in _PALETTE.items():
+        if group == "Other":
+            continue
+        r, g, b = rgb_val.split(",")
+        lines.append(f"  #text(fill: rgb({r}, {g}, {b}))[●] {title} \\")
+
+    lines.extend([
+        "]",
+        "#benchmark_legend",
+    ])
+    return "\n".join(lines)
+
+
 def build_operation_scale_groups(op_charts: list[dict]) -> dict[str, OperationScaleGroup]:
     groups: dict[str, OperationScaleGroup] = {}
 
@@ -526,6 +546,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   }}
   body {{ margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }}
   header {{ padding: 24px 32px 16px; border-bottom: 1px solid var(--border); }}
+  .header-row {{ display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }}
+  .header-actions {{ display: flex; gap: 8px; }}
   header h1 {{ margin: 0 0 4px; font-size: 1.25rem; }}
   header p {{ margin: 0; color: var(--muted); font-size: 0.85rem; }}
   .legend {{ display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px; }}
@@ -572,8 +594,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </head>
 <body>
 <header>
-  <h1>OSWS Benchmark Charts</h1>
-  <p>Generated {timestamp} &nbsp;·&nbsp; {row_count} benchmark rows &nbsp;·&nbsp; source: {source}</p>
+  <div class="header-row">
+    <div>
+      <h1>OSWS Benchmark Charts</h1>
+      <p>Generated {timestamp} &nbsp;·&nbsp; {row_count} benchmark rows &nbsp;·&nbsp; source: {source}</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="chart-button" id="copyTypstLegendButton">Copy Typst Legend</button>
+    </div>
+  </div>
   <div class="legend">{legend}</div>
 </header>
 <main>
@@ -683,6 +712,8 @@ const TOOLTIP = {{
   }},
 }};
 
+const TYPST_LEGEND = {typst_legend};
+
 const showToast = (message) => {{
   let toast = document.getElementById('toast');
   if (!toast) {{
@@ -719,9 +750,26 @@ const copyChart = async (canvasId) => {{
   }});
 }};
 
+const copyText = async (content, successMessage) => {{
+  if (!navigator.clipboard?.writeText) return showToast('Clipboard not supported in this browser.');
+  try {{
+    await navigator.clipboard.writeText(content);
+    showToast(successMessage);
+  }} catch (err) {{
+    showToast('Unable to copy text to clipboard.');
+  }}
+}};
+
 document.querySelectorAll('.chart-button[data-canvas]').forEach(btn => {{
   btn.addEventListener('click', () => copyChart(btn.dataset.canvas));
 }});
+
+const copyTypstLegendButton = document.getElementById('copyTypstLegendButton');
+if (copyTypstLegendButton) {{
+  copyTypstLegendButton.addEventListener('click', () =>
+    copyText(TYPST_LEGEND, 'Typst legend copied to clipboard.')
+  );
+}}
 
 const CHARTS = {{}};
 const CHARTS_BY_GROUP = {{}};
@@ -814,6 +862,7 @@ def generate_html(rows: list[dict], csv_path: str) -> str:
         row_count=row_count,
         source=source,
         legend=legend,
+        typst_legend=js(build_typst_legend()),
         elapsed_data=js(elapsed_data),
         memory_data=js(memory_data),
         call_count_data=js(call_data),

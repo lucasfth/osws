@@ -444,3 +444,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Chart html file (as it nearly instantly generated)
+benchmark-charts.html

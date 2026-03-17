@@ -5,9 +5,12 @@ using StackExchange.Redis;
 namespace OSWS.ParquetSolver.Helpers;
 
 /// <summary>
-/// Redis-backed cache for unwrapped Data Encryption Keys (DEKs).
-/// Keys are stored under: <c>{prefix}:dek:{kekId}</c>.
+/// Redis-backed DEK cache. DEKs are stored as binary strings under <c>{prefix}:dek:{kekId}</c>.
 /// </summary>
+/// <remarks>
+/// TODO (RBAC): When RBAC is implemented, derive TTL per-entry from the caller's role
+/// instead of the configured default. Higher privilege → shorter TTL; lower privilege → longer TTL.
+/// </remarks>
 public class RedisDekCache : IDekCache
 {
     private readonly IDatabase _db;
@@ -18,9 +21,7 @@ public class RedisDekCache : IDekCache
     {
         _db = redis.GetDatabase();
         _prefix = settings.RedisKeyPrefix ?? "osws";
-        _ttl = settings.RedisTtlSeconds > 0
-            ? TimeSpan.FromSeconds(settings.RedisTtlSeconds)
-            : null;
+        _ttl = settings.DekTtlSeconds > 0 ? TimeSpan.FromSeconds(settings.DekTtlSeconds) : null;
     }
 
     private string Key(string kekId) => $"{_prefix}:dek:{kekId}";
@@ -36,6 +37,7 @@ public class RedisDekCache : IDekCache
 
     public void Set(string kekId, byte[] dek)
     {
+        // TODO (RBAC): Derive TTL from caller's role instead of the configured default.
         _db.StringSet(Key(kekId), dek, _ttl);
     }
 
@@ -47,14 +49,5 @@ public class RedisDekCache : IDekCache
         var keys = server.Keys(pattern: $"{_prefix}:dek:*").ToArray();
         if (keys.Length > 0)
             _db.KeyDelete(keys);
-    }
-
-    public int Count
-    {
-        get
-        {
-            var server = _db.Multiplexer.GetServers().FirstOrDefault();
-            return server?.Keys(pattern: $"{_prefix}:dek:*").Count() ?? 0;
-        }
     }
 }

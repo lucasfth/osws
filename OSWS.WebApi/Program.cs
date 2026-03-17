@@ -32,26 +32,27 @@ builder.Services.AddDbContext<OswsContext>(opts =>
 
 builder.Services.Configure<S3Settings>(builder.Configuration.GetSection("S3Settings"));
 
-// --- Cache Settings ---
-var cacheSettings =
-    builder.Configuration.GetSection("Cache").Get<CacheSettings>() ?? new CacheSettings();
-
+// --- Cache ---
+var cacheSettings = builder.Configuration.GetSection("Cache").Get<CacheSettings>() ?? new CacheSettings();
 builder.Services.AddSingleton(cacheSettings);
 
-// Register cache implementations based on configured provider
-var useRedis = cacheSettings.Provider.Equals("Redis", StringComparison.OrdinalIgnoreCase);
+// Parquet file cache is always local disk
+builder.Services.AddSingleton<EncryptedFileCache>();
 
+// DEK cache: Local (in-memory) or Redis
+var useRedis = cacheSettings.DekCacheProvider.Equals("Redis", StringComparison.OrdinalIgnoreCase);
 if (useRedis)
 {
     builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
         ConnectionMultiplexer.Connect(cacheSettings.RedisConnectionString));
-    builder.Services.AddSingleton<IEncryptedFileCache, RedisEncryptedFileCache>();
     builder.Services.AddSingleton<IDekCache, RedisDekCache>();
 }
 else
 {
-    builder.Services.AddSingleton<IEncryptedFileCache, EncryptedFileCache>();
-    builder.Services.AddSingleton<IDekCache>(_ => new DekCache());
+    var dekTtl = cacheSettings.DekTtlSeconds > 0
+        ? TimeSpan.FromSeconds(cacheSettings.DekTtlSeconds)
+        : (TimeSpan?)null;
+    builder.Services.AddSingleton<IDekCache>(_ => new DekCache(cacheSettings.DekCacheCapacity, dekTtl));
 }
 
 builder.Services.AddTransient<IS3Get, S3Get>();
@@ -60,10 +61,8 @@ builder.Services.AddTransient<IS3List, S3List>();
 builder.Services.AddTransient<IS3Head, S3Head>();
 
 // --- Key Vault Provider ---
-var kvSettings =
-    builder.Configuration.GetSection("KeyVault").Get<KeyVaultSettings>()
+var kvSettings = builder.Configuration.GetSection("KeyVault").Get<KeyVaultSettings>()
     ?? new KeyVaultSettings { Provider = "Internal" };
-
 builder.Services.AddSingleton(kvSettings);
 
 builder.Services.AddSingleton<IKeyVaultProvider>(sp =>
@@ -91,24 +90,15 @@ builder.Services.AddTransient<IParquetReader>(sp =>
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
     var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<S3Settings>>().Value;
-
     var creds = new BasicAWSCredentials(opts.AccessKeyId, opts.SecretAccessKey);
     var endpoint = AwsCredentialHelper.NormalizeEndpoint(opts.EndpointHostname);
-
     var config = new AmazonS3Config
     {
         ServiceURL = string.IsNullOrEmpty(endpoint ?? string.Empty) ? null : endpoint,
         ForcePathStyle = true,
     };
-
-    if (
-        !string.IsNullOrWhiteSpace(opts.Region)
-        && !opts.Region.Equals("auto", StringComparison.OrdinalIgnoreCase)
-    )
-    {
+    if (!string.IsNullOrWhiteSpace(opts.Region) && !opts.Region.Equals("auto", StringComparison.OrdinalIgnoreCase))
         config.RegionEndpoint = RegionEndpoint.GetBySystemName(opts.Region);
-    }
-
     return new AmazonS3Client(creds, config);
 });
 
@@ -119,20 +109,11 @@ var app = builder.Build();
 app.UseHttpLogging();
 
 app.MapGet("/health", () => "OSWS Web API running");
-
-app.MapGet(
-    "/cache-stats",
-    (IEncryptedFileCache fileCache) =>
-    {
-        return Results.Text(fileCache.GetDebugInfo());
-    }
-);
+app.MapGet("/cache-stats", (EncryptedFileCache fileCache) => Results.Text(fileCache.GetDebugInfo()));
 
 app.MapS3Routes();
 
 if (app.Environment.IsDevelopment())
-{
     app.MapOpenApi();
-}
 
 app.Run();

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Security.Cryptography;
 using System.Text;
 using OSWS.Common.Configuration;
+using OSWS.ParquetSolver.Interfaces;
 
 namespace OSWS.ParquetSolver.Helpers;
 
@@ -10,7 +11,7 @@ namespace OSWS.ParquetSolver.Helpers;
 /// Reduces S3 API calls by storing encrypted files locally until cache size limit is reached.
 /// Files are identified by a hash of their S3 bucket+key to ensure uniqueness.
 /// </summary>
-public class EncryptedFileCache : IDisposable
+public class EncryptedFileCache : IEncryptedFileCache, IDisposable
 {
     private readonly CacheSettings _settings;
     private readonly string _cacheDirectory;
@@ -30,22 +31,15 @@ public class EncryptedFileCache : IDisposable
     {
         _settings = settings ?? throw new ArgumentNullException(nameof(settings));
 
-        // Determine cache directory
         _cacheDirectory = string.IsNullOrWhiteSpace(_settings.CacheDirectory)
             ? Path.Combine(Path.GetTempPath(), "osws-cache")
             : _settings.CacheDirectory;
 
-        // Create cache directory if it doesn't exist
         if (_settings.EnableFileCache && !Directory.Exists(_cacheDirectory))
-        {
             Directory.CreateDirectory(_cacheDirectory);
-        }
 
-        // Initialize cache by scanning existing files (in case of restart)
         if (_settings.EnableFileCache && Directory.Exists(_cacheDirectory))
-        {
             InitializeFromDisk();
-        }
     }
 
     /// <summary>
@@ -59,13 +53,6 @@ public class EncryptedFileCache : IDisposable
         return Convert.ToHexString(hashBytes).ToLowerInvariant();
     }
 
-    /// <summary>
-    /// Try to retrieve a cached encrypted file.
-    /// Updates access time on cache hit for LRU tracking.
-    /// </summary>
-    /// <param name="cacheKey">The cache key (generated from bucket+key)</param>
-    /// <param name="stream">The cached file stream if found, null otherwise</param>
-    /// <returns>True if file was in cache, false otherwise</returns>
     public bool TryGet(string cacheKey, out Stream? stream)
     {
         stream = null;
@@ -76,17 +63,14 @@ public class EncryptedFileCache : IDisposable
         if (!_entries.TryGetValue(cacheKey, out var entry))
             return false;
 
-        // Verify file still exists on disk
         if (!File.Exists(entry.FilePath))
         {
             _entries.TryRemove(cacheKey, out _);
             return false;
         }
 
-        // Update access time for LRU
         entry.LastAccessTime = DateTime.UtcNow;
 
-        // Return a read-only file stream
         try
         {
             stream = new FileStream(entry.FilePath, FileMode.Open, FileAccess.Read, FileShare.Read);
@@ -94,19 +78,11 @@ public class EncryptedFileCache : IDisposable
         }
         catch (IOException)
         {
-            // File might have been deleted or is inaccessible
             _entries.TryRemove(cacheKey, out _);
             return false;
         }
     }
 
-    /// <summary>
-    /// Cache an encrypted file to disk.
-    /// Evicts least recently used files if cache size limit would be exceeded.
-    /// </summary>
-    /// <param name="cacheKey">The cache key (generated from bucket+key)</param>
-    /// <param name="stream">The encrypted file stream to cache</param>
-    /// <param name="cancellationToken"></param>
     public async Task SetAsync(
         string cacheKey,
         Stream stream,
@@ -122,23 +98,18 @@ public class EncryptedFileCache : IDisposable
         await _lock.WaitAsync(cancellationToken);
         try
         {
-            // Check if already cached
             if (_entries.ContainsKey(cacheKey))
             {
-                // Update access time and return
                 if (_entries.TryGetValue(cacheKey, out var existingEntry))
-                {
                     existingEntry.LastAccessTime = DateTime.UtcNow;
-                }
                 return;
             }
 
-            // Create folder if not yet exist
             if (!Directory.Exists(_cacheDirectory))
                 Directory.CreateDirectory(_cacheDirectory);
+
             var filePath = Path.Combine(_cacheDirectory, $"{cacheKey}.parquet");
 
-            // Write stream to disk
             await using (
                 var fileStream = new FileStream(
                     filePath,
@@ -151,19 +122,15 @@ public class EncryptedFileCache : IDisposable
                 var originalPosition = stream.Position;
                 stream.Position = 0;
                 await stream.CopyToAsync(fileStream, cancellationToken);
-                stream.Position = originalPosition; // Restore original position
+                stream.Position = originalPosition;
             }
 
             var fileInfo = new FileInfo(filePath);
             var fileSize = fileInfo.Length;
 
-            // Evict if necessary to make room
             while (_currentCacheSize + fileSize > _settings.MaxCacheSizeBytes && _entries.Any())
-            {
                 await EvictLruAsync();
-            }
 
-            // Add to cache
             var entry = new CacheEntry
             {
                 FilePath = filePath,
@@ -181,40 +148,25 @@ public class EncryptedFileCache : IDisposable
         }
     }
 
-    /// <summary>
-    /// Evict the least recently used file from cache.
-    /// </summary>
     private async Task EvictLruAsync()
     {
-        // Find LRU entry
         var lruEntry = _entries.Values.OrderBy(e => e.LastAccessTime).FirstOrDefault();
+        if (lruEntry == null) return;
 
-        if (lruEntry == null)
-            return;
-
-        // Remove from dictionary
         _entries.TryRemove(lruEntry.CacheKey, out _);
 
-        // Delete file from disk
         try
         {
             if (File.Exists(lruEntry.FilePath))
-            {
                 File.Delete(lruEntry.FilePath);
-            }
+
             Interlocked.Add(ref _currentCacheSize, -lruEntry.FileSize);
         }
-        catch (IOException)
-        {
-            // File might already be deleted or locked
-        }
+        catch (IOException) { }
 
         await Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Clear all cached files and reset cache state.
-    /// </summary>
     public async Task ClearAsync()
     {
         await _lock.WaitAsync();
@@ -225,14 +177,9 @@ public class EncryptedFileCache : IDisposable
                 try
                 {
                     if (File.Exists(entry.FilePath))
-                    {
                         File.Delete(entry.FilePath);
-                    }
                 }
-                catch (IOException)
-                {
-                    // Ignore errors during cleanup
-                }
+                catch (IOException) { }
             }
 
             _entries.Clear();
@@ -244,24 +191,14 @@ public class EncryptedFileCache : IDisposable
         }
     }
 
-    /// <summary>
-    /// Get current cache statistics.
-    /// </summary>
-    public (int FileCount, long TotalBytes, long MaxBytes) GetStats()
-    {
-        return (_entries.Count, _currentCacheSize, _settings.MaxCacheSizeBytes);
-    }
+    public (int FileCount, long TotalBytes, long MaxBytes) GetStats() =>
+        (_entries.Count, _currentCacheSize, _settings.MaxCacheSizeBytes);
 
-    /// <summary>
-    /// Initialize cache state by scanning existing files in cache directory.
-    /// Used when restarting the service to restore cache state.
-    /// </summary>
     private void InitializeFromDisk()
     {
         try
         {
-            var files = Directory.GetFiles(_cacheDirectory, "*.parquet");
-            foreach (var filePath in files)
+            foreach (var filePath in Directory.GetFiles(_cacheDirectory, "*.parquet"))
             {
                 var fileInfo = new FileInfo(filePath);
                 var cacheKey = Path.GetFileNameWithoutExtension(filePath);
@@ -280,23 +217,19 @@ public class EncryptedFileCache : IDisposable
         }
         catch (Exception)
         {
-            // If initialization fails, start with empty cache
             _entries.Clear();
             _currentCacheSize = 0;
         }
     }
 
-    /// <summary>
-    /// Returns detailed debug information about cache state.
-    /// Useful for verifying cache is working and monitoring cache health.
-    /// </summary>
     public string GetDebugInfo()
     {
         _lock.Wait();
         try
         {
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine($"=== Encrypted File Cache Debug Info ===");
+            var sb = new StringBuilder();
+            sb.AppendLine("=== Encrypted File Cache Debug Info ===");
+            sb.AppendLine($"Provider: Local");
             sb.AppendLine($"Enabled: {_settings.EnableFileCache}");
             sb.AppendLine($"Directory: {_cacheDirectory}");
             sb.AppendLine($"Files Cached: {_entries.Count}");
@@ -327,8 +260,5 @@ public class EncryptedFileCache : IDisposable
         }
     }
 
-    public void Dispose()
-    {
-        _lock?.Dispose();
-    }
+    public void Dispose() => _lock?.Dispose();
 }

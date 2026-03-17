@@ -12,6 +12,7 @@ using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Endpoints;
 using OSWS.WebApi.Interfaces;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateSlimBuilder(args);
 
@@ -24,7 +25,6 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Services.AddHttpLogging(o => { });
 
-// Configure DatabaseSettings from appsettings.json
 builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddDbContext<OswsContext>(opts =>
     opts.UseNpgsql(builder.Configuration.GetConnectionString("OswsContext"))
@@ -33,14 +33,26 @@ builder.Services.AddDbContext<OswsContext>(opts =>
 builder.Services.Configure<S3Settings>(builder.Configuration.GetSection("S3Settings"));
 
 // --- Cache Settings ---
-// Configure from appsettings.json "Cache" section or use defaults
 var cacheSettings =
     builder.Configuration.GetSection("Cache").Get<CacheSettings>() ?? new CacheSettings();
 
 builder.Services.AddSingleton(cacheSettings);
 
-// Register encrypted file cache as singleton - shared across all operations
-builder.Services.AddSingleton<EncryptedFileCache>();
+// Register cache implementations based on configured provider
+var useRedis = cacheSettings.Provider.Equals("Redis", StringComparison.OrdinalIgnoreCase);
+
+if (useRedis)
+{
+    builder.Services.AddSingleton<IConnectionMultiplexer>(_ =>
+        ConnectionMultiplexer.Connect(cacheSettings.RedisConnectionString));
+    builder.Services.AddSingleton<IEncryptedFileCache, RedisEncryptedFileCache>();
+    builder.Services.AddSingleton<IDekCache, RedisDekCache>();
+}
+else
+{
+    builder.Services.AddSingleton<IEncryptedFileCache, EncryptedFileCache>();
+    builder.Services.AddSingleton<IDekCache>(_ => new DekCache());
+}
 
 builder.Services.AddTransient<IS3Get, S3Get>();
 builder.Services.AddTransient<IS3Put, S3Put>();
@@ -48,8 +60,6 @@ builder.Services.AddTransient<IS3List, S3List>();
 builder.Services.AddTransient<IS3Head, S3Head>();
 
 // --- Key Vault Provider ---
-// Configure from appsettings.json "KeyVault" section or environment variables.
-// Set Provider to "Azure" for production (requires VaultUri), or "Internal" for dev/testing though not yet set fully up
 var kvSettings =
     builder.Configuration.GetSection("KeyVault").Get<KeyVaultSettings>()
     ?? new KeyVaultSettings { Provider = "Internal" };
@@ -66,9 +76,6 @@ builder.Services.AddSingleton<IKeyVaultProvider>(sp =>
     };
 });
 
-// Register DEK cache as singleton - shared across all parquet read operations
-builder.Services.AddSingleton<DekCache>();
-
 builder.Services.AddTransient<IParquetWriter>(sp =>
 {
     var provider = sp.GetRequiredService<IKeyVaultProvider>();
@@ -78,7 +85,7 @@ builder.Services.AddTransient<IParquetWriter>(sp =>
 builder.Services.AddTransient<IParquetReader>(sp =>
 {
     var provider = sp.GetRequiredService<IKeyVaultProvider>();
-    var dekCache = sp.GetRequiredService<DekCache>();
+    var dekCache = sp.GetRequiredService<IDekCache>();
     return new ParquetReader(provider, dekCache);
 });
 builder.Services.AddSingleton<IAmazonS3>(sp =>
@@ -113,16 +120,14 @@ app.UseHttpLogging();
 
 app.MapGet("/health", () => "OSWS Web API running");
 
-// Cache debug endpoint - useful for verifying cache is working
 app.MapGet(
     "/cache-stats",
-    (EncryptedFileCache fileCache) =>
+    (IEncryptedFileCache fileCache) =>
     {
         return Results.Text(fileCache.GetDebugInfo());
     }
 );
 
-// Map S3 routes (GET, PUT) to their handlers
 app.MapS3Routes();
 
 if (app.Environment.IsDevelopment())

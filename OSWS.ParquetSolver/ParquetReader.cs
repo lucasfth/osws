@@ -8,7 +8,7 @@ namespace OSWS.ParquetSolver;
 
 public class ParquetReader(
     IKeyVaultProvider keyVaultProvider,
-    DekCache dekCache,
+    IDekCache dekCache,
     Action<TimeSpan>? onExternalKvOperationLatency = null,
     Action<TimeSpan>? onCachedKvOperationLatency = null
 ) : IParquetReader
@@ -30,17 +30,11 @@ public class ParquetReader(
     /// <see cref="IKeyVaultProvider"/>. Returns a Stream containing the recreated
     /// parquet content (positioned at 0).
     /// </summary>
-    /// <remarks>
-    /// Columns are processed one at a time. If decrypting a specific column fails,
-    /// behaviour is controlled by <see cref="ColumnDecryptionFailureBehavior"/>.
-    /// </remarks>
     public Task<MemoryStream> ReadParquetAsync(Stream input) =>
         Task.Run(() => ReadParquetInternal(input));
 
     private MemoryStream ReadParquetInternal(Stream input)
     {
-        // Build decryption properties - the KeyRetriever will call IKeyVaultProvider
-        // to decrypt DEKs stored in parquet key metadata, with caching to avoid repeated calls
         using var decryptionProperties = Cryptography.BuildDecryptionProperties(
             keyVaultProvider,
             dekCache,

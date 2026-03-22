@@ -12,35 +12,20 @@ public class CacheSettings
     /// <summary>
     /// Provider for the DEK (Data Encryption Key) cache.
     /// "Local" (default) — in-memory, single-node only.
-    /// "Redis" — shared Redis instance, required for multi-node deployments.
     /// </summary>
     public string DekCacheProvider { get; set; } = "Local";
 
     /// <summary>
-    /// Maximum in-memory DEK entries for the Local provider (default 2500).
+    /// Maximum in-memory DEK entries (default 2500).
     /// </summary>
     public int DekCacheCapacity { get; set; } = 2500;
 
     /// <summary>
-    /// TTL in seconds for cached DEKs (both Local and Redis providers).
+    /// TTL in seconds for cached DEKs.
     /// 0 means no expiry until RBAC TTLs are wired in.
     /// TODO (RBAC): This will be superseded by per-entry TTLs derived from the caller's role.
     /// </summary>
     public int DekTtlSeconds { get; set; } = 0;
-
-    // -----------------------------------------------------------------------
-    // Redis provider settings (used when DekCacheProvider = "Redis")
-    // -----------------------------------------------------------------------
-
-    /// <summary>
-    /// Redis connection string (e.g. "localhost:6379"). Required when DekCacheProvider is "Redis".
-    /// </summary>
-    public string RedisConnectionString { get; set; } = "localhost:6379";
-
-    /// <summary>
-    /// Key prefix for all Redis entries to avoid collisions. Defaults to "osws".
-    /// </summary>
-    public string RedisKeyPrefix { get; set; } = "osws";
 
     // -----------------------------------------------------------------------
     // Encrypted parquet file cache (always local disk — not Redis)

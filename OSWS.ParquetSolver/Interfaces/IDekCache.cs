@@ -2,8 +2,7 @@ namespace OSWS.ParquetSolver.Interfaces;
 
 /// <summary>
 /// Abstraction over the Data Encryption Key (DEK) cache.
-/// Implementations: <see cref="Helpers.DekCache"/> (in-memory with TTL) and
-/// <see cref="Helpers.RedisDekCache"/> (Redis with TTL).
+/// Implementation: <see cref="Helpers.DekCache"/> (in-memory with TTL).
 /// </summary>
 /// <remarks>
 /// TODO (RBAC): Once RBAC is implemented, TTL must be determined per-entry based on the

@@ -230,7 +230,7 @@ public class Measurement2WarmDekColumnSelectBenchmark : ScenarioMeasurementBench
                         _smallRows,
                         CancellationToken.None
                     );
-                    _smallEncrypted = await _parquetWriter!.WriteParquetAsync(unenc, "default");
+                    (_smallEncrypted, _) = await _parquetWriter!.WriteParquetAsync(unenc, "default");
                     _smallEncryptedKey = await S3BenchmarkHelper.UploadAsync(
                         _s3Client!,
                         _bucketName!,
@@ -250,7 +250,7 @@ public class Measurement2WarmDekColumnSelectBenchmark : ScenarioMeasurementBench
                         _wideRows,
                         CancellationToken.None
                     );
-                    _wideEncrypted = await _parquetWriter!.WriteParquetAsync(unenc, "default");
+                    (_wideEncrypted, _) = await _parquetWriter!.WriteParquetAsync(unenc, "default");
                     _wideEncryptedKey = await S3BenchmarkHelper.UploadAsync(
                         _s3Client!,
                         _bucketName!,
@@ -270,7 +270,7 @@ public class Measurement2WarmDekColumnSelectBenchmark : ScenarioMeasurementBench
                         _deepRows,
                         CancellationToken.None
                     );
-                    _deepEncrypted = await _parquetWriter!.WriteParquetAsync(unenc, "default");
+                    (_deepEncrypted, _) = await _parquetWriter!.WriteParquetAsync(unenc, "default");
                     _deepEncryptedKey = await S3BenchmarkHelper.UploadAsync(
                         _s3Client!,
                         _bucketName!,

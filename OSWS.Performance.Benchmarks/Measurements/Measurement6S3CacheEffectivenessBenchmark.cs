@@ -73,7 +73,7 @@ public class Measurement6S3CacheEffectivenessBenchmark
         );
 
         Console.WriteLine("   Encrypting dataset...");
-        var encrypted = await _parquetWriter.WriteParquetAsync(unencrypted, "default");
+        var (encrypted, _) = await _parquetWriter.WriteParquetAsync(unencrypted, "default");
 
         // Upload to S3
         Console.WriteLine("   Uploading encrypted file to S3...");

@@ -1,15 +1,24 @@
+using System.Security.Claims;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Microsoft.EntityFrameworkCore;
+using OSWS.KeyManager.Persistence;
 using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Interfaces;
+using OSWS.WebApi.Services;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFileCache fileCache)
-    : IS3Get
+public class S3Get(
+    IAmazonS3 s3Client,
+    IParquetReader parquetReader,
+    EncryptedFileCache fileCache,
+    CurrentUser currentUser,
+    OswsContext db
+) : IS3Get
 {
     public async Task<IResult> GetObject(
         string bucket,
@@ -22,6 +31,10 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFi
         CancellationToken cancellationToken = default
     )
     {
+        var user = await currentUser.ResolveAsync(cancellationToken);
+        if (user is null)
+            return Results.Unauthorized();
+
         if (string.IsNullOrEmpty(bucket))
         {
             httpRequest.HttpContext.Response.StatusCode = 400;
@@ -103,10 +116,27 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFi
         {
             try
             {
-                outputStream = await parquetReader.ReadParquetAsync(encryptedStream);
+                // Resolve which columns the user's roles are permitted to decrypt
+                var roleIds = user.Roles.Select(r => r.Id).ToList();
+                var allowedColumns = await db
+                    .Permissions.Where(p => roleIds.Contains(p.RoleId))
+                    .Select(p => p.Column.Name)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
+                var allowedColumnSet = new HashSet<string>(allowedColumns);
+
+                Console.WriteLine(
+                    $"[OSWS] Permission check for user {user.Id}: roles=[{string.Join(",", roleIds)}], allowedColumns=[{string.Join(",", allowedColumnSet)}]"
+                );
+
+                outputStream = await parquetReader.ReadParquetAsync(
+                    encryptedStream,
+                    allowedColumnSet
+                );
             }
             catch (Exception ex)
             {
+                Console.WriteLine($"[OSWS] Parquet decryption/permission error: {ex}");
                 httpRequest.HttpContext.Response.StatusCode = 500;
                 return Results.Text(
                     ParamValidation.CreateErrorJson(
@@ -145,9 +175,29 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFi
             contentLength = buffered.Length;
         }
 
-        var responseContentType = string.IsNullOrWhiteSpace(resp?.Headers?.ContentType)
-            ? "application/octet-stream"
-            : resp.Headers.ContentType;
+        GetObjectMetadataResponse? metadataResp = null;
+        if (resp == null)
+        {
+            try
+            {
+                metadataResp = await s3Client
+                    .GetObjectMetadataAsync(
+                        new GetObjectMetadataRequest { BucketName = bucket, Key = key },
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
+            }
+            catch (AmazonS3Exception e)
+            {
+                return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
+            }
+        }
+
+        var responseContentType =
+            !string.IsNullOrWhiteSpace(resp?.Headers?.ContentType) ? resp.Headers.ContentType
+            : !string.IsNullOrWhiteSpace(metadataResp?.Headers?.ContentType)
+                ? metadataResp.Headers.ContentType
+            : "application/octet-stream";
 
         // If a range was requested, compute bounds and stream only that range using StreamRangeHelper
         if (rangeSpec.IsRangeRequested)
@@ -163,6 +213,15 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFi
             {
                 await HttpHeaderHelper.ForwardS3ETag(resp, httpResponse);
                 await HttpHeaderHelper.ForwardS3LastModified(resp, httpResponse);
+            }
+            else if (metadataResp != null)
+            {
+                if (!string.IsNullOrEmpty(metadataResp.ETag))
+                    httpResponse.Headers.ETag = metadataResp.ETag;
+                if (metadataResp.LastModified != null)
+                    httpResponse.Headers.LastModified = metadataResp
+                        .LastModified.GetValueOrDefault()
+                        .ToString("R");
             }
             await HttpHeaderHelper.ForwardS3ContentRelatedHeaders(
                 httpResponse,
@@ -195,6 +254,15 @@ public class S3Get(IAmazonS3 s3Client, IParquetReader parquetReader, EncryptedFi
                 httpResponse.Headers.ETag = resp.ETag;
             if (resp.LastModified != null)
                 httpResponse.Headers.LastModified = resp
+                    .LastModified.GetValueOrDefault()
+                    .ToString("R");
+        }
+        else if (metadataResp != null)
+        {
+            if (!string.IsNullOrEmpty(metadataResp.ETag))
+                httpResponse.Headers.ETag = metadataResp.ETag;
+            if (metadataResp.LastModified != null)
+                httpResponse.Headers.LastModified = metadataResp
                     .LastModified.GetValueOrDefault()
                     .ToString("R");
         }

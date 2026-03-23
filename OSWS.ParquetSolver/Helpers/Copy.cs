@@ -13,13 +13,15 @@ public static class Copy
     /// <param name="numRowGroups"></param>
     /// <param name="failureBehavior"></param>
     /// <param name="onColumnDecryptionError"></param>
+    /// <param name="allowedColumns">When non-null, only columns whose names are in this set will be decrypted; all others get dummy values.</param>
     public static void CopyRowGroups(
         ParquetFileWriter parquetFileWriter,
         ParquetFileReader parquetFileReader,
         int numColumns,
         int numRowGroups,
         ColumnDecryptionFailureBehavior failureBehavior = ColumnDecryptionFailureBehavior.Throw,
-        Action<string, Exception>? onColumnDecryptionError = null
+        Action<string, Exception>? onColumnDecryptionError = null,
+        ISet<string>? allowedColumns = null
     )
     {
         var schema = parquetFileReader.FileMetaData.Schema;
@@ -32,10 +34,21 @@ public static class Copy
 
             for (var col = 0; col < numColumns; col++)
             {
+                var columnDescriptor = schema.Column(col);
+
+                // If allowedColumns is specified and this column is not permitted,
+                // skip decryption and write dummy values directly.
+                if (allowedColumns != null && !allowedColumns.Contains(columnDescriptor.Name))
+                {
+                    using var colWriter = rowGroupWriter.NextColumn();
+                    WriteDummyColumn(colWriter, columnDescriptor, numRows);
+                    continue;
+                }
+
                 CopyColumnWithFallback(
                     rowGroupReader,
                     rowGroupWriter,
-                    schema.Column(col),
+                    columnDescriptor,
                     col,
                     numRows,
                     failureBehavior,
@@ -371,21 +384,17 @@ public static class Copy
         if (numRows <= 0)
             return;
 
+        var values = new T[numRows];
+        var defLevels = new short[numRows];
+        var repLevels = new short[numRows];
+
         if (columnDescriptor.MaxDefinitionLevel == 0)
         {
-            var values = new T[numRows];
             typedWriter.WriteBatch(values.AsSpan());
             return;
         }
 
-        var defLevels = new short[numRows];
-        var repLevels = new short[numRows];
-        typedWriter.WriteBatch(
-            numRows,
-            defLevels.AsSpan(),
-            repLevels.AsSpan(),
-            ReadOnlySpan<T>.Empty
-        );
+        typedWriter.WriteBatch(numRows, defLevels.AsSpan(), repLevels.AsSpan(), values.AsSpan());
     }
 
     private static void WriteDummyByteArrayColumn(
@@ -401,21 +410,17 @@ public static class Copy
         if (numRows <= 0)
             return;
 
+        var values = new ByteArray[numRows];
+        var defLevels = new short[numRows];
+        var repLevels = new short[numRows];
+
         if (columnDescriptor.MaxDefinitionLevel == 0)
         {
-            var values = new ByteArray[numRows];
             typedWriter.WriteBatch(values.AsSpan());
             return;
         }
 
-        var defLevels = new short[numRows];
-        var repLevels = new short[numRows];
-        typedWriter.WriteBatch(
-            numRows,
-            defLevels.AsSpan(),
-            repLevels.AsSpan(),
-            ReadOnlySpan<ByteArray>.Empty
-        );
+        typedWriter.WriteBatch(numRows, defLevels.AsSpan(), repLevels.AsSpan(), values.AsSpan());
     }
 
     /// <summary>
@@ -438,20 +443,16 @@ public static class Copy
         if (numRows <= 0)
             return;
 
+        var values = new FixedLenByteArray[numRows];
+        var defLevels = new short[numRows];
+        var repLevels = new short[numRows];
+
         if (columnDescriptor.MaxDefinitionLevel == 0)
         {
-            var values = new FixedLenByteArray[numRows];
             typedWriter.WriteBatch(values.AsSpan());
             return;
         }
 
-        var defLevels = new short[numRows];
-        var repLevels = new short[numRows];
-        typedWriter.WriteBatch(
-            numRows,
-            defLevels.AsSpan(),
-            repLevels.AsSpan(),
-            ReadOnlySpan<FixedLenByteArray>.Empty
-        );
+        typedWriter.WriteBatch(numRows, defLevels.AsSpan(), repLevels.AsSpan(), values.AsSpan());
     }
 }

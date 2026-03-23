@@ -45,9 +45,10 @@ public class Measurement3FullDecryptionThroughputBenchmark : ScenarioMeasurement
             10000,
             CancellationToken.None
         );
-        await using (var temp = await _parquetWriter.WriteParquetAsync(unencrypted, "default"))
+        var (tempStream, _) = await _parquetWriter.WriteParquetAsync(unencrypted, "default");
+        await using (tempStream)
         {
-            _wideEncryptedBytes = ((MemoryStream)temp).ToArray();
+            _wideEncryptedBytes = ((MemoryStream)tempStream).ToArray();
         }
     }
 

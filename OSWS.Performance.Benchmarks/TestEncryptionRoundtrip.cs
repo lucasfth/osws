@@ -33,7 +33,7 @@ public class TestEncryptionRoundtrip
         // Encrypt
         Console.WriteLine("2. Encrypting...");
         var writer = new ParquetWriter(keyVaultProvider, "Internal");
-        var encrypted = await writer.WriteParquetAsync(unencrypted, "default");
+        var (encrypted, _) = await writer.WriteParquetAsync(unencrypted, "default");
         Console.WriteLine($"   Encrypted size: {encrypted.Length} bytes");
 
         // Decrypt (first time - should populate cache)

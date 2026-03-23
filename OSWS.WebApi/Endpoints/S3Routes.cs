@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using OSWS.Models.DTOs;
 using OSWS.WebApi.Interfaces;
+using OSWS.WebApi.Services;
 
 namespace OSWS.WebApi.Endpoints;
 
@@ -11,11 +13,14 @@ public static class S3Routes
 
     public static IEndpointRouteBuilder MapS3Routes(this IEndpointRouteBuilder app)
     {
+        var s3 = app.MapGroup(prefix: "/s3").RequireAuthorization("SigV4Policy");
+
         // S3 GET - path-style routing for S3 compatibility: /{bucket}/{*key} and /{bucket}
-        app.MapGet(
+        s3.MapGet(
             "/{bucket}/{key}",
             async (
                 [FromServices] IS3Get s3Get,
+                [FromServices] CurrentUser currentUser,
                 string bucket,
                 string key,
                 [AsParameters] Params prms,
@@ -38,7 +43,7 @@ public static class S3Routes
         );
 
         // S3 PUT - path-style routing for S3 compatibility: /{bucket}/{*key}
-        app.MapPut(
+        s3.MapPut(
             "/{bucket}/{*key}",
             async (
                 [FromServices] IS3Put s3Put,
@@ -62,7 +67,7 @@ public static class S3Routes
         );
 
         // S3 LIST BUCKETS - path-style routing for S3 compatibility: /
-        app.MapGet(
+        s3.MapGet(
             "/",
             async (
                 [FromServices] IS3List s3List,
@@ -80,7 +85,7 @@ public static class S3Routes
         );
 
         // S3 LIST OBJECTS - path-style routing for S3 compatibility: /{bucket}
-        app.MapGet(
+        s3.MapGet(
             "/{bucket}",
             async (
                 [FromServices] IS3List s3List,
@@ -100,7 +105,7 @@ public static class S3Routes
         );
 
         // S3 HEAD - path-style routing for S3 compatibility: /{bucket}/{key}
-        app.MapMethods(
+        s3.MapMethods(
             "/{bucket}/{key}",
             new[] { "HEAD" },
             async (

@@ -17,9 +17,12 @@ public class ParquetReader(
     Action<TimeSpan>? onCachedKvOperationLatency = null
 ) : IParquetReader
 {
-    private readonly ILogger? _logger = logger;
-    private readonly EncryptionSettings _encryptionSettings = encryptionSettings ?? new EncryptionSettings();
-    private readonly TimingLogger _timingLogger = new(logger, encryptionSettings?.EnableOperationLogging ?? false);
+    private readonly EncryptionSettings _encryptionSettings =
+        encryptionSettings ?? new EncryptionSettings();
+    private readonly TimingLogger _timingLogger = new(
+        logger,
+        encryptionSettings?.EnableOperationLogging ?? false
+    );
 
     /// <summary>
     /// Controls behavior when a column cannot be decrypted.
@@ -38,23 +41,31 @@ public class ParquetReader(
     /// <see cref="IKeyVaultProvider"/>. Returns a Stream containing the recreated
     /// parquet content (positioned at 0).
     /// </summary>
-    public Task<MemoryStream> ReadParquetAsync(Stream input) =>
-        Task.Run(() => ReadParquetInternal(input));
+    /// <remarks>
+    /// Columns are processed one at a time. If decrypting a specific column fails,
+    /// behaviour is controlled by <see cref="ColumnDecryptionFailureBehavior"/>.
+    /// </remarks>
+    public Task<MemoryStream> ReadParquetAsync(Stream input, ISet<string>? allowedColumns = null) =>
+        Task.Run(() => ReadParquetInternal(input, allowedColumns));
 
-    private MemoryStream ReadParquetInternal(Stream input)
+    private MemoryStream ReadParquetInternal(Stream input, ISet<string>? allowedColumns)
     {
         // If encryption is disabled, just pass through the input stream
         if (_encryptionSettings.DisableEncryption)
         {
-            _logger?.LogInformation("[ParquetReader] Encryption disabled, reading plaintext parquet");
+            logger?.LogInformation(
+                "[ParquetReader] Encryption disabled, reading plaintext parquet"
+            );
             var plainTextStream = new MemoryStream();
             input.CopyTo(plainTextStream);
             plainTextStream.Position = 0;
             return plainTextStream;
         }
 
-        _logger?.LogInformation("[ParquetReader] Decrypting parquet file");
+        logger?.LogInformation("[ParquetReader] Decrypting parquet file");
 
+        // Build decryption properties - the KeyRetriever will call IKeyVaultProvider
+        // to decrypt DEKs stored in parquet key metadata, with caching to avoid repeated calls
         using var decryptionProperties = Cryptography.BuildDecryptionProperties(
             keyVaultProvider,
             dekCache,
@@ -90,7 +101,8 @@ public class ParquetReader(
             numColumns,
             numRowGroups,
             ColumnDecryptionFailureBehavior,
-            OnColumnDecryptionError
+            OnColumnDecryptionError,
+            allowedColumns
         );
 
         writer.Close();

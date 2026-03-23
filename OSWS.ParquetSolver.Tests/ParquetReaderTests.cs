@@ -20,10 +20,11 @@ public class ParquetReaderTests
         var keyVaultProvider = new InMemoryKeyVaultProvider();
         var parquetWriter = new ParquetWriter(keyVaultProvider, providerType: "InMemory");
 
-        await using var encrypted = await parquetWriter.WriteParquetAsync(
+        var (encResult, _) = await parquetWriter.WriteParquetAsync(
             plaintext,
             role: "test-role"
         );
+        await using var encrypted = encResult;
 
         var keys = await keyVaultProvider.ListKeysAsync();
 
@@ -47,10 +48,11 @@ public class ParquetReaderTests
         var keyVaultProvider = new InMemoryKeyVaultProvider();
         var parquetWriter = new ParquetWriter(keyVaultProvider, providerType: "InMemory");
 
-        await using var encrypted = await parquetWriter.WriteParquetAsync(
+        var (encResult2, _) = await parquetWriter.WriteParquetAsync(
             plaintext,
             role: "test-role"
         );
+        await using var encrypted = encResult2;
         encrypted.Position = 0;
 
         using var inputRaf = new ManagedRandomAccessFile(encrypted, leaveOpen: true);
@@ -72,10 +74,11 @@ public class ParquetReaderTests
             providerType: KeyManager.Providers.InternalKeyVaultProvider.ProviderTypeName
         );
 
-        await using var encrypted = await parquetWriter.WriteParquetAsync(
+        var (encResult3, _) = await parquetWriter.WriteParquetAsync(
             plaintext,
             role: "test-role"
         );
+        await using var encrypted = encResult3;
         encrypted.Position = 0;
 
         var parquetReader = new ParquetReader(keyVaultProvider, new DekCache());
@@ -99,10 +102,11 @@ public class ParquetReaderTests
             providerType: KeyManager.Providers.InternalKeyVaultProvider.ProviderTypeName
         );
 
-        await using var encrypted = await parquetWriter.WriteParquetAsync(
+        var (encResult4, _) = await parquetWriter.WriteParquetAsync(
             plaintext,
             role: "test-role"
         );
+        await using var encrypted = encResult4;
         encrypted.Position = 0;
 
         var parquetReader = new ParquetReader(keyVaultProvider, new DekCache());
@@ -127,14 +131,16 @@ public class ParquetReaderTests
         using var firstPlain = await GenerateParquetAsync(columns: 5, rows: 250);
         using var secondPlain = await GenerateParquetAsync(columns: 5, rows: 300);
 
-        await using var firstEncrypted = await parquetWriter.WriteParquetAsync(
+        var (firstEncResult, _) = await parquetWriter.WriteParquetAsync(
             firstPlain,
             role: "test-role"
         );
-        await using var secondEncrypted = await parquetWriter.WriteParquetAsync(
+        await using var firstEncrypted = firstEncResult;
+        var (secondEncResult, _) = await parquetWriter.WriteParquetAsync(
             secondPlain,
             role: "test-role"
         );
+        await using var secondEncrypted = secondEncResult;
 
         firstEncrypted.Position = 0;
         var firstReader = new ParquetReader(keyVaultProvider, dekCache);
@@ -158,14 +164,14 @@ public class ParquetReaderTests
         );
 
         using var smallPlain = await GenerateParquetAsync(columns: 5, rows: 5000);
-        var smallEncrypted = await parquetWriter.WriteParquetAsync(smallPlain, role: "test-role");
+        var (smallEncrypted, _) = await parquetWriter.WriteParquetAsync(smallPlain, role: "test-role");
 
         // generate a large "wide" dataset similar to benchmark dimensions
         using var widePlain = await GenerateParquetAsync(columns: 2000, rows: 10000);
-        var wideEncrypted = await parquetWriter.WriteParquetAsync(widePlain, role: "test-role");
+        var (wideEncrypted, _) = await parquetWriter.WriteParquetAsync(widePlain, role: "test-role");
 
         using var deepPlain = await GenerateParquetAsync(columns: 10, rows: 1000000);
-        var deepEncrypted = await parquetWriter.WriteParquetAsync(deepPlain, role: "test-role");
+        var (deepEncrypted, _) = await parquetWriter.WriteParquetAsync(deepPlain, role: "test-role");
 
         // simulate potential GC/LOH compaction that could move the underlying
         // buffer of the smallEncrypted MemoryStream. ParquetSharp's
@@ -203,10 +209,11 @@ public class ParquetReaderTests
         var keyVaultProvider = new InMemoryKeyVaultProvider();
         var parquetWriter = new ParquetWriter(keyVaultProvider, providerType: "InMemory");
 
-        await using var encrypted = await parquetWriter.WriteParquetAsync(
+        var (encResult5, _) = await parquetWriter.WriteParquetAsync(
             plaintext,
             role: "test-role"
         );
+        await using var encrypted = encResult5;
         encrypted.Position = 0;
 
         var fileKey = Assert.Single(await keyVaultProvider.ListKeysAsync());

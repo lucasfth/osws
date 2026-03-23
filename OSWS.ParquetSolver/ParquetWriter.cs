@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using OSWS.Common.Configuration;
+using OSWS.Models.DTOs;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
@@ -18,11 +19,15 @@ public class ParquetWriter(
     private readonly IKeyVaultProvider _keyVaultProvider =
         keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
     private readonly ILogger? _logger = logger;
-    private readonly EncryptionSettings _encryptionSettings = encryptionSettings ?? new EncryptionSettings();
-    private readonly TimingLogger _timingLogger = new(logger, encryptionSettings?.EnableOperationLogging ?? false);
+    private readonly EncryptionSettings _encryptionSettings =
+        encryptionSettings ?? new EncryptionSettings();
+    private readonly TimingLogger _timingLogger = new(
+        logger,
+        encryptionSettings?.EnableOperationLogging ?? false
+    );
 
     /// <summary>
-    /// Read an unencrypted parquet file and write an encrypted version (or plaintext if encryption is disabled).
+    /// Read an unencrypted parquet file and write an encrypted version.
     /// Encrypts specified columns (or all columns if null) using the configured
     /// <see cref="IKeyVaultProvider"/> which holds the encryption key.
     /// </summary>
@@ -31,7 +36,7 @@ public class ParquetWriter(
     /// <param name="columnsToEncrypt">Column names to encrypt, or null for all columns.</param>
     /// <returns>A Stream containing the encrypted parquet content (positioned at 0).</returns>
     /// <remarks>ParquetSharp operates synchronously via native C++ calls, so we wrap in Task.Run to avoid blocking.</remarks>
-    public Task<Stream> WriteParquetAsync(
+    public Task<(Stream Stream, EncryptionResult Metadata)> WriteParquetAsync(
         Stream input,
         string role,
         string[]? columnsToEncrypt = null
@@ -40,20 +45,37 @@ public class ParquetWriter(
         return Task.Run(() => WriteParquetInternal(input, role, columnsToEncrypt));
     }
 
-    private Stream WriteParquetInternal(Stream input, string role, string[]? columnsToEncrypt)
+    private (Stream Stream, EncryptionResult Metadata) WriteParquetInternal(
+        Stream input,
+        string role,
+        string[]? columnsToEncrypt
+    )
     {
         // If encryption is disabled, just pass through the input stream
         if (_encryptionSettings.DisableEncryption)
         {
-            _logger?.LogInformation("[ParquetWriter] Encryption disabled, writing plaintext parquet");
+            _logger?.LogInformation(
+                "[ParquetWriter] Encryption disabled, writing plaintext parquet"
+            );
             var plainTextStream = new MemoryStream();
             input.CopyTo(plainTextStream);
             plainTextStream.Position = 0;
-            return plainTextStream;
+            return (
+                plainTextStream,
+                new EncryptionResult
+                {
+                    FileKeyVaultId = null,
+                    FileKeyName = null,
+                    Columns = null,
+                }
+            );
         }
 
-        _logger?.LogInformation("[ParquetWriter] Encrypting parquet with role: {Role}, columns: {ColumnCount}",
-            role, columnsToEncrypt?.Length.ToString() ?? "all");
+        _logger?.LogInformation(
+            "[ParquetWriter] Encrypting parquet with role: {Role}, columns: {ColumnCount}",
+            role,
+            columnsToEncrypt?.Length.ToString() ?? "all"
+        );
 
         using var inputRaf = new ManagedRandomAccessFile(input, leaveOpen: true);
         using var reader = new ParquetFileReader(inputRaf);
@@ -65,7 +87,7 @@ public class ParquetWriter(
         var keyValueMetadata = fileMetaData.KeyValueMetadata;
 
         // Build encryption properties via the key vault provider
-        var encryptionProperties = Cryptography.BuildEncryptionProperties(
+        var (encryptionProperties, encryptionMetadata) = Cryptography.BuildEncryptionProperties(
             schema,
             columnsToEncrypt,
             _keyVaultProvider,
@@ -97,6 +119,6 @@ public class ParquetWriter(
         reader.Close();
 
         outputStream.Position = 0;
-        return outputStream;
+        return (outputStream, encryptionMetadata);
     }
 }

@@ -1,16 +1,26 @@
+using System.Security.Claims;
 using Amazon.S3;
 using Amazon.S3.Model;
+using Microsoft.EntityFrameworkCore;
+using OSWS.KeyManager.Persistence;
 using OSWS.Library;
 using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
+using OSWS.Models.Entities;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Interfaces;
+using OSWS.WebApi.Services;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter, EncryptedFileCache fileCache)
-    : IS3Put
+public class S3Put(
+    IAmazonS3 s3Client,
+    IParquetWriter parquetWriter,
+    EncryptedFileCache fileCache,
+    CurrentUser currentUser,
+    OswsContext db
+) : IS3Put
 {
     public async Task<IResult> PutObject(
         string bucket,
@@ -22,6 +32,10 @@ public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter, EncryptedFi
         CancellationToken cancellationToken = default
     )
     {
+        var user = await currentUser.ResolveAsync(cancellationToken);
+        if (user is null)
+            return Results.Unauthorized();
+
         if (string.IsNullOrEmpty(bucket))
         {
             httpRequest.HttpContext.Response.StatusCode = 400;
@@ -53,15 +67,62 @@ public class S3Put(IAmazonS3 s3Client, IParquetWriter parquetWriter, EncryptedFi
             MemoryStream? seekableStream = null;
             try
             {
-                // Role determines which key in the vault encrypts the DEK
-                var role = httpRequest.Headers["x-osws-role"].FirstOrDefault() ?? "default";
+                // for now just take the first role, need to figure out how to do this nicely
+                var role = user.Roles.FirstOrDefault();
+                if (role is null)
+                {
+                    httpRequest.HttpContext.Response.StatusCode = 403;
+                    return Results.Text(
+                        ParamValidation.CreateErrorJson("User has no roles assigned"),
+                        "application/json"
+                    );
+                }
 
                 // Copy to MemoryStream to make it seekable for Parquet library
                 seekableStream = new MemoryStream();
                 await httpRequest.Body.CopyToAsync(seekableStream, cancellationToken);
                 seekableStream.Position = 0;
 
-                var uploadStream = await parquetWriter.WriteParquetAsync(seekableStream, role);
+                var (uploadStream, encryptionResult) = await parquetWriter.WriteParquetAsync(
+                    seekableStream,
+                    role.Name
+                );
+
+                // Persist column, key, and permission records
+                foreach (var colInfo in encryptionResult.Columns)
+                {
+                    var column = await db.Columns.FirstOrDefaultAsync(
+                        c => c.Name == colInfo.ColumnName,
+                        cancellationToken
+                    );
+
+                    if (column is null)
+                    {
+                        column = new Column { Name = colInfo.ColumnName };
+                        db.Columns.Add(column);
+                    }
+
+                    db.Keys.Add(
+                        new Key
+                        {
+                            Name = colInfo.KeyName,
+                            KeyVaultId = colInfo.KeyVaultId,
+                            Column = column,
+                        }
+                    );
+
+                    var permissionExists = await db.Permissions.AnyAsync(
+                        p => p.RoleId == role.Id && p.Column == column,
+                        cancellationToken
+                    );
+
+                    if (!permissionExists)
+                    {
+                        db.Permissions.Add(new Permission { Role = role, Column = column });
+                    }
+                }
+
+                await db.SaveChangesAsync(cancellationToken);
 
                 // Ensure stream is at position 0 and set content length
                 uploadStream.Position = 0;

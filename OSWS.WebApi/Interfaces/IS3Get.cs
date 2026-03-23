@@ -1,5 +1,7 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using OSWS.Models.DTOs;
+using OSWS.WebApi.Services;
 
 namespace OSWS.WebApi.Interfaces;
 

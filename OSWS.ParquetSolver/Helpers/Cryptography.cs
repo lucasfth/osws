@@ -18,7 +18,7 @@ public static class Cryptography
     /// Each encrypted column gets its own ephemeral AES-128 DEK, and all column DEKs for the file
     /// are wrapped by a single file-level KEK created through the vault provider.
     /// </summary>
-    public static FileEncryptionProperties BuildEncryptionProperties(
+    public static (FileEncryptionProperties Properties, EncryptionResult Metadata) BuildEncryptionProperties(
         SchemaDescriptor schema,
         string[]? columnsToEncrypt,
         IKeyVaultProvider keyVaultProvider,
@@ -54,6 +54,7 @@ public static class Cryptography
         // Each encrypted column gets its own DEK, but every DEK in the file is wrapped by one KEK.
         var numColumns = schema.NumColumns;
         var columnProperties = new ColumnEncryptionProperties[numColumns];
+        var encryptedColumnInfos = new List<EncryptedColumnInfo>();
 
         for (var i = 0; i < numColumns; i++)
         {
@@ -90,6 +91,13 @@ public static class Cryptography
             colBuilder.Key(columnDek);
             colBuilder.KeyMetadata(columnMetadata.Serialize());
             columnProperties[i] = colBuilder.Build();
+
+            encryptedColumnInfos.Add(new EncryptedColumnInfo
+            {
+                ColumnName = colName,
+                KeyVaultId = fileKeyId!,
+                KeyName = fileKeyName!,
+            });
         }
 
         var encryptedCols = Array.FindAll(columnProperties, p => p != null!);
@@ -98,7 +106,14 @@ public static class Cryptography
             builder.EncryptedColumns(encryptedCols!);
         }
 
-        return builder.Build();
+        var metadata = new EncryptionResult
+        {
+            FileKeyVaultId = fileKeyId,
+            FileKeyName = fileKeyName,
+            Columns = encryptedColumnInfos,
+        };
+
+        return (builder.Build(), metadata);
     }
 
     /// <summary>

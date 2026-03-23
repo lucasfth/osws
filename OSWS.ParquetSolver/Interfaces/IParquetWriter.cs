@@ -1,3 +1,5 @@
+using OSWS.Models.DTOs;
+
 namespace OSWS.ParquetSolver.Interfaces;
 
 public interface IParquetWriter
@@ -11,5 +13,6 @@ public interface IParquetWriter
     /// <param name="input">Stream containing plaintext parquet data.</param>
     /// <param name="role">The role to associate encryption keys with.</param>
     /// <param name="columnsToEncrypt">Column names to encrypt, or null for all columns.</param>
-    Task<Stream> WriteParquetAsync(Stream input, string role, string[]? columnsToEncrypt = null);
+    /// <returns>The encrypted stream and metadata about the encryption keys used.</returns>
+    Task<(Stream Stream, EncryptionResult Metadata)> WriteParquetAsync(Stream input, string role, string[]? columnsToEncrypt = null);
 }

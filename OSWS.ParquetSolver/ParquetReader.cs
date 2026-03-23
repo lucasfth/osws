@@ -34,10 +34,10 @@ public class ParquetReader(
     /// Columns are processed one at a time. If decrypting a specific column fails,
     /// behaviour is controlled by <see cref="ColumnDecryptionFailureBehavior"/>.
     /// </remarks>
-    public Task<MemoryStream> ReadParquetAsync(Stream input) =>
-        Task.Run(() => ReadParquetInternal(input));
+    public Task<MemoryStream> ReadParquetAsync(Stream input, ISet<string>? allowedColumns = null) =>
+        Task.Run(() => ReadParquetInternal(input, allowedColumns));
 
-    private MemoryStream ReadParquetInternal(Stream input)
+    private MemoryStream ReadParquetInternal(Stream input, ISet<string>? allowedColumns)
     {
         // Build decryption properties - the KeyRetriever will call IKeyVaultProvider
         // to decrypt DEKs stored in parquet key metadata, with caching to avoid repeated calls
@@ -76,7 +76,8 @@ public class ParquetReader(
             numColumns,
             numRowGroups,
             ColumnDecryptionFailureBehavior,
-            OnColumnDecryptionError
+            OnColumnDecryptionError,
+            allowedColumns
         );
 
         writer.Close();

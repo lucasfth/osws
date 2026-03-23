@@ -1,3 +1,4 @@
+using OSWS.Models.DTOs;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
@@ -22,7 +23,7 @@ public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerTy
     /// <param name="columnsToEncrypt">Column names to encrypt, or null for all columns.</param>
     /// <returns>A Stream containing the encrypted parquet content (positioned at 0).</returns>
     /// <remarks>ParquetSharp operates synchronously via native C++ calls, so we wrap in Task.Run to avoid blocking.</remarks>
-    public Task<Stream> WriteParquetAsync(
+    public Task<(Stream Stream, EncryptionResult Metadata)> WriteParquetAsync(
         Stream input,
         string role,
         string[]? columnsToEncrypt = null
@@ -31,7 +32,7 @@ public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerTy
         return Task.Run(() => WriteParquetInternal(input, role, columnsToEncrypt));
     }
 
-    private Stream WriteParquetInternal(Stream input, string role, string[]? columnsToEncrypt)
+    private (Stream Stream, EncryptionResult Metadata) WriteParquetInternal(Stream input, string role, string[]? columnsToEncrypt)
     {
         using var inputRaf = new ManagedRandomAccessFile(input, leaveOpen: true);
         using var reader = new ParquetFileReader(inputRaf);
@@ -43,7 +44,7 @@ public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerTy
         var keyValueMetadata = fileMetaData.KeyValueMetadata;
 
         // Build encryption properties via the key vault provider
-        var encryptionProperties = Cryptography.BuildEncryptionProperties(
+        var (encryptionProperties, encryptionMetadata) = Cryptography.BuildEncryptionProperties(
             schema,
             columnsToEncrypt,
             _keyVaultProvider,
@@ -74,6 +75,6 @@ public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerTy
         reader.Close();
 
         outputStream.Position = 0;
-        return outputStream;
+        return (outputStream, encryptionMetadata);
     }
 }

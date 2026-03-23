@@ -182,7 +182,7 @@ public static class S3BenchmarkHelper
             encryptionObj.SmallRows,
             CancellationToken.None
         );
-        encryptionObj.SmallEnc = await RetryWithBackoffAsync(
+        (encryptionObj.SmallEnc, _) = await RetryWithBackoffAsync(
             () => encryptionObj.ParquetWriter.WriteParquetAsync(smallUnenc, "default"),
             "Small dataset encryption"
         );
@@ -207,7 +207,7 @@ public static class S3BenchmarkHelper
             encryptionObj.WideRows,
             CancellationToken.None
         );
-        encryptionObj.WideEnc = await RetryWithBackoffAsync(
+        (encryptionObj.WideEnc, _) = await RetryWithBackoffAsync(
             () => encryptionObj.ParquetWriter.WriteParquetAsync(wideUnenc, "default"),
             "Wide dataset encryption"
         );
@@ -232,7 +232,7 @@ public static class S3BenchmarkHelper
             encryptionObj.DeepRows,
             CancellationToken.None
         );
-        encryptionObj.DeepEnc = await RetryWithBackoffAsync(
+        (encryptionObj.DeepEnc, _) = await RetryWithBackoffAsync(
             () => encryptionObj.ParquetWriter.WriteParquetAsync(deepUnenc, "default"),
             "Deep dataset encryption"
         );

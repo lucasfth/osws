@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OSWS.KeyManager.Persistence;
@@ -11,9 +12,11 @@ using OSWS.KeyManager.Persistence;
 namespace OSWS.KeyManager.Migrations
 {
     [DbContext(typeof(OswsContext))]
-    partial class OswsContextModelSnapshot : ModelSnapshot
+    [Migration("20260310134700_AddColumnAndKeysAndMore")]
+    partial class AddColumnAndKeysAndMore
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -100,6 +103,9 @@ namespace OSWS.KeyManager.Migrations
 
                     b.HasIndex("ColumnId");
 
+                    b.HasIndex("KeyVaultId")
+                        .IsUnique();
+
                     b.ToTable("Keys");
                 });
 
@@ -173,9 +179,6 @@ namespace OSWS.KeyManager.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("DefaultRoleId")
-                        .HasColumnType("integer");
-
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -190,8 +193,6 @@ namespace OSWS.KeyManager.Migrations
 
                     b.HasIndex("AccessKeyId")
                         .IsUnique();
-
-                    b.HasIndex("DefaultRoleId");
 
                     b.HasIndex("UserId");
 
@@ -280,17 +281,11 @@ namespace OSWS.KeyManager.Migrations
 
             modelBuilder.Entity("OSWS.Models.Entities.S3Credential", b =>
                 {
-                    b.HasOne("OSWS.Models.Entities.Role", "DefaultRole")
-                        .WithMany("S3Credentials")
-                        .HasForeignKey("DefaultRoleId");
-
                     b.HasOne("OSWS.Models.Entities.User", "User")
                         .WithMany("S3Credentials")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("DefaultRole");
 
                     b.Navigation("User");
                 });
@@ -307,8 +302,6 @@ namespace OSWS.KeyManager.Migrations
                     b.Navigation("Permissions");
 
                     b.Navigation("RoleAssignments");
-
-                    b.Navigation("S3Credentials");
                 });
 
             modelBuilder.Entity("OSWS.Models.Entities.User", b =>

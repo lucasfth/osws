@@ -81,9 +81,10 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
             smallRows,
             CancellationToken.None
         );
-        using (var temp = await _parquetWriter.WriteParquetAsync(smallUnencrypted, "default"))
+        var (smallTemp, _) = await _parquetWriter.WriteParquetAsync(smallUnencrypted, "default");
+        using (smallTemp)
         {
-            _smallEncryptedBytes = ((MemoryStream)temp).ToArray();
+            _smallEncryptedBytes = ((MemoryStream)smallTemp).ToArray();
         }
 
         var wideUnencrypted = await WideDatasetGenerator.GenerateAsync(
@@ -91,9 +92,10 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
             wideRows,
             CancellationToken.None
         );
-        using (var temp = await _parquetWriter.WriteParquetAsync(wideUnencrypted, "default"))
+        var (wideTemp, _) = await _parquetWriter.WriteParquetAsync(wideUnencrypted, "default");
+        using (wideTemp)
         {
-            _wideEncryptedBytes = ((MemoryStream)temp).ToArray();
+            _wideEncryptedBytes = ((MemoryStream)wideTemp).ToArray();
         }
 
         var deepUnencrypted = await DeepDatasetGenerator.GenerateAsync(
@@ -101,9 +103,10 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
             deepRows,
             CancellationToken.None
         );
-        using (var temp = await _parquetWriter.WriteParquetAsync(deepUnencrypted, "default"))
+        var (deepTemp, _) = await _parquetWriter.WriteParquetAsync(deepUnencrypted, "default");
+        using (deepTemp)
         {
-            _deepEncryptedBytes = ((MemoryStream)temp).ToArray();
+            _deepEncryptedBytes = ((MemoryStream)deepTemp).ToArray();
         }
 
         // Prepare distinct small files for stress test (one per role to create multiple cache entries)
@@ -114,8 +117,11 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
                 smallRows,
                 CancellationToken.None
             );
-            using var encrypted = await _parquetWriter.WriteParquetAsync(data, $"default-{i}");
-            _stressTestFilesBytes.Add(((MemoryStream)encrypted).ToArray());
+            var (encrypted, _) = await _parquetWriter.WriteParquetAsync(data, $"default-{i}");
+            using (encrypted)
+            {
+                _stressTestFilesBytes.Add(((MemoryStream)encrypted).ToArray());
+            }
         }
 
         // Warm up the warm fixture caches

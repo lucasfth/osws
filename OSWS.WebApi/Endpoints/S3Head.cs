@@ -1,13 +1,17 @@
 using Amazon.S3;
 using Amazon.S3.Model;
+using Microsoft.EntityFrameworkCore;
+using OSWS.KeyManager.Persistence;
 using OSWS.Library;
 using OSWS.Library.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Interfaces;
+using OSWS.WebApi.Services;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Head(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Head
+public class S3Head(IAmazonS3 s3Client, IParquetReader parquetReader, CurrentUser currentUser, OswsContext db)
+    : IS3Head
 {
     public async Task<IResult> HeadObject(
         string bucket,
@@ -35,6 +39,10 @@ public class S3Head(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Head
 
         if (isParquetFile)
         {
+            var user = await currentUser.ResolveAsync(cancellationToken);
+            if (user is null)
+                return Results.Unauthorized();
+
             using var resp = await s3Client
                 .GetObjectAsync(
                     new GetObjectRequest { BucketName = bucket, Key = key },
@@ -45,11 +53,19 @@ public class S3Head(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Head
             Stream outputStream = resp.ResponseStream;
             try
             {
+                var roleIds = user.Roles.Select(r => r.Id).ToList();
+                var allowedColumns = await db
+                    .Permissions.Where(p => roleIds.Contains(p.RoleId))
+                    .Select(p => p.Column.Name)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
+                var allowedColumnSet = new HashSet<string>(allowedColumns);
+
                 var seekableStream = new MemoryStream();
                 await resp.ResponseStream.CopyToAsync(seekableStream, cancellationToken);
                 seekableStream.Position = 0;
 
-                outputStream = await parquetReader.ReadParquetAsync(seekableStream);
+                outputStream = await parquetReader.ReadParquetAsync(seekableStream, allowedColumnSet);
             }
             catch (AmazonS3Exception e)
             {
@@ -68,6 +84,8 @@ public class S3Head(IAmazonS3 s3Client, IParquetReader parquetReader) : IS3Head
             httpResponse.ContentLength = outputStream.Length;
             if (!string.IsNullOrWhiteSpace(resp.Headers?.ContentType))
                 httpResponse.ContentType = resp.Headers.ContentType;
+            if (!string.IsNullOrEmpty(resp.ETag))
+                httpResponse.Headers.ETag = resp.ETag;
             if (resp.LastModified != null)
                 httpResponse.Headers.LastModified = resp
                     .LastModified.GetValueOrDefault()

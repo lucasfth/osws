@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using OSWS.Common.Configuration;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
@@ -9,10 +11,16 @@ namespace OSWS.ParquetSolver;
 public class ParquetReader(
     IKeyVaultProvider keyVaultProvider,
     IDekCache dekCache,
+    ILogger? logger = null,
+    EncryptionSettings? encryptionSettings = null,
     Action<TimeSpan>? onExternalKvOperationLatency = null,
     Action<TimeSpan>? onCachedKvOperationLatency = null
 ) : IParquetReader
 {
+    private readonly ILogger? _logger = logger;
+    private readonly EncryptionSettings _encryptionSettings = encryptionSettings ?? new EncryptionSettings();
+    private readonly TimingLogger _timingLogger = new(logger, encryptionSettings?.EnableOperationLogging ?? false);
+
     /// <summary>
     /// Controls behavior when a column cannot be decrypted.
     /// Defaults to writing dummy values for that column so the remaining columns can still be read.
@@ -35,6 +43,18 @@ public class ParquetReader(
 
     private MemoryStream ReadParquetInternal(Stream input)
     {
+        // If encryption is disabled, just pass through the input stream
+        if (_encryptionSettings.DisableEncryption)
+        {
+            _logger?.LogInformation("[ParquetReader] Encryption disabled, reading plaintext parquet");
+            var plainTextStream = new MemoryStream();
+            input.CopyTo(plainTextStream);
+            plainTextStream.Position = 0;
+            return plainTextStream;
+        }
+
+        _logger?.LogInformation("[ParquetReader] Decrypting parquet file");
+
         using var decryptionProperties = Cryptography.BuildDecryptionProperties(
             keyVaultProvider,
             dekCache,

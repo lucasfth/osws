@@ -50,8 +50,10 @@ public class EncryptedFileCache : IDisposable
     public bool TryGet(string cacheKey, out Stream? stream)
     {
         stream = null;
-        if (!_settings.EnableFileCache) return false;
-        if (!_entries.TryGetValue(cacheKey, out var entry)) return false;
+        if (!_settings.EnableFileCache)
+            return false;
+        if (!_entries.TryGetValue(cacheKey, out var entry))
+            return false;
 
         if (!File.Exists(entry.FilePath))
         {
@@ -72,9 +74,14 @@ public class EncryptedFileCache : IDisposable
         }
     }
 
-    public async Task SetAsync(string cacheKey, Stream stream, CancellationToken cancellationToken = default)
+    public async Task SetAsync(
+        string cacheKey,
+        Stream stream,
+        CancellationToken cancellationToken = default
+    )
     {
-        if (!_settings.EnableFileCache) return;
+        if (!_settings.EnableFileCache)
+            return;
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentException.ThrowIfNullOrWhiteSpace(cacheKey);
 
@@ -92,7 +99,14 @@ public class EncryptedFileCache : IDisposable
                 Directory.CreateDirectory(_cacheDirectory);
 
             var filePath = Path.Combine(_cacheDirectory, $"{cacheKey}.parquet");
-            await using (var fileStream = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            await using (
+                var fileStream = new FileStream(
+                    filePath,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None
+                )
+            )
             {
                 var originalPosition = stream.Position;
                 stream.Position = 0;
@@ -105,13 +119,16 @@ public class EncryptedFileCache : IDisposable
             while (_currentCacheSize + fileSize > _settings.MaxCacheSizeBytes && _entries.Any())
                 await EvictLruAsync();
 
-            _entries.TryAdd(cacheKey, new CacheEntry
-            {
-                FilePath = filePath,
-                FileSize = fileSize,
-                LastAccessTime = DateTime.UtcNow,
-                CacheKey = cacheKey,
-            });
+            _entries.TryAdd(
+                cacheKey,
+                new CacheEntry
+                {
+                    FilePath = filePath,
+                    FileSize = fileSize,
+                    LastAccessTime = DateTime.UtcNow,
+                    CacheKey = cacheKey,
+                }
+            );
             Interlocked.Add(ref _currentCacheSize, fileSize);
         }
         finally
@@ -123,12 +140,14 @@ public class EncryptedFileCache : IDisposable
     private async Task EvictLruAsync()
     {
         var lruEntry = _entries.Values.MinBy(e => e.LastAccessTime);
-        if (lruEntry == null) return;
+        if (lruEntry == null)
+            return;
 
         _entries.TryRemove(lruEntry.CacheKey, out _);
         try
         {
-            if (File.Exists(lruEntry.FilePath)) File.Delete(lruEntry.FilePath);
+            if (File.Exists(lruEntry.FilePath))
+                File.Delete(lruEntry.FilePath);
             Interlocked.Add(ref _currentCacheSize, -lruEntry.FileSize);
         }
         catch (IOException) { }
@@ -142,12 +161,20 @@ public class EncryptedFileCache : IDisposable
         try
         {
             foreach (var entry in _entries.Values)
-                try { if (File.Exists(entry.FilePath)) File.Delete(entry.FilePath); } catch (IOException) { }
+                try
+                {
+                    if (File.Exists(entry.FilePath))
+                        File.Delete(entry.FilePath);
+                }
+                catch (IOException) { }
 
             _entries.Clear();
             _currentCacheSize = 0;
         }
-        finally { _lock.Release(); }
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     public (int FileCount, long TotalBytes, long MaxBytes) GetStats() =>
@@ -163,12 +190,19 @@ public class EncryptedFileCache : IDisposable
             sb.AppendLine($"Enabled: {_settings.EnableFileCache}");
             sb.AppendLine($"Directory: {_cacheDirectory}");
             sb.AppendLine($"Files: {_entries.Count}");
-            sb.AppendLine($"Size: {_currentCacheSize / (1024 * 1024):N2} MB / {_settings.MaxCacheSizeBytes / (1024 * 1024 * 1024):N2} GB");
+            sb.AppendLine(
+                $"Size: {_currentCacheSize / (1024 * 1024):N2} MB / {_settings.MaxCacheSizeBytes / (1024 * 1024 * 1024):N2} GB"
+            );
             foreach (var entry in _entries.OrderByDescending(e => e.Value.LastAccessTime))
-                sb.AppendLine($"  {entry.Key} — {entry.Value.FileSize / (1024 * 1024):N2} MB, last: {entry.Value.LastAccessTime:O}");
+                sb.AppendLine(
+                    $"  {entry.Key} — {entry.Value.FileSize / (1024 * 1024):N2} MB, last: {entry.Value.LastAccessTime:O}"
+                );
             return sb.ToString();
         }
-        finally { _lock.Release(); }
+        finally
+        {
+            _lock.Release();
+        }
     }
 
     private void InitializeFromDisk()
@@ -179,17 +213,24 @@ public class EncryptedFileCache : IDisposable
             {
                 var fileInfo = new FileInfo(filePath);
                 var cacheKey = Path.GetFileNameWithoutExtension(filePath);
-                _entries.TryAdd(cacheKey, new CacheEntry
-                {
-                    FilePath = filePath,
-                    FileSize = fileInfo.Length,
-                    LastAccessTime = fileInfo.LastAccessTimeUtc,
-                    CacheKey = cacheKey,
-                });
+                _entries.TryAdd(
+                    cacheKey,
+                    new CacheEntry
+                    {
+                        FilePath = filePath,
+                        FileSize = fileInfo.Length,
+                        LastAccessTime = fileInfo.LastAccessTimeUtc,
+                        CacheKey = cacheKey,
+                    }
+                );
                 Interlocked.Add(ref _currentCacheSize, fileInfo.Length);
             }
         }
-        catch { _entries.Clear(); _currentCacheSize = 0; }
+        catch
+        {
+            _entries.Clear();
+            _currentCacheSize = 0;
+        }
     }
 
     public void Dispose() => _lock?.Dispose();

@@ -13,7 +13,7 @@ public static class Program
         Console.WriteLine();
 
         // allow selecting a specific benchmark via environment variable or first CLI arg.
-        // values: "1","2","3","4","5","6" or the full type name.
+        // values: "1"-"10" or the full type name.
         var choice = Environment.GetEnvironmentVariable("BENCH_MEASUREMENT");
         if (string.IsNullOrWhiteSpace(choice) && args.Length > 0)
         {
@@ -34,6 +34,14 @@ public static class Program
                 typeof(Measurement5S3DirectVsOSWSBenchmark),
             "6" or "Measurement6S3CacheEffectivenessBenchmark" =>
                 typeof(Measurement6S3CacheEffectivenessBenchmark),
+            "7" or "Measurement7KeyUnwrapBenchmark" =>
+                typeof(Measurement7KeyUnwrapBenchmark),
+            "8" or "Measurement8ColumnDecryptionBenchmark" =>
+                typeof(Measurement8ColumnDecryptionBenchmark),
+            "9" or "Measurement9S3WriteDirectVsOSWSBenchmark" =>
+                typeof(Measurement9S3WriteDirectVsOSWSBenchmark),
+            "10" or "Measurement10RBACAuthorizationBenchmark" =>
+                typeof(Measurement10RBACAuthorizationBenchmark),
             _ => null, // run all benchmarks
         };
 
@@ -51,15 +59,25 @@ public static class Program
             Console.WriteLine("  Measurements 5-6: S3/R2 integration performance");
             BenchmarkRunner.Run<Measurement5S3DirectVsOSWSBenchmark>();
             BenchmarkRunner.Run<Measurement6S3CacheEffectivenessBenchmark>();
+
+            Console.WriteLine();
+            Console.WriteLine("  Measurements 7-10: Micro-benchmarks (single parameter variation)");
+            BenchmarkRunner.Run<Measurement7KeyUnwrapBenchmark>();
+            BenchmarkRunner.Run<Measurement8ColumnDecryptionBenchmark>();
+            BenchmarkRunner.Run<Measurement9S3WriteDirectVsOSWSBenchmark>();
+            BenchmarkRunner.Run<Measurement10RBACAuthorizationBenchmark>();
         }
         else
         {
-            var isS3Benchmark =
-                benchmarkType == typeof(Measurement5S3DirectVsOSWSBenchmark)
-                || benchmarkType == typeof(Measurement6S3CacheEffectivenessBenchmark);
-            var type = isS3Benchmark ? "S3/R2 integration" : "In-memory crypto";
+            var benchmarkCategory = choice switch
+            {
+                "1" or "2" or "3" or "4" => "In-memory crypto",
+                "5" or "6" => "S3/R2 integration",
+                "7" or "8" or "9" or "10" => "Micro-benchmark",
+                _ => "Unknown"
+            };
             Console.WriteLine($"  Running benchmark: {benchmarkType.Name}");
-            Console.WriteLine($"   Type: {type}");
+            Console.WriteLine($"   Category: {benchmarkCategory}");
             Console.WriteLine();
             BenchmarkRunner.Run(benchmarkType);
         }

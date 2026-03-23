@@ -1,6 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver;
 using OSWS.ParquetSolver.Helpers;
@@ -23,6 +24,7 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
     private IKeyVaultProvider? _keyVaultProvider;
     private ColdStartFixture? _coldFixture;
     private WarmStartFixture? _warmFixture;
+    private ILogger<Measurement4DekCacheStressTestBenchmark>? _logger;
 
     private byte[]? _smallEncryptedBytes;
     private byte[]? _wideEncryptedBytes;
@@ -39,6 +41,7 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
         _services = BenchmarkServiceFactory.BuildServiceProvider();
         var config = _services.GetRequiredService<IConfiguration>();
         _keyVaultProvider = _services.GetRequiredService<IKeyVaultProvider>();
+        _logger = _services.GetRequiredService<ILogger<Measurement4DekCacheStressTestBenchmark>>();
         var providerType = config.GetValue<string>("KeyVault:Provider") ?? "Internal";
 
         if (
@@ -54,7 +57,7 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
 
         _coldFixture = new ColdStartFixture();
         _warmFixture = new WarmStartFixture(_dekCacheCapacity);
-        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType);
+        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType, logger: _logger);
 
         var smallCols = config.GetValue<int>("ParquetSizes:Small:Columns");
         var smallRows = config.GetValue<int>("ParquetSizes:Small:Rows");
@@ -169,7 +172,9 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
         var reader = new ParquetReader(
             _keyVaultProvider,
             _coldFixture.DekCache,
-            (latency) =>
+            logger: null,
+            encryptionSettings: null,
+            onExternalKvOperationLatency: latency =>
             {
                 _metrics.RecordKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -177,7 +182,7 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
                     latency
                 );
             },
-            latency =>
+            onCachedKvOperationLatency: latency =>
             {
                 _metrics.RecordCachedKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -214,7 +219,9 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
         var reader = new ParquetReader(
             _keyVaultProvider,
             _coldFixture.DekCache,
-            (latency) =>
+            logger: null,
+            encryptionSettings: null,
+            onExternalKvOperationLatency: latency =>
             {
                 _metrics.RecordKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -222,7 +229,7 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
                     latency
                 );
             },
-            latency =>
+            onCachedKvOperationLatency: latency =>
             {
                 _metrics.RecordCachedKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -259,7 +266,9 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
         var reader = new ParquetReader(
             _keyVaultProvider,
             _coldFixture.DekCache,
-            (latency) =>
+            logger: null,
+            encryptionSettings: null,
+            onExternalKvOperationLatency: latency =>
             {
                 _metrics.RecordKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -267,7 +276,7 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
                     latency
                 );
             },
-            latency =>
+            onCachedKvOperationLatency: latency =>
             {
                 _metrics.RecordCachedKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -302,7 +311,9 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
         var reader = new ParquetReader(
             _keyVaultProvider,
             _warmFixture.DekCache,
-            (latency) =>
+            logger: null,
+            encryptionSettings: null,
+            onExternalKvOperationLatency: latency =>
             {
                 _metrics.RecordKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -310,7 +321,7 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
                     latency
                 );
             },
-            latency =>
+            onCachedKvOperationLatency: latency =>
             {
                 _metrics.RecordCachedKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -345,7 +356,9 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
         var reader = new ParquetReader(
             _keyVaultProvider,
             _warmFixture.DekCache,
-            (latency) =>
+            logger: null,
+            encryptionSettings: null,
+            onExternalKvOperationLatency: latency =>
             {
                 _metrics.RecordKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -353,7 +366,7 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
                     latency
                 );
             },
-            latency =>
+            onCachedKvOperationLatency: latency =>
             {
                 _metrics.RecordCachedKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -388,7 +401,9 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
         var reader = new ParquetReader(
             _keyVaultProvider,
             _warmFixture.DekCache,
-            (latency) =>
+            logger: null,
+            encryptionSettings: null,
+            onExternalKvOperationLatency: latency =>
             {
                 _metrics.RecordKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -396,7 +411,7 @@ public class Measurement4DekCacheStressTestBenchmark : ScenarioMeasurementBenchm
                     latency
                 );
             },
-            latency =>
+            onCachedKvOperationLatency: latency =>
             {
                 _metrics.RecordCachedKvCall(latency);
                 _metrics.RecordOperationLatency(

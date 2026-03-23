@@ -3,6 +3,7 @@ using Amazon.S3;
 using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver;
 using OSWS.Performance.Benchmarks.DatasetGenerators;
@@ -29,6 +30,7 @@ public class Measurement6S3CacheEffectivenessBenchmark
     private ParquetWriter? _parquetWriter;
     private ParquetReader? _parquetReader;
     private WarmStartFixture? _fixture;
+    private ILogger<Measurement6S3CacheEffectivenessBenchmark>? _logger;
     private readonly List<string> _uploadedKeys = [];
 
     private string _bucketName = "osws-benchmark-test";
@@ -43,6 +45,7 @@ public class Measurement6S3CacheEffectivenessBenchmark
         _services = BenchmarkServiceFactory.BuildServiceProvider();
         _keyVaultProvider = _services.GetRequiredService<IKeyVaultProvider>();
         _s3Client = _services.GetRequiredService<IAmazonS3>();
+        _logger = _services.GetRequiredService<ILogger<Measurement6S3CacheEffectivenessBenchmark>>();
 
         // Load benchmark settings from config
         var config = _services.GetRequiredService<IConfiguration>();
@@ -58,7 +61,7 @@ public class Measurement6S3CacheEffectivenessBenchmark
         _fixture = new WarmStartFixture();
 
         var providerType = config.GetValue<string>("KeyVault:Provider") ?? "Internal";
-        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType);
+        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType, logger: _logger);
         _parquetReader = new ParquetReader(_keyVaultProvider, _fixture.DekCache);
 
         // Generate and encrypt a deep dataset

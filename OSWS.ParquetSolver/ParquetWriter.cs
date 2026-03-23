@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using OSWS.Common.Configuration;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
@@ -6,14 +8,21 @@ using ParquetSharp.IO;
 
 namespace OSWS.ParquetSolver;
 
-public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerType = "Azure")
-    : IParquetWriter
+public class ParquetWriter(
+    IKeyVaultProvider keyVaultProvider,
+    string providerType = "Azure",
+    ILogger? logger = null,
+    EncryptionSettings? encryptionSettings = null
+) : IParquetWriter
 {
     private readonly IKeyVaultProvider _keyVaultProvider =
         keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
+    private readonly ILogger? _logger = logger;
+    private readonly EncryptionSettings _encryptionSettings = encryptionSettings ?? new EncryptionSettings();
+    private readonly TimingLogger _timingLogger = new(logger, encryptionSettings?.EnableOperationLogging ?? false);
 
     /// <summary>
-    /// Read an unencrypted parquet file and write an encrypted version.
+    /// Read an unencrypted parquet file and write an encrypted version (or plaintext if encryption is disabled).
     /// Encrypts specified columns (or all columns if null) using the configured
     /// <see cref="IKeyVaultProvider"/> which holds the encryption key.
     /// </summary>
@@ -33,6 +42,19 @@ public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerTy
 
     private Stream WriteParquetInternal(Stream input, string role, string[]? columnsToEncrypt)
     {
+        // If encryption is disabled, just pass through the input stream
+        if (_encryptionSettings.DisableEncryption)
+        {
+            _logger?.LogInformation("[ParquetWriter] Encryption disabled, writing plaintext parquet");
+            var plainTextStream = new MemoryStream();
+            input.CopyTo(plainTextStream);
+            plainTextStream.Position = 0;
+            return plainTextStream;
+        }
+
+        _logger?.LogInformation("[ParquetWriter] Encrypting parquet with role: {Role}, columns: {ColumnCount}",
+            role, columnsToEncrypt?.Length.ToString() ?? "all");
+
         using var inputRaf = new ManagedRandomAccessFile(input, leaveOpen: true);
         using var reader = new ParquetFileReader(inputRaf);
 
@@ -48,7 +70,8 @@ public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerTy
             columnsToEncrypt,
             _keyVaultProvider,
             role,
-            providerType
+            providerType,
+            _encryptionSettings
         );
 
         Console.WriteLine(

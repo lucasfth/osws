@@ -29,7 +29,8 @@ public class DekCache : IDekCache
     public bool TryGet(string kekId, out byte[]? dek)
     {
         dek = null;
-        if (!_cache.TryGetValue(kekId, out var entry)) return false;
+        if (!_cache.TryGetValue(kekId, out var entry))
+            return false;
 
         if (_ttl.HasValue && DateTime.UtcNow > entry.ExpiresAt)
         {

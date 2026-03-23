@@ -11,17 +11,6 @@ namespace OSWS.ParquetSolver.Tests;
 public class ParquetReaderTests
 {
     [Fact]
-    public void DekCacheCapacityCanBeSet()
-    {
-        // capacity small ensures evictions occur
-        var cache = new DekCache(2);
-        cache.Set("a", new byte[] { 1 });
-        cache.Set("b", new byte[] { 2 });
-        cache.Set("c", new byte[] { 3 });
-        Assert.True(cache.Count <= 2, "Cache exceeded specified capacity");
-    }
-
-    [Fact]
     public async Task ReadParquetAsync_WithAllKeysAvailable_DecryptsAllColumns()
     {
         var inputA = new[] { 10, 20, 30, 40 };

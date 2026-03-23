@@ -3,6 +3,7 @@ using Amazon.S3;
 using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver;
 using OSWS.Performance.Benchmarks.DatasetGenerators;
@@ -28,6 +29,7 @@ public class Measurement2WarmDekColumnSelectBenchmark : ScenarioMeasurementBench
     private IKeyVaultProvider? _keyVaultProvider;
     private IAmazonS3? _s3Client;
     private WarmStartFixture? _fixture;
+    private ILogger<Measurement2WarmDekColumnSelectBenchmark>? _logger;
 
     private Stream? _smallEncrypted;
     private Stream? _wideEncrypted;
@@ -60,9 +62,10 @@ public class Measurement2WarmDekColumnSelectBenchmark : ScenarioMeasurementBench
         var config = _services.GetRequiredService<IConfiguration>();
         _keyVaultProvider = _services.GetRequiredService<IKeyVaultProvider>();
         _s3Client = _services.GetRequiredService<IAmazonS3>();
+        _logger = _services.GetRequiredService<ILogger<Measurement2WarmDekColumnSelectBenchmark>>();
         _fixture = new WarmStartFixture(DekCacheCapacity);
         var providerType = config.GetValue<string>("KeyVault:Provider") ?? "Internal";
-        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType);
+        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType, logger: _logger);
         _bucketName =
             config.GetValue<string>("BenchmarkSettings:S3BucketName") ?? "osws-benchmark-warm";
 
@@ -204,8 +207,10 @@ public class Measurement2WarmDekColumnSelectBenchmark : ScenarioMeasurementBench
         var reader = new ParquetReader(
             _keyVaultProvider,
             _fixture.DekCache,
-            latency => _metrics.RecordKvCall(latency),
-            latency => _metrics.RecordCachedKvCall(latency)
+            logger: null,
+            encryptionSettings: null,
+            onExternalKvOperationLatency: latency => _metrics.RecordKvCall(latency),
+            onCachedKvOperationLatency: latency => _metrics.RecordCachedKvCall(latency)
         );
         _ = await reader.ReadParquetAsync(encryptedStream);
 

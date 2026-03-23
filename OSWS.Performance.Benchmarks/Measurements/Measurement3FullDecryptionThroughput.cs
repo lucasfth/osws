@@ -1,6 +1,7 @@
 using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver;
 using OSWS.Performance.Benchmarks.DatasetGenerators;
@@ -22,6 +23,7 @@ public class Measurement3FullDecryptionThroughputBenchmark : ScenarioMeasurement
     private IKeyVaultProvider? _keyVaultProvider;
     private ColdStartFixture? _fixture;
     private byte[]? _wideEncryptedBytes;
+    private ILogger<Measurement3FullDecryptionThroughputBenchmark>? _logger;
 
     private readonly MetricsCollector _metrics = new();
     private ParquetWriter? _parquetWriter;
@@ -32,9 +34,10 @@ public class Measurement3FullDecryptionThroughputBenchmark : ScenarioMeasurement
         _services = BenchmarkServiceFactory.BuildServiceProvider();
         var config = _services.GetRequiredService<IConfiguration>();
         _keyVaultProvider = _services.GetRequiredService<IKeyVaultProvider>();
+        _logger = _services.GetRequiredService<ILogger<Measurement3FullDecryptionThroughputBenchmark>>();
         _fixture = new ColdStartFixture();
         var providerType = config.GetValue<string>("KeyVault:Provider") ?? "Internal";
-        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType);
+        _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType, logger: _logger);
 
         // Generate the wide dataset once - 2000 columns provides sufficient granularity
         var unencrypted = await WideDatasetGenerator.GenerateAsync(
@@ -83,7 +86,9 @@ public class Measurement3FullDecryptionThroughputBenchmark : ScenarioMeasurement
         var reader = new ParquetReader(
             _keyVaultProvider,
             _fixture.DekCache,
-            (latency) =>
+            logger: null,
+            encryptionSettings: null,
+            onExternalKvOperationLatency: latency =>
             {
                 _metrics.RecordKvCall(latency);
                 _metrics.RecordOperationLatency(
@@ -91,7 +96,7 @@ public class Measurement3FullDecryptionThroughputBenchmark : ScenarioMeasurement
                     latency
                 );
             },
-            latency => _metrics.RecordCachedKvCall(latency)
+            onCachedKvOperationLatency: latency => _metrics.RecordCachedKvCall(latency)
         );
 
         _ = await reader.ReadParquetAsync(stream);

@@ -40,8 +40,15 @@ BENCHMARK_DIR="$(dirname "$SCRIPT_DIR")"
 
 # Load .env file if it exists
 ENV_FILE="$BENCHMARK_DIR/.env"
+ENV_VARS=""
 if [[ -f "$ENV_FILE" ]]; then
+    # Export variables to current shell
     export $(cat "$ENV_FILE" | grep -v '^#' | xargs)
+    
+    # Also collect them for passing to dotnet process
+    while IFS= read -r line; do
+        [[ "$line" =~ ^[^#]*= ]] && ENV_VARS="$ENV_VARS $line"
+    done < <(cat "$ENV_FILE" | grep -v '^#' | grep '=')
 fi
 
 echo "Starting OSWS instance $INSTANCE_NUM ($MODE) on port $PORT..."
@@ -70,7 +77,8 @@ if [[ ! -f "$DLL_PATH" ]]; then
     exit 1
 fi
 
-nohup dotnet "$DLL_PATH" > "/tmp/osws-instance-${INSTANCE_NUM}-${MODE}.log" 2>&1 &
+# Start dotnet with environment variables from .env explicitly passed
+nohup env $ENV_VARS ASPNETCORE_URLS="http://0.0.0.0:$PORT" Encryption__DisableEncryption=$DISABLE_ENCRYPTION dotnet "$DLL_PATH" > "/tmp/osws-instance-${INSTANCE_NUM}-${MODE}.log" 2>&1 &
 SHELL_PID=$!
 
 # Wait a moment for the dotnet process to start

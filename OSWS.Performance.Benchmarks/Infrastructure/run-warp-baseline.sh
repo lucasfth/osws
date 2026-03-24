@@ -28,12 +28,14 @@ REPO_ROOT="$(dirname "$BENCHMARK_DIR")"
 ENV_FILE="$BENCHMARK_DIR/.env"
 if [[ -f "$ENV_FILE" ]]; then
     export $(cat "$ENV_FILE" | grep -v '^#' | xargs)
+    ENV_LOADED=true
 else
     echo "⚠️  Warning: .env file not found at $ENV_FILE"
     echo "   To set up configuration, run:"
     echo "   cp .env.example .env"
     echo "   Then edit .env with your S3 backend credentials"
     echo ""
+    ENV_LOADED=false
 fi
 
 # Configuration (can be overridden from command line, .env, or appsettings.json)
@@ -46,27 +48,6 @@ WORKLOAD_PROFILE="${4:-${WARP_WORKLOAD_PROFILE:-mixed}}"
 OSWS_BASE_PORT="${OSWS_BASE_PORT:-8000}"
 RESULTS_DIR="./warp-results"
 BUCKET_NAME="warp-benchmark-test"
-
-# S3/R2 Configuration - extract from environment variables set by .env
-S3_ACCESS_KEY="${S3Settings__AccessKeyId:-}"
-S3_SECRET_KEY="${S3Settings__SecretAccessKey:-}"
-S3_ENDPOINT="${S3Settings__EndpointHostname:-}"
-S3_REGION="${S3Settings__Region:-auto}"
-
-# Validate S3 credentials are configured
-validate_s3_credentials() {
-    if [[ -z "$S3_ACCESS_KEY" || -z "$S3_SECRET_KEY" || -z "$S3_ENDPOINT" ]]; then
-        echo "ERROR: S3/R2 credentials not configured in .env file"
-        echo "Required environment variables:"
-        echo "  - S3Settings__AccessKeyId"
-        echo "  - S3Settings__SecretAccessKey"
-        echo "  - S3Settings__EndpointHostname"
-        echo ""
-        echo "Please update your .env file with valid S3/R2 credentials"
-        return 1
-    fi
-    return 0
-}
 
 echo "╔════════════════════════════════════════════════════════╗"
 echo "║   OSWS Warp Baseline Benchmark Suite                  ║"
@@ -88,71 +69,31 @@ WARP_VERSION=$(warp --version 2>/dev/null || echo "unknown")
 echo "✓ Warp found: $WARP_VERSION"
 echo ""
 
-# Validate S3 credentials
-echo "Validating S3/R2 credentials..."
-if ! validate_s3_credentials; then
+# Validate .env configuration
+echo "Validating configuration..."
+if [[ "$ENV_LOADED" != "true" ]]; then
+    echo "ERROR: .env file not found or could not be loaded"
+    echo "Please ensure .env file exists in: $BENCHMARK_DIR"
+    exit 1
+fi
+S3_ACCESS_KEY="${S3Settings__AccessKeyId:-}"
+S3_SECRET_KEY="${S3Settings__SecretAccessKey:-}"
+S3_ENDPOINT="${S3Settings__EndpointHostname:-}"
+if [[ -z "$S3_ACCESS_KEY" || -z "$S3_SECRET_KEY" || -z "$S3_ENDPOINT" ]]; then
+    echo "ERROR: S3/R2 credentials not configured in .env file"
+    echo "Required environment variables:"
+    echo "  - S3Settings__AccessKeyId"
+    echo "  - S3Settings__SecretAccessKey"
+    echo "  - S3Settings__EndpointHostname"
+    echo ""
+    echo "Please update your .env file with valid S3/R2 credentials"
     exit 1
 fi
 echo "✓ S3/R2 credentials configured"
 echo ""
 
-# Parse S3 endpoint to extract host and scheme
-S3_SCHEME="https"
-S3_HOST="$S3_ENDPOINT"
-if [[ "$S3_ENDPOINT" == http://* ]]; then
-    S3_SCHEME="http"
-    S3_HOST="${S3_ENDPOINT#http://}"
-elif [[ "$S3_ENDPOINT" == https://* ]]; then
-    S3_HOST="${S3_ENDPOINT#https://}"
-fi
-
-# Test S3 connectivity and create bucket if needed
-test_and_create_s3_bucket() {
-    local bucket="$1"
-    local access_key="$2"
-    local secret_key="$3"
-    local host="$4"
-    local scheme="$5"
-    
-    echo "Testing S3/R2 connectivity..."
-    
-    # Try to list buckets to verify credentials work
-    if ! aws s3api list-buckets \
-        --endpoint-url "${scheme}://${host}" \
-        --region "$S3_REGION" \
-        --access-key "$access_key" \
-        --secret-key "$secret_key" > /dev/null 2>&1; then
-        echo "  ⚠️  Warning: Could not verify S3/R2 credentials with aws cli"
-        echo "     This may be expected if aws cli is not installed or configured"
-        echo "     Warp will attempt to authenticate when benchmarking"
-    else
-        echo "✓ S3/R2 authentication successful"
-        
-        # Check if bucket exists, create if not
-        echo "Checking for bucket: $bucket"
-        if aws s3api head-bucket \
-            --bucket "$bucket" \
-            --endpoint-url "${scheme}://${host}" \
-            --region "$S3_REGION" \
-            --access-key "$access_key" \
-            --secret-key "$secret_key" 2>/dev/null; then
-            echo "✓ Bucket '$bucket' exists"
-        else
-            echo "  Creating bucket: $bucket"
-            if aws s3api create-bucket \
-                --bucket "$bucket" \
-                --endpoint-url "${scheme}://${host}" \
-                --region "$S3_REGION" \
-                --access-key "$access_key" \
-                --secret-key "$secret_key" 2>/dev/null; then
-                echo "✓ Bucket '$bucket' created"
-            else
-                echo "  ⚠️  Could not create bucket (may already exist or permission denied)"
-                echo "     Warp will attempt to create it during benchmark"
-            fi
-        fi
-    fi
-}
+echo "✓ Configuration validated"
+echo ""
 
 # Create results directory
 mkdir -p "$RESULTS_DIR"
@@ -167,7 +108,6 @@ echo "  Workload Profile: $WORKLOAD_PROFILE"
 echo "  Results Directory: $RESULTS_DIR"
 echo "  S3 Bucket: $BUCKET_NAME"
 echo "  S3/R2 Endpoint: $S3_ENDPOINT"
-echo "  S3/R2 Region: $S3_REGION"
 echo ""
 
 if [[ -z "$INSTANCE_COUNT" ]]; then
@@ -179,13 +119,9 @@ else
 fi
 echo ""
 
-echo "NOTE: This implementation runs Warp directly against instance ports."
-echo "      For multiple instances, Warp connects to different ports (8000, 8002, 8004, etc.)"
-echo "      In production, use a load balancer (nginx) for fair distribution."
-echo ""
-
-# Test S3 bucket before benchmarking
-test_and_create_s3_bucket "$BUCKET_NAME" "$S3_ACCESS_KEY" "$S3_SECRET_KEY" "$S3_HOST" "$S3_SCHEME"
+echo "NOTE: Warp connects to OSWS instances on localhost ports."
+echo "      OSWS instances use S3/R2 credentials from .env for backend operations."
+echo "      For multiple instances, connect to different ports (8000, 8002, 8004, etc.)"
 echo ""
 
 # Cleanup function to stop instances on exit
@@ -252,15 +188,17 @@ for num_instances in "${INSTANCE_COUNTS[@]}"; do
     
     RESULT_FILE="$RESULTS_DIR/warp-${num_instances}instances-encrypted.json"
     
-    # Run Warp with proper S3/R2 credentials from environment
+    # Run Warp benchmark against OSWS instance
+    # Note: Warp uses generic credentials to connect to OSWS.
+    # OSWS internally uses the real S3/R2 credentials from environment variables.
     if warp $WORKLOAD_PROFILE \
         --duration "${WARP_DURATION}s" \
         --concurrent $WARP_CONCURRENCY \
         --objects 1000 \
         --obj.size 1M \
         --host "localhost:$TARGET_PORT" \
-        --access-key "$S3_ACCESS_KEY" \
-        --secret-key "$S3_SECRET_KEY" \
+        --access-key "minioadmin" \
+        --secret-key "minioadmin" \
         --json > "$RESULT_FILE" 2>&1; then
         echo "  ✓ Warp benchmark completed"
         echo "    Results saved to: $RESULT_FILE"

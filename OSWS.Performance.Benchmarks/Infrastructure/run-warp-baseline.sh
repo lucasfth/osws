@@ -1,40 +1,34 @@
 #!/bin/bash
 
-# Run OSWS Warp Baseline Benchmarks
-# 
-# This script orchestrates the full Warp benchmark suite:
-# 1. Validates Warp is installed
-# 2. Starts OSWS instances (encrypted and non-encrypted modes)
-# 3. Runs Warp benchmarks against each instance configuration
-# 4. Collects and stores results
-# 5. Stops instances
+# Run OSWS Warp baseline benchmarks.
 #
-# Usage: ./run-warp-baseline.sh [instance-count] [concurrency] [duration-seconds]
+# Executes these baseline categories for each selected instance count:
+# 1) S3/R2 direct
+# 2) OSWS without encryption
+# 3) OSWS with encryption (cache disabled)
+# 4) OSWS with encryption (cache enabled)
 #
-# Configuration: Copy .env.example to .env and configure your S3 backend
-#
-# Examples:
-#   ./run-warp-baseline.sh         # Run with default settings (1, 2, 4, 8 instances)
-#   ./run-warp-baseline.sh 1       # Run only with 1 instance
-#   ./run-warp-baseline.sh 4 32 90 # Run with 4 instances, 32 concurrent clients, 90 second duration
+# Usage: ./run-warp-baseline.sh [instance-count] [concurrency] [duration-seconds] [workload-profile]
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BENCHMARK_DIR="$(dirname "$SCRIPT_DIR")"
 REPO_ROOT="$(dirname "$BENCHMARK_DIR")"
+WEBAPP_DIR="$REPO_ROOT/OSWS.WebApi"
 
 # Load environment from .env file
 ENV_FILE="$BENCHMARK_DIR/.env"
 if [[ -f "$ENV_FILE" ]]; then
-    export $(cat "$ENV_FILE" | grep -v '^#' | xargs)
+    set -a
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${line// }" ]] && continue
+        eval "export $line"
+    done < "$ENV_FILE"
+    set +a
     ENV_LOADED=true
 else
-    echo "⚠️  Warning: .env file not found at $ENV_FILE"
-    echo "   To set up configuration, run:"
-    echo "   cp .env.example .env"
-    echo "   Then edit .env with your S3 backend credentials"
-    echo ""
     ENV_LOADED=false
 fi
 
@@ -46,198 +40,337 @@ WORKLOAD_PROFILE="${4:-${WARP_WORKLOAD_PROFILE:-mixed}}"
 
 # Constants
 OSWS_BASE_PORT="${OSWS_BASE_PORT:-8000}"
-RESULTS_DIR="./warp-results"
-BUCKET_NAME="warp-benchmark-test"
+RESULTS_DIR="$BENCHMARK_DIR/warp-results"
+BUCKET_NAME="${WARP_BUCKET_NAME:-warp-benchmark-test}"
+ENABLE_PARQUET_GET="${WARP_ENABLE_PARQUET_GET:-true}"
+PARQUET_BUCKET_NAME="${WARP_PARQUET_BUCKET_NAME:-$BUCKET_NAME}"
+PARQUET_PREFIX="${WARP_PARQUET_PREFIX:-parquet/}"
+PARQUET_OBJECT_LIMIT="${WARP_PARQUET_OBJECT_LIMIT:-0}"
+PARQUET_SEED_IF_EMPTY="${WARP_PARQUET_SEED_IF_EMPTY:-true}"
+PARQUET_SAMPLE_DIR="${WARP_PARQUET_SAMPLE_DIR:-$REPO_ROOT/samples}"
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║   OSWS Warp Baseline Benchmark Suite                  ║"
+echo "║   OSWS Warp Baseline Benchmark Suite                   ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
 
-# Check if Warp is installed
-echo "Checking if Warp is installed..."
-if ! command -v warp &> /dev/null; then
+if ! command -v warp >/dev/null 2>&1; then
     echo "ERROR: Warp not found in PATH"
-    echo "Please install Warp from: https://github.com/minio/warp"
-    echo ""
-    echo "macOS:  brew install minio/stable/warp"
-    echo "Linux:  See https://github.com/minio/warp"
+    echo "Install: brew install minio/stable/warp"
     exit 1
 fi
 
 WARP_VERSION=$(warp --version 2>/dev/null || echo "unknown")
 echo "✓ Warp found: $WARP_VERSION"
-echo ""
 
-# Validate .env configuration
-echo "Validating configuration..."
 if [[ "$ENV_LOADED" != "true" ]]; then
-    echo "ERROR: .env file not found or could not be loaded"
-    echo "Please ensure .env file exists in: $BENCHMARK_DIR"
+    echo "ERROR: .env file not found at $ENV_FILE"
+    echo "Run: cp .env.example .env"
     exit 1
 fi
+
 S3_ACCESS_KEY="${S3Settings__AccessKeyId:-}"
 S3_SECRET_KEY="${S3Settings__SecretAccessKey:-}"
 S3_ENDPOINT="${S3Settings__EndpointHostname:-}"
+
 if [[ -z "$S3_ACCESS_KEY" || -z "$S3_SECRET_KEY" || -z "$S3_ENDPOINT" ]]; then
-    echo "ERROR: S3/R2 credentials not configured in .env file"
-    echo "Required environment variables:"
+    echo "ERROR: Missing required S3 settings in .env"
     echo "  - S3Settings__AccessKeyId"
     echo "  - S3Settings__SecretAccessKey"
     echo "  - S3Settings__EndpointHostname"
-    echo ""
-    echo "Please update your .env file with valid S3/R2 credentials"
     exit 1
 fi
-echo "✓ S3/R2 credentials configured"
-echo ""
-
-echo "✓ Configuration validated"
-echo ""
-
-# Create results directory
-mkdir -p "$RESULTS_DIR"
-echo "Results will be saved to: $RESULTS_DIR"
-echo ""
-
-echo "Configuration:"
-echo "  OSWS Base Port: $OSWS_BASE_PORT"
-echo "  Warp Concurrency: $WARP_CONCURRENCY clients"
-echo "  Warp Duration: $WARP_DURATION seconds"
-echo "  Workload Profile: $WORKLOAD_PROFILE"
-echo "  Results Directory: $RESULTS_DIR"
-echo "  S3 Bucket: $BUCKET_NAME"
-echo "  S3/R2 Endpoint: $S3_ENDPOINT"
-echo ""
 
 if [[ -z "$INSTANCE_COUNT" ]]; then
-    echo "Instance Counts: All (1, 2, 4, 8)"
     INSTANCE_COUNTS=(1 2 4 8)
 else
-    echo "Instance Count: $INSTANCE_COUNT"
     INSTANCE_COUNTS=($INSTANCE_COUNT)
+fi
+
+S3_HOST="$S3_ENDPOINT"
+S3_HOST="${S3_HOST#http://}"
+S3_HOST="${S3_HOST#https://}"
+S3_HOST="${S3_HOST%/}"
+
+S3_WARP_TLS_ARGS=()
+if [[ "$S3_ENDPOINT" == https://* ]]; then
+    S3_WARP_TLS_ARGS+=("--tls")
+fi
+
+if [[ "${WARP_INSECURE_TLS:-false}" == "true" ]]; then
+    S3_WARP_TLS_ARGS+=("--insecure")
+fi
+
+mkdir -p "$RESULTS_DIR"
+
+echo ""
+echo "Configuration:"
+echo "  Instance counts: ${INSTANCE_COUNTS[*]}"
+echo "  Concurrency: $WARP_CONCURRENCY"
+echo "  Duration: ${WARP_DURATION}s"
+echo "  Workload profile: $WORKLOAD_PROFILE"
+echo "  Bucket: $BUCKET_NAME"
+echo "  Parquet GET enabled: $ENABLE_PARQUET_GET"
+echo "  Parquet bucket: $PARQUET_BUCKET_NAME"
+echo "  Parquet prefix: $PARQUET_PREFIX"
+echo "  Parquet seed-if-empty: $PARQUET_SEED_IF_EMPTY"
+echo "  Parquet sample dir: $PARQUET_SAMPLE_DIR"
+echo "  S3 endpoint: $S3_ENDPOINT"
+echo "  Results dir: $RESULTS_DIR"
+echo ""
+
+if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
+    echo "Parquet mode note:"
+    echo "  Parquet GET benchmarks use existing objects only (--list-existing)."
+    echo "  Seed parquet objects beforehand under bucket '$PARQUET_BUCKET_NAME' and prefix '$PARQUET_PREFIX'."
+    echo ""
+fi
+
+echo "Pre-building OSWS.WebApi (Release, isolated project build)..."
+if dotnet build "$WEBAPP_DIR/OSWS.WebApi.csproj" -c Release -p:BuildProjectReferences=false -v minimal >/dev/null; then
+    echo "  ✓ OSWS.WebApi build succeeded"
+else
+    echo "  ✗ OSWS.WebApi build failed"
+    echo "    Fix build errors before running Warp against OSWS"
+    exit 1
 fi
 echo ""
 
-echo "NOTE: Warp connects to OSWS instances on localhost ports."
-echo "      OSWS instances use S3/R2 credentials from .env for backend operations."
-echo "      For multiple instances, connect to different ports (8000, 8002, 8004, etc.)"
+echo "Pre-building OSWS.Performance.Benchmarks (Release, isolated project build)..."
+if dotnet build "$BENCHMARK_DIR/OSWS.Performance.Benchmarks.csproj" -c Release -p:BuildProjectReferences=false -v minimal >/dev/null; then
+    echo "  ✓ OSWS.Performance.Benchmarks build succeeded"
+else
+    echo "  ✗ OSWS.Performance.Benchmarks build failed"
+    exit 1
+fi
 echo ""
 
-# Cleanup function to stop instances on exit
 cleanup() {
-    echo ""
-    echo "════════════════════════════════════════════════════════"
-    echo "Cleaning up..."
-    bash "$SCRIPT_DIR/osws-stop.sh" all 2>/dev/null || true
+    bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
 }
 
 trap cleanup EXIT
 
-# Run benchmark for each instance count
-for num_instances in "${INSTANCE_COUNTS[@]}"; do
-    echo "════════════════════════════════════════════════════════"
-    echo "Running benchmark with $num_instances instance(s)"
-    echo "════════════════════════════════════════════════════════"
-    echo ""
+run_warp() {
+    local category=$1
+    local instance_count=$2
+    local host=$3
+    local access_key=$4
+    local secret_key=$5
+    local -a tls_args=()
+    local -a payload_args=()
 
-    echo "Step 1: Starting OSWS instances..."
-    
-    # Start encrypted instances
-    for i in $(seq 1 $num_instances); do
-        PORT=$((OSWS_BASE_PORT + (i-1)*2))
-        echo "  Instance $i (encrypted) on port $PORT..."
-        bash "$SCRIPT_DIR/osws-start.sh" "$i" "true" "$PORT" &
-        PIDS[$i]=$!
-    done
-    
-    echo "  Waiting for instances to start..."
-    sleep 10
-    
-    # Verify instances are running
-    echo "  Verifying instances..."
-    all_healthy=true
-    for i in $(seq 1 $num_instances); do
-        PORT=$((OSWS_BASE_PORT + (i-1)*2))
-        if curl -s "http://localhost:$PORT/health" > /dev/null 2>&1; then
-            echo "    ✓ Instance $i (port $PORT) is healthy"
-        else
-            echo "    ✗ Instance $i (port $PORT) is NOT responding"
-            all_healthy=false
-        fi
-    done
-    
-    if [[ "$all_healthy" != "true" ]]; then
-        echo "ERROR: Some instances failed to start"
-        echo "STOPPING: Will not continue to next instance count due to failure"
-        exit 1
+    if [[ "$category" == "s3-direct" ]]; then
+        tls_args=("${S3_WARP_TLS_ARGS[@]}")
+    else
+        # OSWS benchmark routes currently forward request bodies and do not decode
+        # aws-chunked signed payload framing. Disable client-side sha256 payload
+        # signing so uploaded object size remains identical for PUT/GET/STAT checks.
+        payload_args=("--disable-sha256-payload")
     fi
-    
-    echo ""
-    echo "Step 2: Running Warp benchmarks..."
-    
-    # Run Warp benchmarks against first encrypted instance
-    # For multiple instances, users should use load balancer
-    TARGET_PORT=$OSWS_BASE_PORT
-    TARGET_URL="http://localhost:$TARGET_PORT"
-    
-    echo "  Running Warp benchmark..."
-    echo "  Target: $TARGET_URL"
-    echo "  Instances: $num_instances, Concurrency: $WARP_CONCURRENCY, Duration: $WARP_DURATION seconds"
-    echo "  S3 Bucket: $BUCKET_NAME"
-    
-    RESULT_FILE="$RESULTS_DIR/warp-${num_instances}instances-encrypted.json"
-    
-    # Run Warp benchmark against OSWS instance
-    # Note: Warp uses generic credentials to connect to OSWS.
-    # OSWS internally uses the real S3/R2 credentials from environment variables.
-    if warp $WORKLOAD_PROFILE \
+
+    # Warp appends its own .json.zst suffix to --benchdata output.
+    local result_base="$RESULTS_DIR/warp-${instance_count}instances-${category}"
+    local result_file="${result_base}.json.zst"
+
+    echo "  Running: $category (instances=$instance_count, host=$host)"
+    if warp "$WORKLOAD_PROFILE" \
         --duration "${WARP_DURATION}s" \
-        --concurrent $WARP_CONCURRENCY \
+        --concurrent "$WARP_CONCURRENCY" \
         --objects 1000 \
         --obj.size 1M \
-        --host "localhost:$TARGET_PORT" \
-        --access-key "minioadmin" \
-        --secret-key "minioadmin" \
-        --json > "$RESULT_FILE" 2>&1; then
-        echo "  ✓ Warp benchmark completed"
-        echo "    Results saved to: $RESULT_FILE"
+        --bucket "$BUCKET_NAME" \
+        --host "$host" \
+        --access-key "$access_key" \
+        --secret-key "$secret_key" \
+        --benchdata "$result_base" \
+        "${tls_args[@]}" \
+        "${payload_args[@]}" \
+        --json; then
+        # Primary expected output.
+        if [[ -f "$result_file" ]]; then
+            echo "    ✓ Saved: $result_file"
+        # Backward-compat: if caller passed extension before this fix, Warp may emit double suffix.
+        elif [[ -f "${result_file}.json.zst" ]]; then
+            echo "    ✓ Saved: ${result_file}.json.zst"
+            mv "${result_file}.json.zst" "$result_file"
+            echo "    ✓ Renamed to: $result_file"
+        else
+            echo "    ✗ Warp completed but no benchdata file was created"
+            echo "      Expected one of: $result_file or ${result_file}.json.zst"
+            exit 1
+        fi
     else
-        echo "  ✗ Warp benchmark failed"
-        echo "    Check $RESULT_FILE for details"
-        echo "    ERROR: Stopping execution due to benchmark failure"
+        echo "    ✗ Warp failed for $category ($instance_count instances)"
+        echo "      Check: $result_file"
         exit 1
     fi
-    
-    echo ""
-    echo "Step 3: Stopping OSWS instances..."
-    bash "$SCRIPT_DIR/osws-stop.sh" all 2>/dev/null || true
-    sleep 2
-    echo "  Instances stopped"
+}
+
+run_warp_parquet_get() {
+    local category=$1
+    local instance_count=$2
+    local host=$3
+    local access_key=$4
+    local secret_key=$5
+    local -a tls_args=()
+
+    if [[ "$category" == "s3-direct" ]]; then
+        tls_args=("${S3_WARP_TLS_ARGS[@]}")
+    fi
+
+    # Warp appends its own .json.zst suffix to --benchdata output.
+    local result_base="$RESULTS_DIR/warp-${instance_count}instances-${category}-parquet-get"
+    local result_file="${result_base}.json.zst"
+
+    echo "  Running: ${category} parquet-get (instances=$instance_count, host=$host, prefix=$PARQUET_PREFIX)"
+    if warp get \
+        --duration "${WARP_DURATION}s" \
+        --concurrent "$WARP_CONCURRENCY" \
+        --objects "$PARQUET_OBJECT_LIMIT" \
+        --bucket "$PARQUET_BUCKET_NAME" \
+        --host "$host" \
+        --access-key "$access_key" \
+        --secret-key "$secret_key" \
+        --prefix "$PARQUET_PREFIX" \
+        --list-existing \
+        --noclear \
+        --benchdata "$result_base" \
+        "${tls_args[@]}" \
+        --json; then
+        if [[ -f "$result_file" ]]; then
+            echo "    ✓ Saved: $result_file"
+        elif [[ -f "${result_file}.json.zst" ]]; then
+            echo "    ✓ Saved: ${result_file}.json.zst"
+            mv "${result_file}.json.zst" "$result_file"
+            echo "    ✓ Renamed to: $result_file"
+        else
+            echo "    ✗ Parquet GET completed but no benchdata file was created"
+            echo "      Expected one of: $result_file or ${result_file}.json.zst"
+            exit 1
+        fi
+    else
+        echo "    ✗ Parquet GET failed for $category ($instance_count instances)"
+        echo "      Ensure parquet objects exist under bucket '$PARQUET_BUCKET_NAME' and prefix '$PARQUET_PREFIX'"
+        exit 1
+    fi
+}
+
+seed_parquet_if_needed() {
+    local category=$1
+    local host=$2
+    local access_key=$3
+    local secret_key=$4
+
+    if [[ "$PARQUET_SEED_IF_EMPTY" != "true" ]]; then
+        return 0
+    fi
+
+    if [[ ! -d "$PARQUET_SAMPLE_DIR" ]]; then
+        echo "    ✗ Parquet sample directory not found: $PARQUET_SAMPLE_DIR"
+        echo "      Set WARP_PARQUET_SAMPLE_DIR to a directory containing .parquet files"
+        return 1
+    fi
+
+    local endpoint_url
+    if [[ "$category" == "s3-direct" ]]; then
+        endpoint_url="$S3_ENDPOINT"
+    else
+        endpoint_url="http://$host"
+    fi
+
+    echo "  Ensuring parquet seed objects exist (category=$category, endpoint=$endpoint_url)..."
+    if dotnet run --project "$BENCHMARK_DIR/OSWS.Performance.Benchmarks.csproj" -c Release --no-build -- \
+        seed-parquet \
+        --endpoint "$endpoint_url" \
+        --access-key "$access_key" \
+        --secret-key "$secret_key" \
+        --bucket "$PARQUET_BUCKET_NAME" \
+        --prefix "$PARQUET_PREFIX" \
+        --sample-dir "$PARQUET_SAMPLE_DIR"; then
+        echo "    ✓ Parquet seed check complete"
+    else
+        echo "    ✗ Failed to seed parquet objects for $category"
+        return 1
+    fi
+}
+
+start_osws_instances() {
+    local instance_count=$1
+    local disable_encryption=$2
+    local enable_file_cache=$3
+
+    local encryption_enabled=true
+    if [[ "$disable_encryption" == "true" ]]; then
+        encryption_enabled=false
+    fi
+
+    bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
+
+    echo "  Starting OSWS instances (disable-encryption=$disable_encryption, file-cache=$enable_file_cache)"
+    for i in $(seq 1 "$instance_count"); do
+        local port=$((OSWS_BASE_PORT + (i-1)*2))
+        echo "    Instance $i on port $port"
+        bash "$SCRIPT_DIR/osws-start.sh" "$i" "$encryption_enabled" "$port" "$enable_file_cache"
+    done
+
+    echo "  Verifying health"
+    for i in $(seq 1 "$instance_count"); do
+        local port=$((OSWS_BASE_PORT + (i-1)*2))
+        if curl -fsS "http://localhost:$port/health" >/dev/null 2>&1; then
+            echo "    ✓ http://localhost:$port/health"
+        else
+            echo "    ✗ Instance on port $port failed health check"
+            exit 1
+        fi
+    done
+}
+
+for num_instances in "${INSTANCE_COUNTS[@]}"; do
+    echo "════════════════════════════════════════════════════════"
+    echo "Instance count: $num_instances"
+    echo "════════════════════════════════════════════════════════"
+
+    # Category: Baseline / S3 (direct)
+    run_warp "s3-direct" "$num_instances" "$S3_HOST" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
+    if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
+        seed_parquet_if_needed "s3-direct" "$S3_HOST" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
+        run_warp_parquet_get "s3-direct" "$num_instances" "$S3_HOST" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
+    fi
+
+    # Category: Baseline / OSWS (encryption disabled)
+    start_osws_instances "$num_instances" "true" "false"
+    run_warp "osws-no-encryption" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+    if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
+        seed_parquet_if_needed "osws-no-encryption" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+        run_warp_parquet_get "osws-no-encryption" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+    fi
+    bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
+
+    # Category: Baseline / OSWS + encryption (cache disabled)
+    start_osws_instances "$num_instances" "false" "false"
+    run_warp "osws-encryption-no-cache" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+    if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
+        seed_parquet_if_needed "osws-encryption-no-cache" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+        run_warp_parquet_get "osws-encryption-no-cache" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+    fi
+    bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
+
+    # Category: Baseline / OSWS + encryption (cache enabled)
+    start_osws_instances "$num_instances" "false" "true"
+    run_warp "osws-encryption-cache" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+    if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
+        seed_parquet_if_needed "osws-encryption-cache" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+        run_warp_parquet_get "osws-encryption-cache" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+    fi
+    bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
+
     echo ""
 done
 
-echo ""
 echo "════════════════════════════════════════════════════════"
-echo "Benchmark Suite Complete"
-echo "════════════════════════════════════════════════════════"
-echo ""
+echo "Benchmark suite complete"
 echo "Results location: $RESULTS_DIR"
-echo ""
-
-# List results
-if [[ -d "$RESULTS_DIR" && -n "$(ls -A "$RESULTS_DIR" 2>/dev/null)" ]]; then
-    echo "Results files:"
-    ls -lh "$RESULTS_DIR"/*.json 2>/dev/null || echo "  No JSON files found"
-else
-    echo "No results found in $RESULTS_DIR"
-fi
-
-echo ""
-echo "Next steps:"
-echo "  1. Review JSON results in $RESULTS_DIR"
-echo "  2. Parse results and compare metrics"
-echo "  3. For multiple instances, set up nginx load balancer"
-echo "  4. Compare encrypted vs non-encrypted performance"
-echo ""
+echo "════════════════════════════════════════════════════════"
+ls -lh "$RESULTS_DIR"/*.json.zst 2>/dev/null || echo "No Warp result files generated"
 

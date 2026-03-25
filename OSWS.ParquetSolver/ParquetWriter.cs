@@ -16,16 +16,6 @@ public class ParquetWriter(
     EncryptionSettings? encryptionSettings = null
 ) : IParquetWriter
 {
-    private readonly IKeyVaultProvider _keyVaultProvider =
-        keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
-    private readonly ILogger? _logger = logger;
-    private readonly EncryptionSettings _encryptionSettings =
-        encryptionSettings ?? new EncryptionSettings();
-    private readonly TimingLogger _timingLogger = new(
-        logger,
-        encryptionSettings?.EnableOperationLogging ?? false
-    );
-
     /// <summary>
     /// Read an unencrypted parquet file and write an encrypted version.
     /// Encrypts specified columns (or all columns if null) using the configured
@@ -39,22 +29,24 @@ public class ParquetWriter(
     public Task<(Stream Stream, EncryptionResult Metadata)> WriteParquetAsync(
         Stream input,
         string role,
-        string[]? columnsToEncrypt = null
+        string[]? columnsToEncrypt = null,
+        Stream? output = null
     )
     {
-        return Task.Run(() => WriteParquetInternal(input, role, columnsToEncrypt));
+        return Task.Run(() => WriteParquetInternal(input, role, columnsToEncrypt, output));
     }
 
     private (Stream Stream, EncryptionResult Metadata) WriteParquetInternal(
         Stream input,
         string role,
-        string[]? columnsToEncrypt
+        string[]? columnsToEncrypt,
+        Stream? output
     )
     {
         // If encryption is disabled, just pass through the input stream
-        if (_encryptionSettings.DisableEncryption)
+        if (encryptionSettings is { DisableEncryption: true })
         {
-            _logger?.LogInformation(
+            logger?.LogInformation(
                 "[ParquetWriter] Encryption disabled, writing plaintext parquet"
             );
             var plainTextStream = new MemoryStream();
@@ -64,14 +56,14 @@ public class ParquetWriter(
                 plainTextStream,
                 new EncryptionResult
                 {
-                    FileKeyVaultId = null,
-                    FileKeyName = null,
-                    Columns = null,
+                    FileKeyVaultId = string.Empty,
+                    FileKeyName = string.Empty,
+                    Columns = new List<EncryptedColumnInfo>(),
                 }
             );
         }
 
-        _logger?.LogInformation(
+        logger?.LogInformation(
             "[ParquetWriter] Encrypting parquet with role: {Role}, columns: {ColumnCount}",
             role,
             columnsToEncrypt?.Length.ToString() ?? "all"
@@ -90,10 +82,10 @@ public class ParquetWriter(
         var (encryptionProperties, encryptionMetadata) = Cryptography.BuildEncryptionProperties(
             schema,
             columnsToEncrypt,
-            _keyVaultProvider,
+            keyVaultProvider,
             role,
             providerType,
-            _encryptionSettings
+            encryptionSettings
         );
 
         Console.WriteLine(
@@ -104,7 +96,7 @@ public class ParquetWriter(
         writerPropertiesBuilder.Encryption(encryptionProperties);
         using var writerProperties = writerPropertiesBuilder.Build();
 
-        var outputStream = new MemoryStream();
+        var outputStream = output ?? new MemoryStream();
         using var outputMos = new ManagedOutputStream(outputStream, leaveOpen: true);
         using var writer = new ParquetFileWriter(
             outputMos,
@@ -118,7 +110,10 @@ public class ParquetWriter(
         writer.Close();
         reader.Close();
 
-        outputStream.Position = 0;
+        if (outputStream.CanSeek)
+        {
+            outputStream.Position = 0;
+        }
         return (outputStream, encryptionMetadata);
     }
 }

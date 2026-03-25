@@ -33,6 +33,7 @@ public static class Cryptography
 
         var fileKeyName = $"{role}-file-{Guid.NewGuid():N}";
         var fileKeyId = keyVaultProvider.CreateKeyAsync(fileKeyName, role).GetAwaiter().GetResult();
+        var encryptedColumns = new List<EncryptedColumnInfo>();
 
         // Parquet still expects a footer key and key metadata even when the footer itself is plaintext.
         // Keep the footer plaintext, but wrap the footer key with the file-level KEK so readers can initialize crypto.
@@ -59,7 +60,6 @@ public static class Cryptography
         // Each encrypted column gets its own DEK, but every DEK in the file is wrapped by one KEK.
         var numColumns = schema.NumColumns;
         var columnProperties = new ColumnEncryptionProperties[numColumns];
-        var encryptedColumnInfos = new List<EncryptedColumnInfo>();
 
         for (var i = 0; i < numColumns; i++)
         {
@@ -98,11 +98,11 @@ public static class Cryptography
             colBuilder.KeyMetadata(columnMetadata.Serialize());
             columnProperties[i] = colBuilder.Build();
 
-            encryptedColumnInfos.Add(new EncryptedColumnInfo
+            encryptedColumns.Add(new EncryptedColumnInfo
             {
                 ColumnName = colName,
-                KeyVaultId = fileKeyId!,
-                KeyName = fileKeyName!,
+                KeyVaultId = fileKeyId,
+                KeyName = fileKeyName,
             });
         }
 
@@ -112,14 +112,15 @@ public static class Cryptography
             builder.EncryptedColumns(encryptedCols!);
         }
 
-        var metadata = new EncryptionResult
-        {
-            FileKeyVaultId = fileKeyId,
-            FileKeyName = fileKeyName,
-            Columns = encryptedColumnInfos,
-        };
-
-        return (builder.Build(), metadata);
+        return (
+            builder.Build(),
+            new EncryptionResult
+            {
+                FileKeyVaultId = fileKeyId,
+                FileKeyName = fileKeyName,
+                Columns = encryptedColumns,
+            }
+        );
     }
 
     /// <summary>

@@ -29,6 +29,14 @@ public class EncryptionSettings
     public bool EnableOperationLogging { get; set; } = false;
 
     /// <summary>
+    /// When true, disables user authentication requirements for S3 operations.
+    /// This allows benchmark tools like Warp to connect without valid credentials.
+    /// WARNING: Only enable this in controlled benchmark environments, never in production!
+    /// Default: false (authentication required)
+    /// </summary>
+    public bool BenchmarkMode { get; set; } = false;
+
+    /// <summary>
     /// Validates the configuration and throws if DekSizeBits is invalid.
     /// </summary>
     public void Validate()

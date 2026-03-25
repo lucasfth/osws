@@ -17,13 +17,6 @@ public class ParquetReader(
     Action<TimeSpan>? onCachedKvOperationLatency = null
 ) : IParquetReader
 {
-    private readonly EncryptionSettings _encryptionSettings =
-        encryptionSettings ?? new EncryptionSettings();
-    private readonly TimingLogger _timingLogger = new(
-        logger,
-        encryptionSettings?.EnableOperationLogging ?? false
-    );
-
     /// <summary>
     /// Controls behavior when a column cannot be decrypted.
     /// Defaults to writing dummy values for that column so the remaining columns can still be read.
@@ -48,10 +41,10 @@ public class ParquetReader(
     public Task<MemoryStream> ReadParquetAsync(Stream input, ISet<string>? allowedColumns = null) =>
         Task.Run(() => ReadParquetInternal(input, allowedColumns));
 
-    private MemoryStream ReadParquetInternal(Stream input, ISet<string>? allowedColumns)
+    private MemoryStream ReadParquetInternal(Stream input, ISet<string>? allowedColumns = null)
     {
         // If encryption is disabled, just pass through the input stream
-        if (_encryptionSettings.DisableEncryption)
+        if (encryptionSettings is { DisableEncryption: true })
         {
             logger?.LogInformation(
                 "[ParquetReader] Encryption disabled, reading plaintext parquet"
@@ -64,8 +57,6 @@ public class ParquetReader(
 
         logger?.LogInformation("[ParquetReader] Decrypting parquet file");
 
-        // Build decryption properties - the KeyRetriever will call IKeyVaultProvider
-        // to decrypt DEKs stored in parquet key metadata, with caching to avoid repeated calls
         using var decryptionProperties = Cryptography.BuildDecryptionProperties(
             keyVaultProvider,
             dekCache,

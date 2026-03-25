@@ -1,0 +1,21 @@
+# Environment-specific configuration (DO NOT COMMIT)
+.env
+
+# Warp benchmark results
+warp-results/
+
+# Build artifacts
+bin/
+obj/
+
+# User-specific files
+.DS_Store
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.log

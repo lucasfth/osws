@@ -13,6 +13,11 @@ public interface IParquetWriter
     /// <param name="input">Stream containing plaintext parquet data.</param>
     /// <param name="role">The role to associate encryption keys with.</param>
     /// <param name="columnsToEncrypt">Column names to encrypt, or null for all columns.</param>
-    /// <returns>The encrypted stream and metadata about the encryption keys used.</returns>
-    Task<(Stream Stream, EncryptionResult Metadata)> WriteParquetAsync(Stream input, string role, string[]? columnsToEncrypt = null);
+    /// <param name="output">Optional destination stream for encrypted parquet output.</param>
+    Task<(Stream Stream, EncryptionResult Metadata)> WriteParquetAsync(
+        Stream input,
+        string role,
+        string[]? columnsToEncrypt = null,
+        Stream? output = null
+    );
 }

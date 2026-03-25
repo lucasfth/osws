@@ -12,12 +12,13 @@ public static class WideDatasetGenerator
     public static async Task<Stream> GenerateAsync(
         int columns = 2000,
         int rows = 10000,
+        Stream? output = null,
         CancellationToken cancellationToken = default
     )
     {
         await Task.CompletedTask; // For async signature consistency
 
-        var outputStream = new MemoryStream();
+        var outputStream = output ?? new MemoryStream();
 
         // Create schema with many columns
         var schemaColumns = new List<Column>();
@@ -49,7 +50,10 @@ public static class WideDatasetGenerator
         }
 
         writer.Close();
-        outputStream.Position = 0;
+        if (outputStream.CanSeek)
+        {
+            outputStream.Position = 0;
+        }
 
         return outputStream;
     }

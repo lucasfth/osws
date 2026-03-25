@@ -1,0 +1,1190 @@
+
+{
+  "v": 2,
+  "commandline": "warp mixed --json=true --host=localhost:8000 --access-key=*REDACTED* --secret-key=*REDACTED* --bucket=warp-benchmark-test --concurrent=4 --disable-sha256-payload=true --objects=1000 --obj.size=1M --duration=10s",
+  "final": true,
+  "total": {
+    "Title": "Total (Final)",
+    "total_requests": 43,
+    "total_objects": 43,
+    "total_errors": 0,
+    "total_bytes": 28000000,
+    "concurrency": 4,
+    "start_time": "2026-03-24T12:30:07.166435+01:00",
+    "end_time": "2026-03-24T12:30:18.213090708+01:00",
+    "first_errors": null,
+    "hosts": [
+      "http://localhost:8000"
+    ],
+    "clients": [
+      "4maK"
+    ],
+    "throughput": {
+      "start_time": "2026-03-24T12:30:09+01:00",
+      "end_time": "2026-03-24T12:30:21+01:00",
+      "segmented": {
+        "fastest_start": "2026-03-24T12:30:10+01:00",
+        "median_start": "2026-03-24T12:30:12+01:00",
+        "slowest_start": "2026-03-24T12:30:14+01:00",
+        "sorted_by": "bps",
+        "segments": [
+          {
+            "start": "2026-03-24T12:30:07+01:00",
+            "bytes_per_sec": 2225445,
+            "obj_per_sec": 2.66
+          },
+          {
+            "start": "2026-03-24T12:30:08+01:00",
+            "bytes_per_sec": 2914909,
+            "obj_per_sec": 5.48
+          },
+          {
+            "start": "2026-03-24T12:30:09+01:00",
+            "bytes_per_sec": 3003126,
+            "obj_per_sec": 5
+          },
+          {
+            "start": "2026-03-24T12:30:10+01:00",
+            "bytes_per_sec": 3407820,
+            "obj_per_sec": 3.41
+          },
+          {
+            "start": "2026-03-24T12:30:11+01:00",
+            "bytes_per_sec": 2745284,
+            "obj_per_sec": 3.75
+          },
+          {
+            "start": "2026-03-24T12:30:12+01:00",
+            "bytes_per_sec": 2844259,
+            "obj_per_sec": 5.84
+          },
+          {
+            "start": "2026-03-24T12:30:13+01:00",
+            "bytes_per_sec": 2425097,
+            "obj_per_sec": 3.61
+          },
+          {
+            "start": "2026-03-24T12:30:14+01:00",
+            "bytes_per_sec": 1888619,
+            "obj_per_sec": 5.7
+          }
+        ],
+        "segment_duration_millis": 1000,
+        "fastest_bps": 3407820,
+        "fastest_ops": 3.41,
+        "median_bps": 2844259,
+        "median_ops": 5.84,
+        "slowest_bps": 1888619,
+        "slowest_ops": 5.7
+      },
+      "errors": 0,
+      "measure_duration_millis": 8000,
+      "bytes": 21454562.405275334,
+      "objects": 35.45456240527533,
+      "ops": 36
+    },
+    "throughput_by_host": {
+      "http://localhost:8000": {
+        "start_time": "2026-03-24T12:30:07.166435+01:00",
+        "end_time": "2026-03-24T12:30:18.213090708+01:00",
+        "errors": 0,
+        "measure_duration_millis": 11046,
+        "bytes": 28000000,
+        "objects": 43,
+        "ops": 43
+      }
+    },
+    "throughput_by_client": {
+      "4maK": {
+        "start_time": "2026-03-24T12:30:07.166435+01:00",
+        "end_time": "2026-03-24T12:30:18.213090708+01:00",
+        "errors": 0,
+        "measure_duration_millis": 11046,
+        "bytes": 28000000,
+        "objects": 43,
+        "ops": 43
+      }
+    },
+    "requests_by_client": {
+      "4maK": [
+        {
+          "start_time": "2026-03-24T12:30:07+01:00",
+          "end_time": "2026-03-24T12:30:17+01:00",
+          "multi_sized_requests": {
+            "by_size": [
+              {
+                "first_byte": {
+                  "average_millis": 434.774568,
+                  "fastest_millis": 210.189458,
+                  "p25_millis": 332.166209,
+                  "median_millis": 391.113458,
+                  "p75_millis": 537.053833,
+                  "p90_millis": 763.571042,
+                  "p99_millis": 789.3305,
+                  "slowest_millis": 789.3305,
+                  "std_dev_millis": 168.533592
+                },
+                "min_size_string": "1 B",
+                "max_size_string": "1.0 MiB",
+                "bps_median": 1033862.8,
+                "avg_duration_millis": 1410.374631,
+                "bps_average": 709031.5,
+                "requests": 24,
+                "bps_90": 324655.4,
+                "bps_99": 181610.4,
+                "bps_fastest": 2119116.6,
+                "bps_slowest": 181610.4,
+                "avg_obj_size": 1000000,
+                "max_size": 1048576,
+                "min_size": 1,
+                "merged_entries": 1
+              }
+            ],
+            "requests": 39,
+            "avg_obj_size": 615384,
+            "merged_entries": 1
+          }
+        },
+        {
+          "start_time": "2026-03-24T12:30:17+01:00",
+          "end_time": "2026-03-24T12:30:27+01:00",
+          "multi_sized_requests": {
+            "by_size": [
+              {
+                "first_byte": {
+                  "average_millis": 278.369187,
+                  "fastest_millis": 241.122333,
+                  "p25_millis": 258.090041,
+                  "median_millis": 283.390166,
+                  "p75_millis": 330.874208,
+                  "p90_millis": 330.874208,
+                  "p99_millis": 330.874208,
+                  "slowest_millis": 330.874208,
+                  "std_dev_millis": 39.074967
+                },
+                "min_size_string": "100KiB",
+                "max_size_string": "1MiB",
+                "bps_median": 617000.4,
+                "avg_duration_millis": 1589.381895,
+                "bps_average": 629175.4,
+                "requests": 4,
+                "bps_90": 443879.9,
+                "bps_99": 443879.9,
+                "bps_fastest": 1136276.2,
+                "bps_slowest": 443879.9,
+                "avg_obj_size": 1000000,
+                "max_size": 1000000,
+                "min_size": 1000000,
+                "merged_entries": 1
+              }
+            ],
+            "requests": 4,
+            "avg_obj_size": 1000000,
+            "merged_entries": 1
+          }
+        }
+      ]
+    }
+  },
+  "by_op_type": {
+    "DELETE": {
+      "Title": "Operation: DELETE (Final)",
+      "total_requests": 5,
+      "total_objects": 5,
+      "total_errors": 0,
+      "total_bytes": 0,
+      "concurrency": 3,
+      "start_time": "2026-03-24T12:30:07.166446+01:00",
+      "end_time": "2026-03-24T12:30:15.251741458+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "4maK"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:30:09+01:00",
+        "end_time": "2026-03-24T12:30:18+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:30:11+01:00",
+          "median_start": "2026-03-24T12:30:08+01:00",
+          "slowest_start": "2026-03-24T12:30:09+01:00",
+          "sorted_by": "ops",
+          "segments": [
+            {
+              "start": "2026-03-24T12:30:07+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0.43
+            },
+            {
+              "start": "2026-03-24T12:30:08+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0.57
+            },
+            {
+              "start": "2026-03-24T12:30:09+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0
+            },
+            {
+              "start": "2026-03-24T12:30:10+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0
+            },
+            {
+              "start": "2026-03-24T12:30:11+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 0,
+          "fastest_ops": 1,
+          "median_bps": 0,
+          "median_ops": 0.57,
+          "slowest_bps": 0,
+          "slowest_ops": 0
+        },
+        "errors": 0,
+        "measure_duration_millis": 5000,
+        "bytes": 0,
+        "objects": 2,
+        "ops": 2
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:30:07.166446+01:00",
+          "end_time": "2026-03-24T12:30:15.251741458+01:00",
+          "errors": 0,
+          "measure_duration_millis": 8085,
+          "bytes": 0,
+          "objects": 5,
+          "ops": 5
+        }
+      },
+      "throughput_by_client": {
+        "4maK": {
+          "start_time": "2026-03-24T12:30:07.166446+01:00",
+          "end_time": "2026-03-24T12:30:15.251741458+01:00",
+          "errors": 0,
+          "measure_duration_millis": 8085,
+          "bytes": 0,
+          "objects": 5,
+          "ops": 5
+        }
+      },
+      "requests_by_client": {
+        "4maK": [
+          {
+            "start_time": "2026-03-24T12:30:07+01:00",
+            "end_time": "2026-03-24T12:30:17+01:00",
+            "single_sized_requests": {
+              "dur_median_millis": 218.809458,
+              "fastest_millis": 193.022458,
+              "slowest_millis": 288.680917,
+              "std_dev_millis": 37.180595,
+              "dur_99_millis": 288.680917,
+              "dur_90_millis": 288.680917,
+              "dur_avg_millis": 224.574825,
+              "requests": 5,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    },
+    "GET": {
+      "Title": "Operation: GET (Final)",
+      "total_requests": 24,
+      "total_objects": 24,
+      "total_errors": 0,
+      "total_bytes": 24000000,
+      "concurrency": 4,
+      "start_time": "2026-03-24T12:30:07.166435+01:00",
+      "end_time": "2026-03-24T12:30:18.213090708+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "4maK"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:30:09+01:00",
+        "end_time": "2026-03-24T12:30:21+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:30:12+01:00",
+          "median_start": "2026-03-24T12:30:13+01:00",
+          "slowest_start": "2026-03-24T12:30:14+01:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-24T12:30:07+01:00",
+              "bytes_per_sec": 1900790,
+              "obj_per_sec": 1.9
+            },
+            {
+              "start": "2026-03-24T12:30:08+01:00",
+              "bytes_per_sec": 2510502,
+              "obj_per_sec": 2.51
+            },
+            {
+              "start": "2026-03-24T12:30:09+01:00",
+              "bytes_per_sec": 1984870,
+              "obj_per_sec": 1.98
+            },
+            {
+              "start": "2026-03-24T12:30:10+01:00",
+              "bytes_per_sec": 1998648,
+              "obj_per_sec": 2
+            },
+            {
+              "start": "2026-03-24T12:30:11+01:00",
+              "bytes_per_sec": 2429777,
+              "obj_per_sec": 2.43
+            },
+            {
+              "start": "2026-03-24T12:30:12+01:00",
+              "bytes_per_sec": 2844259,
+              "obj_per_sec": 2.84
+            },
+            {
+              "start": "2026-03-24T12:30:13+01:00",
+              "bytes_per_sec": 2425097,
+              "obj_per_sec": 2.43
+            },
+            {
+              "start": "2026-03-24T12:30:14+01:00",
+              "bytes_per_sec": 1888619,
+              "obj_per_sec": 1.89
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 2844259,
+          "fastest_ops": 2.84,
+          "median_bps": 2425097,
+          "median_ops": 2.43,
+          "slowest_bps": 1888619,
+          "slowest_ops": 1.89
+        },
+        "errors": 0,
+        "measure_duration_millis": 8000,
+        "bytes": 17982565.416129656,
+        "objects": 17.982565416129656,
+        "ops": 19
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:30:07.166435+01:00",
+          "end_time": "2026-03-24T12:30:18.213090708+01:00",
+          "errors": 0,
+          "measure_duration_millis": 11046,
+          "bytes": 24000000,
+          "objects": 24,
+          "ops": 24
+        }
+      },
+      "throughput_by_client": {
+        "4maK": {
+          "start_time": "2026-03-24T12:30:07.166435+01:00",
+          "end_time": "2026-03-24T12:30:18.213090708+01:00",
+          "errors": 0,
+          "measure_duration_millis": 11046,
+          "bytes": 24000000,
+          "objects": 24,
+          "ops": 24
+        }
+      },
+      "requests_by_client": {
+        "4maK": [
+          {
+            "start_time": "2026-03-24T12:30:07+01:00",
+            "end_time": "2026-03-24T12:30:17+01:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 434.774568,
+                "fastest_millis": 210.189458,
+                "p25_millis": 332.166209,
+                "median_millis": 391.113458,
+                "p75_millis": 537.053833,
+                "p90_millis": 763.571042,
+                "p99_millis": 789.3305,
+                "slowest_millis": 789.3305,
+                "std_dev_millis": 168.533592
+              },
+              "dur_median_millis": 1030.832916,
+              "fastest_millis": 471.89475,
+              "slowest_millis": 5506.292834,
+              "std_dev_millis": 1154.839007,
+              "dur_99_millis": 5506.292834,
+              "dur_90_millis": 2893.070125,
+              "dur_avg_millis": 1419.895431,
+              "requests": 20,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-24T12:30:17+01:00",
+            "end_time": "2026-03-24T12:30:27+01:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 278.369187,
+                "fastest_millis": 241.122333,
+                "p25_millis": 258.090041,
+                "median_millis": 283.390166,
+                "p75_millis": 330.874208,
+                "p90_millis": 330.874208,
+                "p99_millis": 330.874208,
+                "slowest_millis": 330.874208,
+                "std_dev_millis": 39.074967
+              },
+              "dur_median_millis": 1620.744583,
+              "fastest_millis": 880.06775,
+              "slowest_millis": 2252.861708,
+              "std_dev_millis": 561.107555,
+              "dur_99_millis": 2252.861708,
+              "dur_90_millis": 2252.861708,
+              "dur_avg_millis": 1589.381895,
+              "requests": 4,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    },
+    "PUT": {
+      "Title": "Operation: PUT (Final)",
+      "total_requests": 4,
+      "total_objects": 4,
+      "total_errors": 0,
+      "total_bytes": 4000000,
+      "concurrency": 3,
+      "start_time": "2026-03-24T12:30:07.373651+01:00",
+      "end_time": "2026-03-24T12:30:13.220997583+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "4maK"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:30:09+01:00",
+        "end_time": "2026-03-24T12:30:16+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:30:09+01:00",
+          "median_start": "2026-03-24T12:30:09+01:00",
+          "slowest_start": "2026-03-24T12:30:07+01:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-24T12:30:07+01:00",
+              "bytes_per_sec": 324655,
+              "obj_per_sec": 0.32
+            },
+            {
+              "start": "2026-03-24T12:30:08+01:00",
+              "bytes_per_sec": 404406,
+              "obj_per_sec": 0.4
+            },
+            {
+              "start": "2026-03-24T12:30:09+01:00",
+              "bytes_per_sec": 1018256,
+              "obj_per_sec": 1.02
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 1018256,
+          "fastest_ops": 1.02,
+          "median_bps": 1018256,
+          "median_ops": 1.02,
+          "slowest_bps": 324655,
+          "slowest_ops": 0.32
+        },
+        "errors": 0,
+        "measure_duration_millis": 3000,
+        "bytes": 1747318.2735247768,
+        "objects": 1.7473182735247768,
+        "ops": 2
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:30:07.373651+01:00",
+          "end_time": "2026-03-24T12:30:13.220997583+01:00",
+          "errors": 0,
+          "measure_duration_millis": 5847,
+          "bytes": 4000000,
+          "objects": 4,
+          "ops": 4
+        }
+      },
+      "throughput_by_client": {
+        "4maK": {
+          "start_time": "2026-03-24T12:30:07.373651+01:00",
+          "end_time": "2026-03-24T12:30:13.220997583+01:00",
+          "errors": 0,
+          "measure_duration_millis": 5847,
+          "bytes": 4000000,
+          "objects": 4,
+          "ops": 4
+        }
+      },
+      "requests_by_client": {
+        "4maK": [
+          {
+            "start_time": "2026-03-24T12:30:10+01:00",
+            "end_time": "2026-03-24T12:30:20+01:00",
+            "single_sized_requests": {
+              "dur_median_millis": 952.178417,
+              "fastest_millis": 700.452583,
+              "slowest_millis": 3080.188875,
+              "std_dev_millis": 1150.676192,
+              "dur_99_millis": 3080.188875,
+              "dur_90_millis": 3080.188875,
+              "dur_avg_millis": 1362.770635,
+              "requests": 4,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    },
+    "STAT": {
+      "Title": "Operation: STAT (Final)",
+      "total_requests": 10,
+      "total_objects": 10,
+      "total_errors": 0,
+      "total_bytes": 0,
+      "concurrency": 2,
+      "start_time": "2026-03-24T12:30:10.059735+01:00",
+      "end_time": "2026-03-24T12:30:16.784250833+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "4maK"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:30:12+01:00",
+        "end_time": "2026-03-24T12:30:19+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:30:12+01:00",
+          "median_start": "2026-03-24T12:30:12+01:00",
+          "slowest_start": "2026-03-24T12:30:10+01:00",
+          "sorted_by": "ops",
+          "segments": [
+            {
+              "start": "2026-03-24T12:30:10+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0
+            },
+            {
+              "start": "2026-03-24T12:30:11+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0
+            },
+            {
+              "start": "2026-03-24T12:30:12+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 0,
+          "fastest_ops": 2,
+          "median_bps": 0,
+          "median_ops": 2,
+          "slowest_bps": 0,
+          "slowest_ops": 0
+        },
+        "errors": 0,
+        "measure_duration_millis": 3000,
+        "bytes": 0,
+        "objects": 2,
+        "ops": 2
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:30:10.059735+01:00",
+          "end_time": "2026-03-24T12:30:16.784250833+01:00",
+          "errors": 0,
+          "measure_duration_millis": 6724,
+          "bytes": 0,
+          "objects": 10,
+          "ops": 10
+        }
+      },
+      "throughput_by_client": {
+        "4maK": {
+          "start_time": "2026-03-24T12:30:10.059735+01:00",
+          "end_time": "2026-03-24T12:30:16.784250833+01:00",
+          "errors": 0,
+          "measure_duration_millis": 6724,
+          "bytes": 0,
+          "objects": 10,
+          "ops": 10
+        }
+      },
+      "requests_by_client": {
+        "4maK": [
+          {
+            "start_time": "2026-03-24T12:30:10+01:00",
+            "end_time": "2026-03-24T12:30:20+01:00",
+            "single_sized_requests": {
+              "dur_median_millis": 169.766833,
+              "fastest_millis": 94.802667,
+              "slowest_millis": 415.448125,
+              "std_dev_millis": 114.292207,
+              "dur_99_millis": 415.448125,
+              "dur_90_millis": 415.448125,
+              "dur_avg_millis": 199.335683,
+              "requests": 10,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "by_host": {
+    "http://localhost:8000": {
+      "Title": "Host: http://localhost:8000 (Final)",
+      "total_requests": 43,
+      "total_objects": 43,
+      "total_errors": 0,
+      "total_bytes": 28000000,
+      "concurrency": 4,
+      "start_time": "2026-03-24T12:30:07.166435+01:00",
+      "end_time": "2026-03-24T12:30:18.213090708+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "4maK"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:30:09+01:00",
+        "end_time": "2026-03-24T12:30:21+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:30:10+01:00",
+          "median_start": "2026-03-24T12:30:12+01:00",
+          "slowest_start": "2026-03-24T12:30:14+01:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-24T12:30:07+01:00",
+              "bytes_per_sec": 2225445,
+              "obj_per_sec": 2.66
+            },
+            {
+              "start": "2026-03-24T12:30:08+01:00",
+              "bytes_per_sec": 2914909,
+              "obj_per_sec": 5.48
+            },
+            {
+              "start": "2026-03-24T12:30:09+01:00",
+              "bytes_per_sec": 3003126,
+              "obj_per_sec": 5
+            },
+            {
+              "start": "2026-03-24T12:30:10+01:00",
+              "bytes_per_sec": 3407820,
+              "obj_per_sec": 3.41
+            },
+            {
+              "start": "2026-03-24T12:30:11+01:00",
+              "bytes_per_sec": 2745284,
+              "obj_per_sec": 3.75
+            },
+            {
+              "start": "2026-03-24T12:30:12+01:00",
+              "bytes_per_sec": 2844259,
+              "obj_per_sec": 5.84
+            },
+            {
+              "start": "2026-03-24T12:30:13+01:00",
+              "bytes_per_sec": 2425097,
+              "obj_per_sec": 3.61
+            },
+            {
+              "start": "2026-03-24T12:30:14+01:00",
+              "bytes_per_sec": 1888619,
+              "obj_per_sec": 5.7
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 3407820,
+          "fastest_ops": 3.41,
+          "median_bps": 2844259,
+          "median_ops": 5.84,
+          "slowest_bps": 1888619,
+          "slowest_ops": 5.7
+        },
+        "errors": 0,
+        "measure_duration_millis": 8000,
+        "bytes": 21454562.405275334,
+        "objects": 35.45456240527533,
+        "ops": 36
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:30:07.166435+01:00",
+          "end_time": "2026-03-24T12:30:18.213090708+01:00",
+          "errors": 0,
+          "measure_duration_millis": 11046,
+          "bytes": 28000000,
+          "objects": 43,
+          "ops": 43
+        }
+      },
+      "throughput_by_client": {
+        "4maK": {
+          "start_time": "2026-03-24T12:30:07.166435+01:00",
+          "end_time": "2026-03-24T12:30:18.213090708+01:00",
+          "errors": 0,
+          "measure_duration_millis": 11046,
+          "bytes": 28000000,
+          "objects": 43,
+          "ops": 43
+        }
+      },
+      "requests_by_client": {
+        "4maK": [
+          {
+            "start_time": "2026-03-24T12:30:07+01:00",
+            "end_time": "2026-03-24T12:30:17+01:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 434.774568,
+                    "fastest_millis": 210.189458,
+                    "p25_millis": 332.166209,
+                    "median_millis": 391.113458,
+                    "p75_millis": 537.053833,
+                    "p90_millis": 763.571042,
+                    "p99_millis": 789.3305,
+                    "slowest_millis": 789.3305,
+                    "std_dev_millis": 168.533592
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1033862.8,
+                  "avg_duration_millis": 1410.374631,
+                  "bps_average": 709031.5,
+                  "requests": 24,
+                  "bps_90": 324655.4,
+                  "bps_99": 181610.4,
+                  "bps_fastest": 2119116.6,
+                  "bps_slowest": 181610.4,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 39,
+              "avg_obj_size": 615384,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-24T12:30:17+01:00",
+            "end_time": "2026-03-24T12:30:27+01:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 278.369187,
+                    "fastest_millis": 241.122333,
+                    "p25_millis": 258.090041,
+                    "median_millis": 283.390166,
+                    "p75_millis": 330.874208,
+                    "p90_millis": 330.874208,
+                    "p99_millis": 330.874208,
+                    "slowest_millis": 330.874208,
+                    "std_dev_millis": 39.074967
+                  },
+                  "min_size_string": "100KiB",
+                  "max_size_string": "1MiB",
+                  "bps_median": 617000.4,
+                  "avg_duration_millis": 1589.381895,
+                  "bps_average": 629175.4,
+                  "requests": 4,
+                  "bps_90": 443879.9,
+                  "bps_99": 443879.9,
+                  "bps_fastest": 1136276.2,
+                  "bps_slowest": 443879.9,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1000000,
+                  "min_size": 1000000,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 4,
+              "avg_obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "by_obj_log_2_size": {
+    "20": {
+      "Title": "Size: 0-\u003e1048575 (Final)",
+      "total_requests": 28,
+      "total_objects": 28,
+      "total_errors": 0,
+      "total_bytes": 28000000,
+      "concurrency": 4,
+      "start_time": "2026-03-24T12:30:07.166435+01:00",
+      "end_time": "2026-03-24T12:30:18.213090708+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "4maK"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:30:09+01:00",
+        "end_time": "2026-03-24T12:30:21+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:30:10+01:00",
+          "median_start": "2026-03-24T12:30:12+01:00",
+          "slowest_start": "2026-03-24T12:30:14+01:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-24T12:30:07+01:00",
+              "bytes_per_sec": 2225445,
+              "obj_per_sec": 2.23
+            },
+            {
+              "start": "2026-03-24T12:30:08+01:00",
+              "bytes_per_sec": 2914909,
+              "obj_per_sec": 2.91
+            },
+            {
+              "start": "2026-03-24T12:30:09+01:00",
+              "bytes_per_sec": 3003126,
+              "obj_per_sec": 3
+            },
+            {
+              "start": "2026-03-24T12:30:10+01:00",
+              "bytes_per_sec": 3407820,
+              "obj_per_sec": 3.41
+            },
+            {
+              "start": "2026-03-24T12:30:11+01:00",
+              "bytes_per_sec": 2745284,
+              "obj_per_sec": 2.75
+            },
+            {
+              "start": "2026-03-24T12:30:12+01:00",
+              "bytes_per_sec": 2844259,
+              "obj_per_sec": 2.84
+            },
+            {
+              "start": "2026-03-24T12:30:13+01:00",
+              "bytes_per_sec": 2425097,
+              "obj_per_sec": 2.43
+            },
+            {
+              "start": "2026-03-24T12:30:14+01:00",
+              "bytes_per_sec": 1888619,
+              "obj_per_sec": 1.89
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 3407820,
+          "fastest_ops": 3.41,
+          "median_bps": 2844259,
+          "median_ops": 2.84,
+          "slowest_bps": 1888619,
+          "slowest_ops": 1.89
+        },
+        "errors": 0,
+        "measure_duration_millis": 8000,
+        "bytes": 21454562.405275334,
+        "objects": 21.45456240527533,
+        "ops": 22
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:30:07.166435+01:00",
+          "end_time": "2026-03-24T12:30:18.213090708+01:00",
+          "errors": 0,
+          "measure_duration_millis": 11046,
+          "bytes": 28000000,
+          "objects": 28,
+          "ops": 28
+        }
+      },
+      "throughput_by_client": {
+        "4maK": {
+          "start_time": "2026-03-24T12:30:07.166435+01:00",
+          "end_time": "2026-03-24T12:30:18.213090708+01:00",
+          "errors": 0,
+          "measure_duration_millis": 11046,
+          "bytes": 28000000,
+          "objects": 28,
+          "ops": 28
+        }
+      },
+      "requests_by_client": {
+        "4maK": [
+          {
+            "start_time": "2026-03-24T12:30:07+01:00",
+            "end_time": "2026-03-24T12:30:17+01:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 434.774568,
+                "fastest_millis": 210.189458,
+                "p25_millis": 332.166209,
+                "median_millis": 391.113458,
+                "p75_millis": 537.053833,
+                "p90_millis": 763.571042,
+                "p99_millis": 789.3305,
+                "slowest_millis": 789.3305,
+                "std_dev_millis": 168.533592
+              },
+              "dur_median_millis": 967.246333,
+              "fastest_millis": 471.89475,
+              "slowest_millis": 5506.292834,
+              "std_dev_millis": 1129.109963,
+              "dur_99_millis": 5506.292834,
+              "dur_90_millis": 3080.188875,
+              "dur_avg_millis": 1410.374631,
+              "requests": 24,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-24T12:30:17+01:00",
+            "end_time": "2026-03-24T12:30:27+01:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 278.369187,
+                "fastest_millis": 241.122333,
+                "p25_millis": 258.090041,
+                "median_millis": 283.390166,
+                "p75_millis": 330.874208,
+                "p90_millis": 330.874208,
+                "p99_millis": 330.874208,
+                "slowest_millis": 330.874208,
+                "std_dev_millis": 39.074967
+              },
+              "dur_median_millis": 1620.744583,
+              "fastest_millis": 880.06775,
+              "slowest_millis": 2252.861708,
+              "std_dev_millis": 561.107555,
+              "dur_99_millis": 2252.861708,
+              "dur_90_millis": 2252.861708,
+              "dur_avg_millis": 1589.381895,
+              "requests": 4,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "by_client": {
+    "4maK": {
+      "Title": "Client: 4maK (Final)",
+      "total_requests": 43,
+      "total_objects": 43,
+      "total_errors": 0,
+      "total_bytes": 28000000,
+      "concurrency": 4,
+      "start_time": "2026-03-24T12:30:07.166435+01:00",
+      "end_time": "2026-03-24T12:30:18.213090708+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "4maK"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:30:09+01:00",
+        "end_time": "2026-03-24T12:30:21+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:30:10+01:00",
+          "median_start": "2026-03-24T12:30:12+01:00",
+          "slowest_start": "2026-03-24T12:30:14+01:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-24T12:30:07+01:00",
+              "bytes_per_sec": 2225445,
+              "obj_per_sec": 2.66
+            },
+            {
+              "start": "2026-03-24T12:30:08+01:00",
+              "bytes_per_sec": 2914909,
+              "obj_per_sec": 5.48
+            },
+            {
+              "start": "2026-03-24T12:30:09+01:00",
+              "bytes_per_sec": 3003126,
+              "obj_per_sec": 5
+            },
+            {
+              "start": "2026-03-24T12:30:10+01:00",
+              "bytes_per_sec": 3407820,
+              "obj_per_sec": 3.41
+            },
+            {
+              "start": "2026-03-24T12:30:11+01:00",
+              "bytes_per_sec": 2745284,
+              "obj_per_sec": 3.75
+            },
+            {
+              "start": "2026-03-24T12:30:12+01:00",
+              "bytes_per_sec": 2844259,
+              "obj_per_sec": 5.84
+            },
+            {
+              "start": "2026-03-24T12:30:13+01:00",
+              "bytes_per_sec": 2425097,
+              "obj_per_sec": 3.61
+            },
+            {
+              "start": "2026-03-24T12:30:14+01:00",
+              "bytes_per_sec": 1888619,
+              "obj_per_sec": 5.7
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 3407820,
+          "fastest_ops": 3.41,
+          "median_bps": 2844259,
+          "median_ops": 5.84,
+          "slowest_bps": 1888619,
+          "slowest_ops": 5.7
+        },
+        "errors": 0,
+        "measure_duration_millis": 8000,
+        "bytes": 21454562.405275334,
+        "objects": 35.45456240527533,
+        "ops": 36
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:30:07.166435+01:00",
+          "end_time": "2026-03-24T12:30:18.213090708+01:00",
+          "errors": 0,
+          "measure_duration_millis": 11046,
+          "bytes": 28000000,
+          "objects": 43,
+          "ops": 43
+        }
+      },
+      "throughput_by_client": {
+        "4maK": {
+          "start_time": "2026-03-24T12:30:07.166435+01:00",
+          "end_time": "2026-03-24T12:30:18.213090708+01:00",
+          "errors": 0,
+          "measure_duration_millis": 11046,
+          "bytes": 28000000,
+          "objects": 43,
+          "ops": 43
+        }
+      },
+      "requests_by_client": {
+        "4maK": [
+          {
+            "start_time": "2026-03-24T12:30:07+01:00",
+            "end_time": "2026-03-24T12:30:17+01:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 434.774568,
+                    "fastest_millis": 210.189458,
+                    "p25_millis": 332.166209,
+                    "median_millis": 391.113458,
+                    "p75_millis": 537.053833,
+                    "p90_millis": 763.571042,
+                    "p99_millis": 789.3305,
+                    "slowest_millis": 789.3305,
+                    "std_dev_millis": 168.533592
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1033862.8,
+                  "avg_duration_millis": 1410.374631,
+                  "bps_average": 709031.5,
+                  "requests": 24,
+                  "bps_90": 324655.4,
+                  "bps_99": 181610.4,
+                  "bps_fastest": 2119116.6,
+                  "bps_slowest": 181610.4,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 39,
+              "avg_obj_size": 615384,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-24T12:30:17+01:00",
+            "end_time": "2026-03-24T12:30:27+01:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 278.369187,
+                    "fastest_millis": 241.122333,
+                    "p25_millis": 258.090041,
+                    "median_millis": 283.390166,
+                    "p75_millis": 330.874208,
+                    "p90_millis": 330.874208,
+                    "p99_millis": 330.874208,
+                    "slowest_millis": 330.874208,
+                    "std_dev_millis": 39.074967
+                  },
+                  "min_size_string": "100KiB",
+                  "max_size_string": "1MiB",
+                  "bps_median": 617000.4,
+                  "avg_duration_millis": 1589.381895,
+                  "bps_average": 629175.4,
+                  "requests": 4,
+                  "bps_90": 443879.9,
+                  "bps_99": 443879.9,
+                  "bps_fastest": 1136276.2,
+                  "bps_slowest": 443879.9,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1000000,
+                  "min_size": 1000000,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 4,
+              "avg_obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+

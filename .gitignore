@@ -447,3 +447,5 @@ __marimo__/
 
 # Chart html file (as it nearly instantly generated)
 benchmark-charts.html
+
+*.json.zst

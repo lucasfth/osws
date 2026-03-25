@@ -172,6 +172,7 @@ run_warp() {
     # Warp appends its own .json.zst suffix to --benchdata output.
     local result_base="$RESULTS_DIR/warp-${instance_count}instances-${category}"
     local result_file="${result_base}.json.zst"
+    local result_json="${result_base}.json"
 
     echo "  Running: $category (instances=$instance_count, host=$host)"
     if warp "$WORKLOAD_PROFILE" \
@@ -190,11 +191,13 @@ run_warp() {
         # Primary expected output.
         if [[ -f "$result_file" ]]; then
             echo "    ✓ Saved: $result_file"
+            write_plain_json_if_possible "$result_file" "$result_json"
         # Backward-compat: if caller passed extension before this fix, Warp may emit double suffix.
         elif [[ -f "${result_file}.json.zst" ]]; then
             echo "    ✓ Saved: ${result_file}.json.zst"
             mv "${result_file}.json.zst" "$result_file"
             echo "    ✓ Renamed to: $result_file"
+            write_plain_json_if_possible "$result_file" "$result_json"
         else
             echo "    ✗ Warp completed but no benchdata file was created"
             echo "      Expected one of: $result_file or ${result_file}.json.zst"
@@ -222,6 +225,7 @@ run_warp_parquet_get() {
     # Warp appends its own .json.zst suffix to --benchdata output.
     local result_base="$RESULTS_DIR/warp-${instance_count}instances-${category}-parquet-get"
     local result_file="${result_base}.json.zst"
+    local result_json="${result_base}.json"
 
     echo "  Running: ${category} parquet-get (instances=$instance_count, host=$host, prefix=$PARQUET_PREFIX)"
     if warp get \
@@ -240,10 +244,12 @@ run_warp_parquet_get() {
         --json; then
         if [[ -f "$result_file" ]]; then
             echo "    ✓ Saved: $result_file"
+            write_plain_json_if_possible "$result_file" "$result_json"
         elif [[ -f "${result_file}.json.zst" ]]; then
             echo "    ✓ Saved: ${result_file}.json.zst"
             mv "${result_file}.json.zst" "$result_file"
             echo "    ✓ Renamed to: $result_file"
+            write_plain_json_if_possible "$result_file" "$result_json"
         else
             echo "    ✗ Parquet GET completed but no benchdata file was created"
             echo "      Expected one of: $result_file or ${result_file}.json.zst"
@@ -365,7 +371,25 @@ for num_instances in "${INSTANCE_COUNTS[@]}"; do
     fi
     bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
 
-    echo ""
+    echo ""write_plain_json_if_possible() {
+    local source_zst=$1
+    local output_json=$2
+
+    if [[ ! -f "$source_zst" ]]; then
+        return 0
+    fi
+
+    if command -v zstd >/dev/null 2>&1; then
+        if zstd -d -f -q "$source_zst" -o "$output_json"; then
+            echo "    ✓ Saved: $output_json"
+        else
+            echo "    ! Could not extract plain JSON from $source_zst"
+        fi
+    else
+        echo "    ! zstd not found; skipping plain JSON extraction"
+        echo "      Install with: brew install zstd"
+    fi
+
 done
 
 echo "════════════════════════════════════════════════════════"
@@ -373,4 +397,5 @@ echo "Benchmark suite complete"
 echo "Results location: $RESULTS_DIR"
 echo "════════════════════════════════════════════════════════"
 ls -lh "$RESULTS_DIR"/*.json.zst 2>/dev/null || echo "No Warp result files generated"
+ls -lh "$RESULTS_DIR"/*.json 2>/dev/null || true
 

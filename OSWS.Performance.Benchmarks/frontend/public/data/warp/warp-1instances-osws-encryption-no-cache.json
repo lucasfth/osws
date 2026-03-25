@@ -1,0 +1,1195 @@
+
+{
+  "v": 2,
+  "commandline": "warp mixed --json=true --host=localhost:8000 --access-key=*REDACTED* --secret-key=*REDACTED* --bucket=warp-benchmark-test --concurrent=4 --disable-sha256-payload=true --objects=1000 --obj.size=1M --duration=10s",
+  "final": true,
+  "total": {
+    "Title": "Total (Final)",
+    "total_requests": 103,
+    "total_objects": 103,
+    "total_errors": 0,
+    "total_bytes": 58000000,
+    "concurrency": 4,
+    "start_time": "2026-03-24T12:36:14.221647+01:00",
+    "end_time": "2026-03-24T12:36:24.96411725+01:00",
+    "first_errors": null,
+    "hosts": [
+      "http://localhost:8000"
+    ],
+    "clients": [
+      "XtXb"
+    ],
+    "throughput": {
+      "start_time": "2026-03-24T12:36:16+01:00",
+      "end_time": "2026-03-24T12:36:27+01:00",
+      "segmented": {
+        "fastest_start": "2026-03-24T12:36:14+01:00",
+        "median_start": "2026-03-24T12:36:17+01:00",
+        "slowest_start": "2026-03-24T12:36:19+01:00",
+        "sorted_by": "bps",
+        "segments": [
+          {
+            "start": "2026-03-24T12:36:14+01:00",
+            "bytes_per_sec": 8964163,
+            "obj_per_sec": 15.2
+          },
+          {
+            "start": "2026-03-24T12:36:15+01:00",
+            "bytes_per_sec": 4134897,
+            "obj_per_sec": 18.61
+          },
+          {
+            "start": "2026-03-24T12:36:16+01:00",
+            "bytes_per_sec": 5545281,
+            "obj_per_sec": 5.83
+          },
+          {
+            "start": "2026-03-24T12:36:17+01:00",
+            "bytes_per_sec": 5616020,
+            "obj_per_sec": 11.62
+          },
+          {
+            "start": "2026-03-24T12:36:18+01:00",
+            "bytes_per_sec": 6729085,
+            "obj_per_sec": 8.66
+          },
+          {
+            "start": "2026-03-24T12:36:19+01:00",
+            "bytes_per_sec": 3549863,
+            "obj_per_sec": 8.25
+          },
+          {
+            "start": "2026-03-24T12:36:20+01:00",
+            "bytes_per_sec": 5234471,
+            "obj_per_sec": 6.6
+          }
+        ],
+        "segment_duration_millis": 1000,
+        "fastest_bps": 8964163,
+        "fastest_ops": 15.2,
+        "median_bps": 5616020,
+        "median_ops": 11.62,
+        "slowest_bps": 3549863,
+        "slowest_ops": 8.25
+      },
+      "errors": 0,
+      "measure_duration_millis": 7000,
+      "bytes": 39773783.56889715,
+      "objects": 74.77378356889714,
+      "ops": 75
+    },
+    "throughput_by_host": {
+      "http://localhost:8000": {
+        "start_time": "2026-03-24T12:36:14.221647+01:00",
+        "end_time": "2026-03-24T12:36:24.96411725+01:00",
+        "errors": 0,
+        "measure_duration_millis": 10742,
+        "bytes": 58000000,
+        "objects": 103,
+        "ops": 103
+      }
+    },
+    "throughput_by_client": {
+      "XtXb": {
+        "start_time": "2026-03-24T12:36:14.221647+01:00",
+        "end_time": "2026-03-24T12:36:24.96411725+01:00",
+        "errors": 0,
+        "measure_duration_millis": 10742,
+        "bytes": 58000000,
+        "objects": 103,
+        "ops": 103
+      }
+    },
+    "requests_by_client": {
+      "XtXb": [
+        {
+          "start_time": "2026-03-24T12:36:14+01:00",
+          "end_time": "2026-03-24T12:36:24+01:00",
+          "multi_sized_requests": {
+            "by_size": [
+              {
+                "first_byte": {
+                  "average_millis": 285.297788,
+                  "fastest_millis": 95.505708,
+                  "p25_millis": 210.769042,
+                  "median_millis": 265.04975,
+                  "p75_millis": 364.570834,
+                  "p90_millis": 449.279792,
+                  "p99_millis": 488.622959,
+                  "slowest_millis": 488.622959,
+                  "std_dev_millis": 99.961473
+                },
+                "min_size_string": "1 B",
+                "max_size_string": "1.0 MiB",
+                "bps_median": 1837757.1,
+                "avg_duration_millis": 552.577915,
+                "bps_average": 1809699.5,
+                "requests": 54,
+                "bps_90": 1215789.8,
+                "bps_99": 849121.6,
+                "bps_fastest": 4567614.4,
+                "bps_slowest": 849121.6,
+                "avg_obj_size": 1000000,
+                "max_size": 1048576,
+                "min_size": 1,
+                "merged_entries": 1
+              }
+            ],
+            "requests": 99,
+            "avg_obj_size": 545454,
+            "merged_entries": 1
+          }
+        },
+        {
+          "start_time": "2026-03-24T12:36:24+01:00",
+          "end_time": "2026-03-24T12:36:34+01:00",
+          "multi_sized_requests": {
+            "by_size": [
+              {
+                "first_byte": {
+                  "average_millis": 639.067604,
+                  "fastest_millis": 602.63075,
+                  "p25_millis": 675.504458,
+                  "median_millis": 675.504458,
+                  "p75_millis": 675.504458,
+                  "p90_millis": 675.504458,
+                  "p99_millis": 675.504458,
+                  "slowest_millis": 675.504458,
+                  "std_dev_millis": 51.529493
+                },
+                "min_size_string": "100KiB",
+                "max_size_string": "1MiB",
+                "bps_median": 907241.9,
+                "avg_duration_millis": 984.513697,
+                "bps_average": 1015729.9,
+                "requests": 4,
+                "bps_90": 871672.2,
+                "bps_99": 871672.2,
+                "bps_fastest": 1354727.8,
+                "bps_slowest": 871672.2,
+                "avg_obj_size": 1000000,
+                "max_size": 1000000,
+                "min_size": 1000000,
+                "merged_entries": 1
+              }
+            ],
+            "requests": 4,
+            "avg_obj_size": 1000000,
+            "merged_entries": 1
+          }
+        }
+      ]
+    }
+  },
+  "by_op_type": {
+    "DELETE": {
+      "Title": "Operation: DELETE (Final)",
+      "total_requests": 10,
+      "total_objects": 10,
+      "total_errors": 0,
+      "total_bytes": 0,
+      "concurrency": 4,
+      "start_time": "2026-03-24T12:36:14.988654+01:00",
+      "end_time": "2026-03-24T12:36:22.010477375+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "XtXb"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:36:16+01:00",
+        "end_time": "2026-03-24T12:36:25+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:36:15+01:00",
+          "median_start": "2026-03-24T12:36:14+01:00",
+          "slowest_start": "2026-03-24T12:36:16+01:00",
+          "sorted_by": "ops",
+          "segments": [
+            {
+              "start": "2026-03-24T12:36:14+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1.24
+            },
+            {
+              "start": "2026-03-24T12:36:15+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 3.76
+            },
+            {
+              "start": "2026-03-24T12:36:16+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0
+            },
+            {
+              "start": "2026-03-24T12:36:17+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0
+            },
+            {
+              "start": "2026-03-24T12:36:18+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0.12
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 0,
+          "fastest_ops": 3.76,
+          "median_bps": 0,
+          "median_ops": 1.24,
+          "slowest_bps": 0,
+          "slowest_ops": 0
+        },
+        "errors": 0,
+        "measure_duration_millis": 5000,
+        "bytes": 0,
+        "objects": 5.122576763240187,
+        "ops": 6
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:36:14.988654+01:00",
+          "end_time": "2026-03-24T12:36:22.010477375+01:00",
+          "errors": 0,
+          "measure_duration_millis": 7021,
+          "bytes": 0,
+          "objects": 10,
+          "ops": 10
+        }
+      },
+      "throughput_by_client": {
+        "XtXb": {
+          "start_time": "2026-03-24T12:36:14.988654+01:00",
+          "end_time": "2026-03-24T12:36:22.010477375+01:00",
+          "errors": 0,
+          "measure_duration_millis": 7021,
+          "bytes": 0,
+          "objects": 10,
+          "ops": 10
+        }
+      },
+      "requests_by_client": {
+        "XtXb": [
+          {
+            "start_time": "2026-03-24T12:36:15+01:00",
+            "end_time": "2026-03-24T12:36:25+01:00",
+            "single_sized_requests": {
+              "dur_median_millis": 283.293667,
+              "fastest_millis": 178.563166,
+              "slowest_millis": 628.014625,
+              "std_dev_millis": 131.506597,
+              "dur_99_millis": 628.014625,
+              "dur_90_millis": 628.014625,
+              "dur_avg_millis": 278.135487,
+              "requests": 10,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    },
+    "GET": {
+      "Title": "Operation: GET (Final)",
+      "total_requests": 41,
+      "total_objects": 41,
+      "total_errors": 0,
+      "total_bytes": 41000000,
+      "concurrency": 4,
+      "start_time": "2026-03-24T12:36:14.221688+01:00",
+      "end_time": "2026-03-24T12:36:24.96411725+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "XtXb"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:36:16+01:00",
+        "end_time": "2026-03-24T12:36:27+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:36:14+01:00",
+          "median_start": "2026-03-24T12:36:20+01:00",
+          "slowest_start": "2026-03-24T12:36:19+01:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-24T12:36:14+01:00",
+              "bytes_per_sec": 7413452,
+              "obj_per_sec": 7.41
+            },
+            {
+              "start": "2026-03-24T12:36:15+01:00",
+              "bytes_per_sec": 2836709,
+              "obj_per_sec": 2.84
+            },
+            {
+              "start": "2026-03-24T12:36:16+01:00",
+              "bytes_per_sec": 2843469,
+              "obj_per_sec": 2.84
+            },
+            {
+              "start": "2026-03-24T12:36:17+01:00",
+              "bytes_per_sec": 3638231,
+              "obj_per_sec": 3.64
+            },
+            {
+              "start": "2026-03-24T12:36:18+01:00",
+              "bytes_per_sec": 4518298,
+              "obj_per_sec": 4.52
+            },
+            {
+              "start": "2026-03-24T12:36:19+01:00",
+              "bytes_per_sec": 1738439,
+              "obj_per_sec": 1.74
+            },
+            {
+              "start": "2026-03-24T12:36:20+01:00",
+              "bytes_per_sec": 3853827,
+              "obj_per_sec": 3.85
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 7413452,
+          "fastest_ops": 7.41,
+          "median_bps": 3853827,
+          "median_ops": 3.85,
+          "slowest_bps": 1738439,
+          "slowest_ops": 1.74
+        },
+        "errors": 0,
+        "measure_duration_millis": 7000,
+        "bytes": 26842428.973023053,
+        "objects": 26.842428973023047,
+        "ops": 27
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:36:14.221688+01:00",
+          "end_time": "2026-03-24T12:36:24.96411725+01:00",
+          "errors": 0,
+          "measure_duration_millis": 10742,
+          "bytes": 41000000,
+          "objects": 41,
+          "ops": 41
+        }
+      },
+      "throughput_by_client": {
+        "XtXb": {
+          "start_time": "2026-03-24T12:36:14.221688+01:00",
+          "end_time": "2026-03-24T12:36:24.96411725+01:00",
+          "errors": 0,
+          "measure_duration_millis": 10742,
+          "bytes": 41000000,
+          "objects": 41,
+          "ops": 41
+        }
+      },
+      "requests_by_client": {
+        "XtXb": [
+          {
+            "start_time": "2026-03-24T12:36:14+01:00",
+            "end_time": "2026-03-24T12:36:24+01:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 285.297788,
+                "fastest_millis": 95.505708,
+                "p25_millis": 210.769042,
+                "median_millis": 265.04975,
+                "p75_millis": 364.570834,
+                "p90_millis": 449.279792,
+                "p99_millis": 488.622959,
+                "slowest_millis": 488.622959,
+                "std_dev_millis": 99.961473
+              },
+              "dur_median_millis": 530.64025,
+              "fastest_millis": 218.932666,
+              "slowest_millis": 1177.687625,
+              "std_dev_millis": 189.842836,
+              "dur_99_millis": 1177.687625,
+              "dur_90_millis": 755.459834,
+              "dur_avg_millis": 521.893929,
+              "requests": 39,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-24T12:36:24+01:00",
+            "end_time": "2026-03-24T12:36:34+01:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 639.067604,
+                "fastest_millis": 602.63075,
+                "p25_millis": 675.504458,
+                "median_millis": 675.504458,
+                "p75_millis": 675.504458,
+                "p90_millis": 675.504458,
+                "p99_millis": 675.504458,
+                "slowest_millis": 675.504458,
+                "std_dev_millis": 51.529493
+              },
+              "dur_median_millis": 1147.22025,
+              "fastest_millis": 950.437041,
+              "slowest_millis": 1147.22025,
+              "std_dev_millis": 139.146741,
+              "dur_99_millis": 1147.22025,
+              "dur_90_millis": 1147.22025,
+              "dur_avg_millis": 1048.828645,
+              "requests": 2,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    },
+    "PUT": {
+      "Title": "Operation: PUT (Final)",
+      "total_requests": 17,
+      "total_objects": 17,
+      "total_errors": 0,
+      "total_bytes": 17000000,
+      "concurrency": 4,
+      "start_time": "2026-03-24T12:36:15.798225+01:00",
+      "end_time": "2026-03-24T12:36:24.828544833+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "XtXb"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:36:17+01:00",
+        "end_time": "2026-03-24T12:36:27+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:36:16+01:00",
+          "median_start": "2026-03-24T12:36:17+01:00",
+          "slowest_start": "2026-03-24T12:36:15+01:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-24T12:36:15+01:00",
+              "bytes_per_sec": 1298188,
+              "obj_per_sec": 1.3
+            },
+            {
+              "start": "2026-03-24T12:36:16+01:00",
+              "bytes_per_sec": 2701811,
+              "obj_per_sec": 2.7
+            },
+            {
+              "start": "2026-03-24T12:36:17+01:00",
+              "bytes_per_sec": 1977788,
+              "obj_per_sec": 1.98
+            },
+            {
+              "start": "2026-03-24T12:36:18+01:00",
+              "bytes_per_sec": 2210786,
+              "obj_per_sec": 2.21
+            },
+            {
+              "start": "2026-03-24T12:36:19+01:00",
+              "bytes_per_sec": 1811424,
+              "obj_per_sec": 1.81
+            },
+            {
+              "start": "2026-03-24T12:36:20+01:00",
+              "bytes_per_sec": 1380643,
+              "obj_per_sec": 1.38
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 2701811,
+          "fastest_ops": 2.7,
+          "median_bps": 1977788,
+          "median_ops": 1.98,
+          "slowest_bps": 1298188,
+          "slowest_ops": 1.3
+        },
+        "errors": 0,
+        "measure_duration_millis": 6000,
+        "bytes": 11380643.643356977,
+        "objects": 11.380643643356976,
+        "ops": 12
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:36:15.798225+01:00",
+          "end_time": "2026-03-24T12:36:24.828544833+01:00",
+          "errors": 0,
+          "measure_duration_millis": 9030,
+          "bytes": 17000000,
+          "objects": 17,
+          "ops": 17
+        }
+      },
+      "throughput_by_client": {
+        "XtXb": {
+          "start_time": "2026-03-24T12:36:15.798225+01:00",
+          "end_time": "2026-03-24T12:36:24.828544833+01:00",
+          "errors": 0,
+          "measure_duration_millis": 9030,
+          "bytes": 17000000,
+          "objects": 17,
+          "ops": 17
+        }
+      },
+      "requests_by_client": {
+        "XtXb": [
+          {
+            "start_time": "2026-03-24T12:36:16+01:00",
+            "end_time": "2026-03-24T12:36:26+01:00",
+            "single_sized_requests": {
+              "dur_median_millis": 738.155667,
+              "fastest_millis": 398.593084,
+              "slowest_millis": 1102.241833,
+              "std_dev_millis": 194.2596,
+              "dur_99_millis": 1102.241833,
+              "dur_90_millis": 899.660834,
+              "dur_avg_millis": 666.220098,
+              "requests": 17,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    },
+    "STAT": {
+      "Title": "Operation: STAT (Final)",
+      "total_requests": 35,
+      "total_objects": 35,
+      "total_errors": 0,
+      "total_bytes": 0,
+      "concurrency": 4,
+      "start_time": "2026-03-24T12:36:14.221647+01:00",
+      "end_time": "2026-03-24T12:36:23.816867166+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "XtXb"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:36:16+01:00",
+        "end_time": "2026-03-24T12:36:26+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:36:15+01:00",
+          "median_start": "2026-03-24T12:36:14+01:00",
+          "slowest_start": "2026-03-24T12:36:16+01:00",
+          "sorted_by": "ops",
+          "segments": [
+            {
+              "start": "2026-03-24T12:36:14+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 5
+            },
+            {
+              "start": "2026-03-24T12:36:15+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 10.71
+            },
+            {
+              "start": "2026-03-24T12:36:16+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0.29
+            },
+            {
+              "start": "2026-03-24T12:36:17+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 6
+            },
+            {
+              "start": "2026-03-24T12:36:18+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1.81
+            },
+            {
+              "start": "2026-03-24T12:36:19+01:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2.86
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 0,
+          "fastest_ops": 10.71,
+          "median_bps": 0,
+          "median_ops": 5,
+          "slowest_bps": 0,
+          "slowest_ops": 0.29
+        },
+        "errors": 0,
+        "measure_duration_millis": 6000,
+        "bytes": 0,
+        "objects": 26.669980231380777,
+        "ops": 27
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:36:14.221647+01:00",
+          "end_time": "2026-03-24T12:36:23.816867166+01:00",
+          "errors": 0,
+          "measure_duration_millis": 9595,
+          "bytes": 0,
+          "objects": 35,
+          "ops": 35
+        }
+      },
+      "throughput_by_client": {
+        "XtXb": {
+          "start_time": "2026-03-24T12:36:14.221647+01:00",
+          "end_time": "2026-03-24T12:36:23.816867166+01:00",
+          "errors": 0,
+          "measure_duration_millis": 9595,
+          "bytes": 0,
+          "objects": 35,
+          "ops": 35
+        }
+      },
+      "requests_by_client": {
+        "XtXb": [
+          {
+            "start_time": "2026-03-24T12:36:14+01:00",
+            "end_time": "2026-03-24T12:36:24+01:00",
+            "single_sized_requests": {
+              "dur_median_millis": 116.606041,
+              "fastest_millis": 86.032625,
+              "slowest_millis": 437.8785,
+              "std_dev_millis": 96.079563,
+              "dur_99_millis": 437.8785,
+              "dur_90_millis": 353.830417,
+              "dur_avg_millis": 159.120379,
+              "requests": 35,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "by_host": {
+    "http://localhost:8000": {
+      "Title": "Host: http://localhost:8000 (Final)",
+      "total_requests": 103,
+      "total_objects": 103,
+      "total_errors": 0,
+      "total_bytes": 58000000,
+      "concurrency": 4,
+      "start_time": "2026-03-24T12:36:14.221647+01:00",
+      "end_time": "2026-03-24T12:36:24.96411725+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "XtXb"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:36:16+01:00",
+        "end_time": "2026-03-24T12:36:27+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:36:14+01:00",
+          "median_start": "2026-03-24T12:36:17+01:00",
+          "slowest_start": "2026-03-24T12:36:19+01:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-24T12:36:14+01:00",
+              "bytes_per_sec": 8964163,
+              "obj_per_sec": 15.2
+            },
+            {
+              "start": "2026-03-24T12:36:15+01:00",
+              "bytes_per_sec": 4134897,
+              "obj_per_sec": 18.61
+            },
+            {
+              "start": "2026-03-24T12:36:16+01:00",
+              "bytes_per_sec": 5545281,
+              "obj_per_sec": 5.83
+            },
+            {
+              "start": "2026-03-24T12:36:17+01:00",
+              "bytes_per_sec": 5616020,
+              "obj_per_sec": 11.62
+            },
+            {
+              "start": "2026-03-24T12:36:18+01:00",
+              "bytes_per_sec": 6729085,
+              "obj_per_sec": 8.66
+            },
+            {
+              "start": "2026-03-24T12:36:19+01:00",
+              "bytes_per_sec": 3549863,
+              "obj_per_sec": 8.25
+            },
+            {
+              "start": "2026-03-24T12:36:20+01:00",
+              "bytes_per_sec": 5234471,
+              "obj_per_sec": 6.6
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 8964163,
+          "fastest_ops": 15.2,
+          "median_bps": 5616020,
+          "median_ops": 11.62,
+          "slowest_bps": 3549863,
+          "slowest_ops": 8.25
+        },
+        "errors": 0,
+        "measure_duration_millis": 7000,
+        "bytes": 39773783.56889715,
+        "objects": 74.77378356889714,
+        "ops": 75
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:36:14.221647+01:00",
+          "end_time": "2026-03-24T12:36:24.96411725+01:00",
+          "errors": 0,
+          "measure_duration_millis": 10742,
+          "bytes": 58000000,
+          "objects": 103,
+          "ops": 103
+        }
+      },
+      "throughput_by_client": {
+        "XtXb": {
+          "start_time": "2026-03-24T12:36:14.221647+01:00",
+          "end_time": "2026-03-24T12:36:24.96411725+01:00",
+          "errors": 0,
+          "measure_duration_millis": 10742,
+          "bytes": 58000000,
+          "objects": 103,
+          "ops": 103
+        }
+      },
+      "requests_by_client": {
+        "XtXb": [
+          {
+            "start_time": "2026-03-24T12:36:14+01:00",
+            "end_time": "2026-03-24T12:36:24+01:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 285.297788,
+                    "fastest_millis": 95.505708,
+                    "p25_millis": 210.769042,
+                    "median_millis": 265.04975,
+                    "p75_millis": 364.570834,
+                    "p90_millis": 449.279792,
+                    "p99_millis": 488.622959,
+                    "slowest_millis": 488.622959,
+                    "std_dev_millis": 99.961473
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1837757.1,
+                  "avg_duration_millis": 552.577915,
+                  "bps_average": 1809699.5,
+                  "requests": 54,
+                  "bps_90": 1215789.8,
+                  "bps_99": 849121.6,
+                  "bps_fastest": 4567614.4,
+                  "bps_slowest": 849121.6,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 99,
+              "avg_obj_size": 545454,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-24T12:36:24+01:00",
+            "end_time": "2026-03-24T12:36:34+01:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 639.067604,
+                    "fastest_millis": 602.63075,
+                    "p25_millis": 675.504458,
+                    "median_millis": 675.504458,
+                    "p75_millis": 675.504458,
+                    "p90_millis": 675.504458,
+                    "p99_millis": 675.504458,
+                    "slowest_millis": 675.504458,
+                    "std_dev_millis": 51.529493
+                  },
+                  "min_size_string": "100KiB",
+                  "max_size_string": "1MiB",
+                  "bps_median": 907241.9,
+                  "avg_duration_millis": 984.513697,
+                  "bps_average": 1015729.9,
+                  "requests": 4,
+                  "bps_90": 871672.2,
+                  "bps_99": 871672.2,
+                  "bps_fastest": 1354727.8,
+                  "bps_slowest": 871672.2,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1000000,
+                  "min_size": 1000000,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 4,
+              "avg_obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "by_obj_log_2_size": {
+    "20": {
+      "Title": "Size: 0-\u003e1048575 (Final)",
+      "total_requests": 58,
+      "total_objects": 58,
+      "total_errors": 0,
+      "total_bytes": 58000000,
+      "concurrency": 4,
+      "start_time": "2026-03-24T12:36:14.221688+01:00",
+      "end_time": "2026-03-24T12:36:24.96411725+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "XtXb"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:36:16+01:00",
+        "end_time": "2026-03-24T12:36:27+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:36:14+01:00",
+          "median_start": "2026-03-24T12:36:17+01:00",
+          "slowest_start": "2026-03-24T12:36:19+01:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-24T12:36:14+01:00",
+              "bytes_per_sec": 8964163,
+              "obj_per_sec": 8.96
+            },
+            {
+              "start": "2026-03-24T12:36:15+01:00",
+              "bytes_per_sec": 4134897,
+              "obj_per_sec": 4.13
+            },
+            {
+              "start": "2026-03-24T12:36:16+01:00",
+              "bytes_per_sec": 5545281,
+              "obj_per_sec": 5.55
+            },
+            {
+              "start": "2026-03-24T12:36:17+01:00",
+              "bytes_per_sec": 5616020,
+              "obj_per_sec": 5.62
+            },
+            {
+              "start": "2026-03-24T12:36:18+01:00",
+              "bytes_per_sec": 6729085,
+              "obj_per_sec": 6.73
+            },
+            {
+              "start": "2026-03-24T12:36:19+01:00",
+              "bytes_per_sec": 3549863,
+              "obj_per_sec": 3.55
+            },
+            {
+              "start": "2026-03-24T12:36:20+01:00",
+              "bytes_per_sec": 5234471,
+              "obj_per_sec": 5.23
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 8964163,
+          "fastest_ops": 8.96,
+          "median_bps": 5616020,
+          "median_ops": 5.62,
+          "slowest_bps": 3549863,
+          "slowest_ops": 3.55
+        },
+        "errors": 0,
+        "measure_duration_millis": 7000,
+        "bytes": 39773783.56889715,
+        "objects": 39.773783568897144,
+        "ops": 40
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:36:14.221688+01:00",
+          "end_time": "2026-03-24T12:36:24.96411725+01:00",
+          "errors": 0,
+          "measure_duration_millis": 10742,
+          "bytes": 58000000,
+          "objects": 58,
+          "ops": 58
+        }
+      },
+      "throughput_by_client": {
+        "XtXb": {
+          "start_time": "2026-03-24T12:36:14.221688+01:00",
+          "end_time": "2026-03-24T12:36:24.96411725+01:00",
+          "errors": 0,
+          "measure_duration_millis": 10742,
+          "bytes": 58000000,
+          "objects": 58,
+          "ops": 58
+        }
+      },
+      "requests_by_client": {
+        "XtXb": [
+          {
+            "start_time": "2026-03-24T12:36:14+01:00",
+            "end_time": "2026-03-24T12:36:24+01:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 285.297788,
+                "fastest_millis": 95.505708,
+                "p25_millis": 210.769042,
+                "median_millis": 265.04975,
+                "p75_millis": 364.570834,
+                "p90_millis": 449.279792,
+                "p99_millis": 488.622959,
+                "slowest_millis": 488.622959,
+                "std_dev_millis": 99.961473
+              },
+              "dur_median_millis": 544.141542,
+              "fastest_millis": 218.932666,
+              "slowest_millis": 1177.687625,
+              "std_dev_millis": 188.990201,
+              "dur_99_millis": 1177.687625,
+              "dur_90_millis": 822.510584,
+              "dur_avg_millis": 552.577915,
+              "requests": 54,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-24T12:36:24+01:00",
+            "end_time": "2026-03-24T12:36:34+01:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 639.067604,
+                "fastest_millis": 602.63075,
+                "p25_millis": 675.504458,
+                "median_millis": 675.504458,
+                "p75_millis": 675.504458,
+                "p90_millis": 675.504458,
+                "p99_millis": 675.504458,
+                "slowest_millis": 675.504458,
+                "std_dev_millis": 51.529493
+              },
+              "dur_median_millis": 1102.241833,
+              "fastest_millis": 738.155667,
+              "slowest_millis": 1147.22025,
+              "std_dev_millis": 184.559686,
+              "dur_99_millis": 1147.22025,
+              "dur_90_millis": 1147.22025,
+              "dur_avg_millis": 984.513697,
+              "requests": 4,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "by_client": {
+    "XtXb": {
+      "Title": "Client: XtXb (Final)",
+      "total_requests": 103,
+      "total_objects": 103,
+      "total_errors": 0,
+      "total_bytes": 58000000,
+      "concurrency": 4,
+      "start_time": "2026-03-24T12:36:14.221647+01:00",
+      "end_time": "2026-03-24T12:36:24.96411725+01:00",
+      "first_errors": null,
+      "hosts": [
+        "http://localhost:8000"
+      ],
+      "clients": [
+        "XtXb"
+      ],
+      "throughput": {
+        "start_time": "2026-03-24T12:36:16+01:00",
+        "end_time": "2026-03-24T12:36:27+01:00",
+        "segmented": {
+          "fastest_start": "2026-03-24T12:36:14+01:00",
+          "median_start": "2026-03-24T12:36:17+01:00",
+          "slowest_start": "2026-03-24T12:36:19+01:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-24T12:36:14+01:00",
+              "bytes_per_sec": 8964163,
+              "obj_per_sec": 15.2
+            },
+            {
+              "start": "2026-03-24T12:36:15+01:00",
+              "bytes_per_sec": 4134897,
+              "obj_per_sec": 18.61
+            },
+            {
+              "start": "2026-03-24T12:36:16+01:00",
+              "bytes_per_sec": 5545281,
+              "obj_per_sec": 5.83
+            },
+            {
+              "start": "2026-03-24T12:36:17+01:00",
+              "bytes_per_sec": 5616020,
+              "obj_per_sec": 11.62
+            },
+            {
+              "start": "2026-03-24T12:36:18+01:00",
+              "bytes_per_sec": 6729085,
+              "obj_per_sec": 8.66
+            },
+            {
+              "start": "2026-03-24T12:36:19+01:00",
+              "bytes_per_sec": 3549863,
+              "obj_per_sec": 8.25
+            },
+            {
+              "start": "2026-03-24T12:36:20+01:00",
+              "bytes_per_sec": 5234471,
+              "obj_per_sec": 6.6
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 8964163,
+          "fastest_ops": 15.2,
+          "median_bps": 5616020,
+          "median_ops": 11.62,
+          "slowest_bps": 3549863,
+          "slowest_ops": 8.25
+        },
+        "errors": 0,
+        "measure_duration_millis": 7000,
+        "bytes": 39773783.56889715,
+        "objects": 74.77378356889714,
+        "ops": 75
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-24T12:36:14.221647+01:00",
+          "end_time": "2026-03-24T12:36:24.96411725+01:00",
+          "errors": 0,
+          "measure_duration_millis": 10742,
+          "bytes": 58000000,
+          "objects": 103,
+          "ops": 103
+        }
+      },
+      "throughput_by_client": {
+        "XtXb": {
+          "start_time": "2026-03-24T12:36:14.221647+01:00",
+          "end_time": "2026-03-24T12:36:24.96411725+01:00",
+          "errors": 0,
+          "measure_duration_millis": 10742,
+          "bytes": 58000000,
+          "objects": 103,
+          "ops": 103
+        }
+      },
+      "requests_by_client": {
+        "XtXb": [
+          {
+            "start_time": "2026-03-24T12:36:14+01:00",
+            "end_time": "2026-03-24T12:36:24+01:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 285.297788,
+                    "fastest_millis": 95.505708,
+                    "p25_millis": 210.769042,
+                    "median_millis": 265.04975,
+                    "p75_millis": 364.570834,
+                    "p90_millis": 449.279792,
+                    "p99_millis": 488.622959,
+                    "slowest_millis": 488.622959,
+                    "std_dev_millis": 99.961473
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1837757.1,
+                  "avg_duration_millis": 552.577915,
+                  "bps_average": 1809699.5,
+                  "requests": 54,
+                  "bps_90": 1215789.8,
+                  "bps_99": 849121.6,
+                  "bps_fastest": 4567614.4,
+                  "bps_slowest": 849121.6,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 99,
+              "avg_obj_size": 545454,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-24T12:36:24+01:00",
+            "end_time": "2026-03-24T12:36:34+01:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 639.067604,
+                    "fastest_millis": 602.63075,
+                    "p25_millis": 675.504458,
+                    "median_millis": 675.504458,
+                    "p75_millis": 675.504458,
+                    "p90_millis": 675.504458,
+                    "p99_millis": 675.504458,
+                    "slowest_millis": 675.504458,
+                    "std_dev_millis": 51.529493
+                  },
+                  "min_size_string": "100KiB",
+                  "max_size_string": "1MiB",
+                  "bps_median": 907241.9,
+                  "avg_duration_millis": 984.513697,
+                  "bps_average": 1015729.9,
+                  "requests": 4,
+                  "bps_90": 871672.2,
+                  "bps_99": 871672.2,
+                  "bps_fastest": 1354727.8,
+                  "bps_slowest": 871672.2,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1000000,
+                  "min_size": 1000000,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 4,
+              "avg_obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+

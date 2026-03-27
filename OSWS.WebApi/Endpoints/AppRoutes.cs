@@ -100,6 +100,12 @@ public static class AppRoutes
 
                 await db.SaveChangesAsync(cancellationToken);
 
+                var isAdmin =
+                    (userInfo?.IsAdmin ?? false)
+                    || principal.HasClaim(c =>
+                        c.Type == "isAdmin" && (c.Value == "true" || c.Value == "True")
+                    );
+
                 return Results.Ok(
                     new
                     {
@@ -107,7 +113,8 @@ public static class AppRoutes
                         identity.User.Name,
                         identity.User.Email,
                         Provider = provider,
-                        Roles = identity.User.Roles.Select(r => r.Name),
+                        Roles = identity.User.Roles.Select(r => new { r.Id, r.Name }),
+                        IsAdmin = isAdmin,
                     }
                 );
             }

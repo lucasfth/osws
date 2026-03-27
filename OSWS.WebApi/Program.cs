@@ -13,6 +13,7 @@ using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Authentication;
 using OSWS.WebApi.Endpoints;
+using OSWS.WebApi.Endpoints.Admin;
 using OSWS.WebApi.Interfaces;
 using OSWS.WebApi.Services;
 
@@ -197,6 +198,21 @@ builder.Services.AddAuthorization(authOpts =>
     );
 
     authOpts.AddPolicy(
+        "AdminPolicy",
+        policy =>
+        {
+            policy.RequireAuthenticatedUser();
+            if (schemeNames.Length > 0)
+                policy.AddAuthenticationSchemes(schemeNames);
+            policy.RequireAssertion(ctx =>
+                ctx.User.HasClaim(c =>
+                    c.Type == "isAdmin" && (c.Value == "true" || c.Value == "True")
+                )
+            );
+        }
+    );
+
+    authOpts.AddPolicy(
         "SigV4Policy",
         policy =>
         {
@@ -232,6 +248,8 @@ app.MapS3Routes();
 
 // Map App API routes (OIDC-protected, for the React frontend)
 app.MapAppRoutes();
+app.MapCredentialRoutes();
+app.MapAdminRoutes();
 
 if (app.Environment.IsDevelopment())
 {

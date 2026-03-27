@@ -48,11 +48,16 @@ public class UserInfoService(IHttpClientFactory httpClientFactory, ILogger<UserI
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
+            var isAdmin =
+                root.TryGetProperty("isAdmin", out var isAdminProp)
+                && isAdminProp.ValueKind == JsonValueKind.True;
+
             return new OidcUserInfo(
                 Subject: root.GetStringOrNull("sub") ?? string.Empty,
                 Name: root.GetStringOrNull("name"),
                 PreferredUsername: root.GetStringOrNull("preferred_username"),
-                Email: root.GetStringOrNull("email")
+                Email: root.GetStringOrNull("email"),
+                IsAdmin: isAdmin
             );
         }
         catch (Exception ex)

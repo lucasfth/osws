@@ -8,5 +8,6 @@ public record OidcUserInfo(
     string Subject,
     string? Name,
     string? PreferredUsername,
-    string? Email
+    string? Email,
+    bool IsAdmin = false
 );

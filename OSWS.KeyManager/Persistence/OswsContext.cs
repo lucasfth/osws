@@ -15,6 +15,8 @@ public class OswsContext(DbContextOptions<OswsContext> options) : DbContext(opti
     public DbSet<Permission> Permissions { get; set; }
     public DbSet<Key> Keys { get; set; }
 
+    public DbSet<RoleInheritance> RoleInheritances { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -25,11 +27,12 @@ public class OswsContext(DbContextOptions<OswsContext> options) : DbContext(opti
             .WithMany(r => r.Users)
             .UsingEntity<RoleAssignment>();
 
-        modelBuilder
-            .Entity<Role>()
-            .HasMany(r => r.Users)
-            .WithMany(r => r.Roles)
-            .UsingEntity<RoleAssignment>();
+        modelBuilder.Entity<RoleInheritance>(entity =>
+        {
+            entity.HasKey(ri => new { ri.ParentRoleId, ri.ChildRoleId });
+            entity.HasOne(ri => ri.ParentRole).WithMany().HasForeignKey(ri => ri.ParentRoleId);
+            entity.HasOne(ri => ri.ChildRole).WithMany().HasForeignKey(ri => ri.ChildRoleId);
+        });
 
         modelBuilder.Entity<ExternalIdentity>(entity =>
         {

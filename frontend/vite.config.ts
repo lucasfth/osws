@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, type Plugin } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
@@ -17,6 +17,9 @@ function peggyPlugin(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
+  test: {
+    environment: 'node',
+  },
   server: {
     allowedHosts: [
       "together-malamute-finer.ngrok-free.app",

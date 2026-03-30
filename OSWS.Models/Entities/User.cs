@@ -11,6 +11,13 @@ public class User
     /// </summary>
     public string? Email { get; set; }
 
+    /// <summary>
+    /// Whether this user is an RBAC administrator. Synced from the
+    /// <c>isRbacAdmin</c> claim on every login via <c>/api/me</c>.
+    /// Can also be set manually in the database.
+    /// </summary>
+    public bool IsRbacAdmin { get; set; }
+
     public ICollection<Role> Roles { get; set; } = [];
 
     public ICollection<RoleAssignment> RoleAssignments { get; set; } = [];

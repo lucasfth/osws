@@ -49,7 +49,7 @@ export function DashboardPage() {
               </TableRow>
               <TableRow>
                 <TableHead>Admin</TableHead>
-                <TableCell>{profile.isAdmin ? "Yes" : "No"}</TableCell>
+                <TableCell>{profile.isRbacAdmin ? "Yes" : "No"}</TableCell>
               </TableRow>
             </TableBody>
           </Table>

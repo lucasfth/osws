@@ -181,6 +181,7 @@ export function QueryPage() {
                       <TableRow>
                         <TableHead className="w-16">ID</TableHead>
                         <TableHead>Name</TableHead>
+                        <TableHead>Child roles</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -188,6 +189,19 @@ export function QueryPage() {
                         <TableRow key={r.id}>
                           <TableCell>{r.id}</TableCell>
                           <TableCell>{r.name}</TableCell>
+                          <TableCell>
+                            <div className="flex flex-wrap gap-1">
+                              {r.childRoles.length === 0 ? (
+                                <span className="text-sm text-muted-foreground">None</span>
+                              ) : (
+                                r.childRoles.map((child) => (
+                                  <Badge key={child.id} variant="secondary">
+                                    {child.name}
+                                  </Badge>
+                                ))
+                              )}
+                            </div>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

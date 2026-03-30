@@ -1,12 +1,14 @@
 import { parse } from './query.peggy'
 
 export type QueryStatement =
-  | { type: 'CREATE_ROLE'; name: string }
-  | { type: 'DROP_ROLE'; name: string }
-  | { type: 'GRANT_ROLE'; roleName: string; userIdentifier: string }
-  | { type: 'REVOKE_ROLE'; roleName: string; userIdentifier: string }
-  | { type: 'GRANT_ACCESS'; columnName: string; roleName: string }
-  | { type: 'REVOKE_ACCESS'; columnName: string; roleName: string }
+  | { type: 'CREATE_ROLE'; names: string[] }
+  | { type: 'DROP_ROLE'; names: string[] }
+  | { type: 'GRANT_ROLE_TO_USER'; roleNames: string[]; userNames: string[] }
+  | { type: 'REVOKE_ROLE_FROM_USER'; roleNames: string[]; userNames: string[] }
+  | { type: 'GRANT_ROLE_TO_ROLE'; roleNames: string[]; parentRoleNames: string[] }
+  | { type: 'REVOKE_ROLE_FROM_ROLE'; roleNames: string[]; parentRoleNames: string[] }
+  | { type: 'GRANT_ACCESS'; columnNames: string[]; roleNames: string[] }
+  | { type: 'REVOKE_ACCESS'; columnNames: string[]; roleNames: string[] }
 
 export type ParseResult =
   | { ok: true; stmt: QueryStatement; raw: string }

@@ -91,3 +91,65 @@ dotnet run --project OSWS.WebApi
 ```
 
 Health check: `GET http://localhost:5000/health`
+
+## OIDC Authentication
+
+OSWS supports multiple OIDC providers simultaneously. Each provider is registered as its own JWT Bearer scheme.
+
+### PocketID setup
+
+[PocketID](https://github.com/pocket-id/pocket-id) is a self-hosted OIDC provider. Install it with Docker Compose:
+
+```bash
+curl -LO https://raw.githubusercontent.com/pocket-id/pocket-id/main/docker-compose.yml
+curl -LO https://raw.githubusercontent.com/pocket-id/pocket-id/main/.env.example && mv .env.example .env
+docker compose up -d
+```
+
+Open `https://<your-app-url>/setup` to create the initial admin account.
+
+#### Create an OIDC application in PocketID
+
+1. Log in to the PocketID admin UI.
+2. Go to **Administration** → **OIDC Clients**.
+3. Set **Client Launch URL** and **Callback URLs** to `http://localhost:5173` (or your frontend URL).
+4. Enable **Public Client** and **PKCE**
+4. Note the **Client ID** and your PocketID URL (e.g. https://pocket-id.example.com or http://localhost:1411)
+
+#### Add a custom claim for RBAC admin
+
+OSWS uses an `isRbacAdmin` claim to identify administrators. In PocketID:
+
+1. Go to **User Groups**. Add a group for RBAC admins.
+2. Edit the user group and add a custom claim `isRbacAdmin` with value `true`
+3. Assign the group to admin users.
+
+The claim is synced to the database on every `/api/me` call (i.e. on every login). Users without the claim are treated as non-admins.
+
+#### Configure OSWS
+
+Add the provider to `OSWS.WebApi/appsettings.<Environment>.json` (or `appsettings.json`)
+
+```json
+{
+  "OidcProviders": [
+    {
+      "Name": "PocketID",
+      "Authority": "https://pocket-id.example.com",
+      "Audience": "<your-client-id>"
+    }
+  ]
+}
+```
+
+`Name` is used as the JWT Bearer scheme name and must be unique per provider. `Authority` must match the issuer in the tokens PocketID issues. `Audience` must match the client ID of your application.
+
+#### Configure the frontend
+
+Set `VITE_OIDC_AUTHORITY` and `VITE_OIDC_CLIENT_ID` in `frontend/.env`:
+
+```bash
+VITE_API_BASE_URL=http://localhost:5000
+VITE_OIDC_AUTHORITY=https://pocket-id.example.com
+VITE_OIDC_CLIENT_ID=<your-client-id>
+```

@@ -452,3 +452,5 @@ __marimo__/
 benchmark-charts.html
 
 *.json.zst
+appsettings.Development.json
+appsettings.Production.json

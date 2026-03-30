@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OSWS.KeyManager.Persistence;
@@ -11,9 +12,11 @@ using OSWS.KeyManager.Persistence;
 namespace OSWS.KeyManager.Migrations
 {
     [DbContext(typeof(OswsContext))]
-    partial class OswsContextModelSnapshot : ModelSnapshot
+    [Migration("20260330091206_AddUserIsRbacAdmin")]
+    partial class AddUserIsRbacAdmin
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -158,21 +161,6 @@ namespace OSWS.KeyManager.Migrations
                     b.ToTable("RoleAssignments");
                 });
 
-            modelBuilder.Entity("OSWS.Models.Entities.RoleInheritance", b =>
-                {
-                    b.Property<int>("ParentRoleId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ChildRoleId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("ParentRoleId", "ChildRoleId");
-
-                    b.HasIndex("ChildRoleId");
-
-                    b.ToTable("RoleInheritances");
-                });
-
             modelBuilder.Entity("OSWS.Models.Entities.S3Credential", b =>
                 {
                     b.Property<int>("Id")
@@ -294,25 +282,6 @@ namespace OSWS.KeyManager.Migrations
                     b.Navigation("Role");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("OSWS.Models.Entities.RoleInheritance", b =>
-                {
-                    b.HasOne("OSWS.Models.Entities.Role", "ChildRole")
-                        .WithMany()
-                        .HasForeignKey("ChildRoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("OSWS.Models.Entities.Role", "ParentRole")
-                        .WithMany()
-                        .HasForeignKey("ParentRoleId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ChildRole");
-
-                    b.Navigation("ParentRole");
                 });
 
             modelBuilder.Entity("OSWS.Models.Entities.S3Credential", b =>

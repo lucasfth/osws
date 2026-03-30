@@ -49,7 +49,7 @@ public class UserInfoService(IHttpClientFactory httpClientFactory, ILogger<UserI
             var root = doc.RootElement;
 
             var isAdmin =
-                root.TryGetProperty("isAdmin", out var isAdminProp)
+                root.TryGetProperty("isRbacAdmin", out var isAdminProp)
                 && isAdminProp.ValueKind == JsonValueKind.True;
 
             return new OidcUserInfo(

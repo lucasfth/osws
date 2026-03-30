@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using OSWS.KeyManager.Persistence;
 using OSWS.Models.Entities;
+using OSWS.WebApi.Services;
 
 namespace OSWS.WebApi.Endpoints.Admin;
 
@@ -16,20 +17,30 @@ public static class AdminRoutes
         MapColumnEndpoints(admin);
     }
 
-    private static void MapRoleEndpoints(RouteGroupBuilder group)
+    private static void MapRoleEndpoints(RouteGroupBuilder roleGroup)
     {
         // GET /api/admin/roles
-        group.MapGet(
+        roleGroup.MapGet(
             "/roles",
             async ([FromServices] OswsContext db, CancellationToken ct) =>
             {
-                var roles = await db.Roles.Select(r => new { r.Id, r.Name }).ToListAsync(ct);
+                var roles = await db
+                    .Roles.Select(r => new
+                    {
+                        r.Id,
+                        r.Name,
+                        ChildRoles = db
+                            .RoleInheritances.Where(ri => ri.ParentRoleId == r.Id)
+                            .Select(ri => new { ri.ChildRole.Id, ri.ChildRole.Name })
+                            .ToList(),
+                    })
+                    .ToListAsync(ct);
                 return Results.Ok(roles);
             }
         );
 
         // POST /api/admin/roles
-        group.MapPost(
+        roleGroup.MapPost(
             "/roles",
             async (
                 [FromBody] CreateRoleRequest body,
@@ -48,7 +59,7 @@ public static class AdminRoutes
         );
 
         // DELETE /api/admin/roles/{id}
-        group.MapDelete(
+        roleGroup.MapDelete(
             "/roles/{id:int}",
             async (int id, [FromServices] OswsContext db, CancellationToken ct) =>
             {
@@ -56,43 +67,125 @@ public static class AdminRoutes
                 if (role is null)
                     return Results.NotFound();
 
-                // Cascade: remove RoleAssignments and Permissions first
+                // Cascade: remove RoleAssignments, Permissions, and RoleInheritances first
                 var assignments = db.RoleAssignments.Where(ra => ra.RoleId == id);
                 db.RoleAssignments.RemoveRange(assignments);
 
                 var permissions = db.Permissions.Where(p => p.RoleId == id);
                 db.Permissions.RemoveRange(permissions);
 
+                var inheritances = db.RoleInheritances.Where(ri =>
+                    ri.ParentRoleId == id || ri.ChildRoleId == id
+                );
+                db.RoleInheritances.RemoveRange(inheritances);
+
                 db.Roles.Remove(role);
+                await db.SaveChangesAsync(ct);
+                return Results.NoContent();
+            }
+        );
+
+        // POST /api/admin/roles/{parentId}/inherit/{childId}
+        roleGroup.MapPost(
+            "/roles/{parentId:int}/inherit/{childId:int}",
+            async (
+                int parentId,
+                int childId,
+                [FromServices] OswsContext db,
+                [FromServices] RoleHierarchyService roleHierarchy,
+                CancellationToken ct
+            ) =>
+            {
+                if (await roleHierarchy.WouldCreateCycleAsync(parentId, childId, ct))
+                    return Results.Conflict("This inheritance would create a cycle in the role hierarchy.");
+
+                var parent = await db.Roles.FindAsync([parentId], ct);
+                if (parent is null)
+                    return Results.NotFound("Parent role not found.");
+
+                var child = await db.Roles.FindAsync([childId], ct);
+                if (child is null)
+                    return Results.NotFound("Child role not found.");
+
+                var exists = await db.RoleInheritances.AnyAsync(
+                    ri => ri.ParentRoleId == parentId && ri.ChildRoleId == childId,
+                    ct
+                );
+                if (exists)
+                    return Results.Conflict("Role already inherits the target role.");
+
+                db.RoleInheritances.Add(
+                    new RoleInheritance
+                    {
+                        ParentRoleId = parentId,
+                        ParentRole = parent,
+                        ChildRoleId = childId,
+                        ChildRole = child,
+                    }
+                );
+                await db.SaveChangesAsync(ct);
+                return Results.NoContent();
+            }
+        );
+
+        // DELETE /api/admin/roles/{parentId}/inherit/{childId}
+        roleGroup.MapDelete(
+            "/roles/{parentId:int}/inherit/{childId:int}",
+            async (
+                int parentId,
+                int childId,
+                [FromServices] OswsContext db,
+                CancellationToken ct
+            ) =>
+            {
+                var inheritance = await db.RoleInheritances.FirstOrDefaultAsync(
+                    ri => ri.ParentRoleId == parentId && ri.ChildRoleId == childId,
+                    ct
+                );
+                if (inheritance is null)
+                    return Results.NotFound();
+
+                db.RoleInheritances.Remove(inheritance);
                 await db.SaveChangesAsync(ct);
                 return Results.NoContent();
             }
         );
     }
 
-    private static void MapUserEndpoints(RouteGroupBuilder group)
+    private static void MapUserEndpoints(RouteGroupBuilder userGroup)
     {
         // GET /api/admin/users
-        group.MapGet(
+        userGroup.MapGet(
             "/users",
-            async ([FromServices] OswsContext db, CancellationToken ct) =>
+            async (
+                [FromServices] OswsContext db,
+                [FromServices] RoleHierarchyService roleHierarchy,
+                CancellationToken ct
+            ) =>
             {
-                var users = await db
-                    .Users.Include(u => u.Roles)
-                    .Select(u => new
+                var users = await db.Users
+                    .Select(u => new { u.Id, u.Name, u.Email })
+                    .ToListAsync(ct);
+
+                var result = new List<object>(users.Count);
+                foreach (var u in users)
+                {
+                    var roles = await roleHierarchy.GetEffectiveRolesAsync(u.Id, ct);
+                    result.Add(new
                     {
                         u.Id,
                         u.Name,
                         u.Email,
-                        Roles = u.Roles.Select(r => new { r.Id, r.Name }),
-                    })
-                    .ToListAsync(ct);
-                return Results.Ok(users);
+                        Roles = roles.Select(r => new { r.Id, r.Name }),
+                    });
+                }
+
+                return Results.Ok(result);
             }
         );
 
         // POST /api/admin/users/{userId}/roles/{roleId}
-        group.MapPost(
+        userGroup.MapPost(
             "/users/{userId:int}/roles/{roleId:int}",
             async (int userId, int roleId, [FromServices] OswsContext db, CancellationToken ct) =>
             {
@@ -126,7 +219,7 @@ public static class AdminRoutes
         );
 
         // DELETE /api/admin/users/{userId}/roles/{roleId}
-        group.MapDelete(
+        userGroup.MapDelete(
             "/users/{userId:int}/roles/{roleId:int}",
             async (int userId, int roleId, [FromServices] OswsContext db, CancellationToken ct) =>
             {
@@ -144,10 +237,10 @@ public static class AdminRoutes
         );
     }
 
-    private static void MapColumnEndpoints(RouteGroupBuilder group)
+    private static void MapColumnEndpoints(RouteGroupBuilder columnGroup)
     {
         // GET /api/admin/columns
-        group.MapGet(
+        columnGroup.MapGet(
             "/columns",
             async ([FromServices] OswsContext db, CancellationToken ct) =>
             {
@@ -165,7 +258,7 @@ public static class AdminRoutes
         );
 
         // POST /api/admin/columns/{columnId}/roles/{roleId}
-        group.MapPost(
+        columnGroup.MapPost(
             "/columns/{columnId:int}/roles/{roleId:int}",
             async (int columnId, int roleId, [FromServices] OswsContext db, CancellationToken ct) =>
             {
@@ -199,7 +292,7 @@ public static class AdminRoutes
         );
 
         // DELETE /api/admin/columns/{columnId}/roles/{roleId}
-        group.MapDelete(
+        columnGroup.MapDelete(
             "/columns/{columnId:int}/roles/{roleId:int}",
             async (int columnId, int roleId, [FromServices] OswsContext db, CancellationToken ct) =>
             {

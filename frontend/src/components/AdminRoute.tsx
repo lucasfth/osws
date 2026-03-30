@@ -13,7 +13,7 @@ export function AdminRoute() {
     );
   }
 
-  if (!profile?.isAdmin) {
+  if (!profile?.isRbacAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
 

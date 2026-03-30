@@ -1,7 +1,7 @@
 import { StreamLanguage } from "@codemirror/language"
 
 const ACTION_KW = /^(grant|revoke|create|drop)\b/i
-const STRUCT_KW = /^(role|access|on|to|from)\b/i
+const STRUCT_KW = /^(role|user|access|on|to|from)\b/i
 
 export const oswsLanguage = StreamLanguage.define({
   token(stream) {

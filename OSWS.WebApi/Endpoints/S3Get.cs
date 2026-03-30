@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using OSWS.KeyManager.Persistence;
 using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
+using OSWS.Models.Entities;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Interfaces;
@@ -17,6 +18,7 @@ public class S3Get(
     IParquetReader parquetReader,
     EncryptedFileCache fileCache,
     CurrentUser currentUser,
+    RoleHierarchyService roleHierarchy,
     OswsContext db
 ) : IS3Get
 {
@@ -116,8 +118,11 @@ public class S3Get(
         {
             try
             {
-                // Resolve which columns the user's roles are permitted to decrypt
-                var roleIds = user.Roles.Select(r => r.Id).ToList();
+                // Resolve which columns the user's roles are permitted to decrypt,
+                // including all transitively inherited roles.
+                var effectiveRoles = await roleHierarchy.GetEffectiveRolesAsync(user.Id, cancellationToken);
+                var roleIds = effectiveRoles.Select(r => r.Id).ToList();
+
                 var allowedColumns = await db
                     .Permissions.Where(p => roleIds.Contains(p.RoleId))
                     .Select(p => p.Column.Name)

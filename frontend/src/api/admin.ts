@@ -65,3 +65,24 @@ export function revokeColumnAccess(
     method: "DELETE",
   });
 }
+
+// Role inheritance
+export function inheritRole(
+  api: ApiCall,
+  parentId: number,
+  childId: number
+): Promise<void> {
+  return api(`/api/admin/roles/${parentId}/inherit/${childId}`, {
+    method: "POST",
+  });
+}
+
+export function uninheritRole(
+  api: ApiCall,
+  parentId: number,
+  childId: number
+): Promise<void> {
+  return api(`/api/admin/roles/${parentId}/inherit/${childId}`, {
+    method: "DELETE",
+  });
+}

@@ -122,6 +122,7 @@ builder.Services.AddSingleton<UserInfoService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<CurrentUser>();
 builder.Services.AddScoped<IAuthorizationHandler, RbacAdminHandler>();
+builder.Services.AddScoped<RoleHierarchyService>();
 
 // --- CORS ---
 if (builder.Environment.IsDevelopment())

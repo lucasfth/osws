@@ -5,7 +5,7 @@
 namespace OSWS.KeyManager.Migrations
 {
     /// <inheritdoc />
-    public partial class RemoveUniqueIndexForKeyvaultId : Migration
+    public partial class AddRbacFields : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

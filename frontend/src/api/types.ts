@@ -23,6 +23,7 @@ export interface NewS3Credential extends S3Credential {
 export interface Role {
   id: number;
   name: string;
+  childRoles: Role[];
 }
 
 export interface UserWithRoles {

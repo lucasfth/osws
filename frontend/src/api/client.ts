@@ -17,7 +17,10 @@ export function useApi() {
           Authorization: `Bearer ${token}`,
         },
       });
-      if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`${res.status} ${res.statusText}: ${text}`);
+      }
       if (res.status === 204) return undefined as T;
       return res.json() as Promise<T>;
     },

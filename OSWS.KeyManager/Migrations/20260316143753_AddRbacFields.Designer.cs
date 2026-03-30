@@ -13,7 +13,7 @@ namespace OSWS.KeyManager.Migrations
 {
     [DbContext(typeof(OswsContext))]
     [Migration("20260316143753_AddRbacFields")]
-    partial class RemoveUniqueIndexForKeyvaultId
+    partial class AddRbacFields
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

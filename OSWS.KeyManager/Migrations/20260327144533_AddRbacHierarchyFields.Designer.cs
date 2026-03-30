@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using OSWS.KeyManager.Persistence;
@@ -11,9 +12,11 @@ using OSWS.KeyManager.Persistence;
 namespace OSWS.KeyManager.Migrations
 {
     [DbContext(typeof(OswsContext))]
-    partial class OswsContextModelSnapshot : ModelSnapshot
+    [Migration("20260327144533_AddRbacHierarchyFields")]
+    partial class AddRbacHierarchyFields
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -223,9 +226,6 @@ namespace OSWS.KeyManager.Migrations
 
                     b.Property<string>("Email")
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsRbacAdmin")
-                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()

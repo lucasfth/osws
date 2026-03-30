@@ -62,8 +62,7 @@ public sealed class CurrentUser(IHttpContextAccessor httpContextAccessor, OswsCo
             return _cached;
         }
 
-        // OIDC path: MapInboundClaims = false keeps sub as "sub", not NameIdentifier.
-        // Look up via ExternalIdentities using the raw sub claim.
+        // OIDC path: Look up via ExternalIdentities using the raw sub claim.
         var subject = principal.FindFirstValue("sub");
         if (subject is not null)
         {

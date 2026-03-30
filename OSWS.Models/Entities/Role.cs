@@ -20,4 +20,6 @@ public class Role
     /// S3-Credentials that default to assuming this role (maybe we don't need this)
     /// </summary>
     public ICollection<S3Credential> S3Credentials { get; set; } = [];
+
+
 }

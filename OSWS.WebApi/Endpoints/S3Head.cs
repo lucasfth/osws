@@ -10,8 +10,13 @@ using OSWS.WebApi.Services;
 
 namespace OSWS.WebApi.Endpoints;
 
-public class S3Head(IAmazonS3 s3Client, IParquetReader parquetReader, CurrentUser currentUser, OswsContext db)
-    : IS3Head
+public class S3Head(
+    IAmazonS3 s3Client,
+    IParquetReader parquetReader,
+    CurrentUser currentUser,
+    RoleHierarchyService roleHierarchy,
+    OswsContext db
+) : IS3Head
 {
     public async Task<IResult> HeadObject(
         string bucket,
@@ -53,7 +58,11 @@ public class S3Head(IAmazonS3 s3Client, IParquetReader parquetReader, CurrentUse
             Stream outputStream = resp.ResponseStream;
             try
             {
-                var roleIds = user.Roles.Select(r => r.Id).ToList();
+                var effectiveRoles = await roleHierarchy.GetEffectiveRolesAsync(
+                    user.Id,
+                    cancellationToken
+                );
+                var roleIds = effectiveRoles.Select(r => r.Id).ToList();
                 var allowedColumns = await db
                     .Permissions.Where(p => roleIds.Contains(p.RoleId))
                     .Select(p => p.Column.Name)
@@ -65,7 +74,10 @@ public class S3Head(IAmazonS3 s3Client, IParquetReader parquetReader, CurrentUse
                 await resp.ResponseStream.CopyToAsync(seekableStream, cancellationToken);
                 seekableStream.Position = 0;
 
-                outputStream = await parquetReader.ReadParquetAsync(seekableStream, allowedColumnSet);
+                outputStream = await parquetReader.ReadParquetAsync(
+                    seekableStream,
+                    allowedColumnSet
+                );
             }
             catch (AmazonS3Exception e)
             {

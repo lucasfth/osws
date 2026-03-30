@@ -51,20 +51,30 @@ public static class ParquetSeedUploader
 
         await EnsureBucketExistsAsync(s3, bucket);
 
-        var normalizedPrefix = prefix.EndsWith("/", StringComparison.Ordinal) ? prefix : prefix + "/";
+        var normalizedPrefix = prefix.EndsWith("/", StringComparison.Ordinal)
+            ? prefix
+            : prefix + "/";
 
         // If parquet objects are already present under prefix, keep existing corpus.
-        var existing = await s3.ListObjectsV2Async(new ListObjectsV2Request
-        {
-            BucketName = bucket,
-            Prefix = normalizedPrefix,
-            MaxKeys = 100,
-        });
+        var existing = await s3.ListObjectsV2Async(
+            new ListObjectsV2Request
+            {
+                BucketName = bucket,
+                Prefix = normalizedPrefix,
+                MaxKeys = 100,
+            }
+        );
 
         var existingObjects = existing.S3Objects ?? [];
-        if (existingObjects.Any(o => (o.Key ?? string.Empty).EndsWith(".parquet", StringComparison.OrdinalIgnoreCase)))
+        if (
+            existingObjects.Any(o =>
+                (o.Key ?? string.Empty).EndsWith(".parquet", StringComparison.OrdinalIgnoreCase)
+            )
+        )
         {
-            Console.WriteLine($"seed-parquet: found existing parquet objects under s3://{bucket}/{normalizedPrefix}");
+            Console.WriteLine(
+                $"seed-parquet: found existing parquet objects under s3://{bucket}/{normalizedPrefix}"
+            );
             return 0;
         }
 

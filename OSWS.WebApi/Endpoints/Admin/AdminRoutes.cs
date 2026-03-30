@@ -97,7 +97,9 @@ public static class AdminRoutes
             ) =>
             {
                 if (await roleHierarchy.WouldCreateCycleAsync(parentId, childId, ct))
-                    return Results.Conflict("This inheritance would create a cycle in the role hierarchy.");
+                    return Results.Conflict(
+                        "This inheritance would create a cycle in the role hierarchy."
+                    );
 
                 var parent = await db.Roles.FindAsync([parentId], ct);
                 if (parent is null)
@@ -163,21 +165,28 @@ public static class AdminRoutes
                 CancellationToken ct
             ) =>
             {
-                var users = await db.Users
-                    .Select(u => new { u.Id, u.Name, u.Email })
+                var users = await db
+                    .Users.Select(u => new
+                    {
+                        u.Id,
+                        u.Name,
+                        u.Email,
+                    })
                     .ToListAsync(ct);
 
                 var result = new List<object>(users.Count);
                 foreach (var u in users)
                 {
                     var roles = await roleHierarchy.GetEffectiveRolesAsync(u.Id, ct);
-                    result.Add(new
-                    {
-                        u.Id,
-                        u.Name,
-                        u.Email,
-                        Roles = roles.Select(r => new { r.Id, r.Name }),
-                    });
+                    result.Add(
+                        new
+                        {
+                            u.Id,
+                            u.Name,
+                            u.Email,
+                            Roles = roles.Select(r => new { r.Id, r.Name }),
+                        }
+                    );
                 }
 
                 return Results.Ok(result);

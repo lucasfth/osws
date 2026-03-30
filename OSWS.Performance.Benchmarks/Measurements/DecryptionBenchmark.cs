@@ -12,12 +12,12 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 
 /// <summary>
 /// Micro-benchmark: Column Decryption Latency
-/// 
+///
 /// Measures how long it takes to decrypt a column by varying the number of rows.
 /// Column width (number of columns) remains constant at 2,000.
-/// 
+///
 /// Parameterized by row count: 5,000, 10,000, 100,000
-/// 
+///
 /// Expected outcome: Understanding decryption latency scaling with data volume.
 /// Uses warm cache (pre-populated with DEKs) to isolate decryption time from key unwrap.
 /// </summary>
@@ -43,7 +43,9 @@ public class DecryptionBenchmark
     [GlobalSetup]
     public async Task GlobalSetupAsync()
     {
-        Console.WriteLine($"    Setting up Decryption benchmark (RowCount={RowCount:N0}, ColumnCount={ColumnCount})...");
+        Console.WriteLine(
+            $"    Setting up Decryption benchmark (RowCount={RowCount:N0}, ColumnCount={ColumnCount})..."
+        );
 
         _services = BenchmarkServiceFactory.BuildServiceProvider();
         var config = _services.GetRequiredService<IConfiguration>();
@@ -58,11 +60,19 @@ public class DecryptionBenchmark
         _parquetWriter = new ParquetWriter(_keyVaultProvider, providerType, logger: _logger);
         _parquetReader = new ParquetReader(_keyVaultProvider, _fixture.DekCache);
 
-        _plainDatasetPath = Path.Combine(Path.GetTempPath(), $"osws-bench-plain-{Guid.NewGuid():N}.parquet");
-        _encryptedDatasetPath = Path.Combine(Path.GetTempPath(), $"osws-bench-encrypted-{Guid.NewGuid():N}.parquet");
+        _plainDatasetPath = Path.Combine(
+            Path.GetTempPath(),
+            $"osws-bench-plain-{Guid.NewGuid():N}.parquet"
+        );
+        _encryptedDatasetPath = Path.Combine(
+            Path.GetTempPath(),
+            $"osws-bench-encrypted-{Guid.NewGuid():N}.parquet"
+        );
 
         // Generate dataset with varying row counts (2000 columns, rows vary)
-        Console.WriteLine($"   Generating wide dataset ({ColumnCount} cols × {RowCount:N0} rows)...");
+        Console.WriteLine(
+            $"   Generating wide dataset ({ColumnCount} cols × {RowCount:N0} rows)..."
+        );
         await using var plainOutput = new FileStream(
             _plainDatasetPath,
             FileMode.Create,
@@ -77,24 +87,28 @@ public class DecryptionBenchmark
         );
 
         Console.WriteLine("   Encrypting dataset for column decryption testing...");
-        await using (var encryptedOutput = new FileStream(
-            _encryptedDatasetPath,
-            FileMode.Create,
-            FileAccess.ReadWrite,
-            FileShare.None
-        ))
+        await using (
+            var encryptedOutput = new FileStream(
+                _encryptedDatasetPath,
+                FileMode.Create,
+                FileAccess.ReadWrite,
+                FileShare.None
+            )
+        )
         {
             await _parquetWriter.WriteParquetAsync(unencrypted, "default", output: encryptedOutput);
         }
 
         // Pre-warm the cache with the DEK so we measure pure decryption time, not key unwrap
         Console.WriteLine("   Pre-warming cache with DEK...");
-        await using (var warmStream = new FileStream(
-            _encryptedDatasetPath,
-            FileMode.Open,
-            FileAccess.Read,
-            FileShare.Read
-        ))
+        await using (
+            var warmStream = new FileStream(
+                _encryptedDatasetPath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read
+            )
+        )
         {
             var warmResult = await _parquetReader.ReadParquetAsync(warmStream);
             warmResult.Dispose();
@@ -102,7 +116,9 @@ public class DecryptionBenchmark
 
         _encryptedDatasetBytes = await File.ReadAllBytesAsync(_encryptedDatasetPath);
 
-        Console.WriteLine($"   ✅ Setup complete for column decryption benchmark ({RowCount:N0} rows)");
+        Console.WriteLine(
+            $"   ✅ Setup complete for column decryption benchmark ({RowCount:N0} rows)"
+        );
     }
 
     [Benchmark(Description = "Column Decryption - Time to fully decrypt all columns")]

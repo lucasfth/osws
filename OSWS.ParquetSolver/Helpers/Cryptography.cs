@@ -20,7 +20,10 @@ public static class Cryptography
     /// Each encrypted column gets its own ephemeral DEK, and all column DEKs for the file
     /// are wrapped by a single file-level KEK created through the vault provider.
     /// </summary>
-    public static (FileEncryptionProperties Properties, EncryptionResult Metadata) BuildEncryptionProperties(
+    public static (
+        FileEncryptionProperties Properties,
+        EncryptionResult Metadata
+    ) BuildEncryptionProperties(
         SchemaDescriptor schema,
         string[]? columnsToEncrypt,
         IKeyVaultProvider keyVaultProvider,
@@ -98,12 +101,14 @@ public static class Cryptography
             colBuilder.KeyMetadata(columnMetadata.Serialize());
             columnProperties[i] = colBuilder.Build();
 
-            encryptedColumns.Add(new EncryptedColumnInfo
-            {
-                ColumnName = colName,
-                KeyVaultId = fileKeyId,
-                KeyName = fileKeyName,
-            });
+            encryptedColumns.Add(
+                new EncryptedColumnInfo
+                {
+                    ColumnName = colName,
+                    KeyVaultId = fileKeyId,
+                    KeyName = fileKeyName,
+                }
+            );
         }
 
         var encryptedCols = Array.FindAll(columnProperties, p => p != null!);

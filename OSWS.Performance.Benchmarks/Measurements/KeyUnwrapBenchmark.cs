@@ -13,16 +13,16 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 
 /// <summary>
 /// Micro-benchmark: Key Unwrap Latency
-/// 
+///
 /// Measures how long it takes to unwrap (decrypt) a Data Encryption Key (DEK)
 /// from the Key Encryption Key (KEK).
-/// 
+///
 /// DEK size is parameterized per benchmark case (16, 24, 32 bytes).
 /// This benchmark measures key unwrap time using a cold cache scenario.
-/// 
+///
 /// Method: We measure key unwrap time by using a cold cache and reading encrypted parquet.
 /// This forces the system to unwrap DEKs without benefit of cached keys.
-/// 
+///
 /// Expected outcome: Understanding key unwrap overhead independent of decryption.
 /// </summary>
 [Config(typeof(SharedBenchmarkConfig))]
@@ -44,7 +44,9 @@ public class KeyUnwrapBenchmark
     public async Task GlobalSetupAsync()
     {
         var dekSizeBits = DekSizeBytes * 8;
-        Console.WriteLine($"    Setting up Key Unwrap benchmark (DekSizeBytes={DekSizeBytes}, DekSizeBits={dekSizeBits})...");
+        Console.WriteLine(
+            $"    Setting up Key Unwrap benchmark (DekSizeBytes={DekSizeBytes}, DekSizeBits={dekSizeBits})..."
+        );
 
         _services = BenchmarkServiceFactory.BuildServiceProvider();
         var config = _services.GetRequiredService<IConfiguration>();
@@ -63,7 +65,9 @@ public class KeyUnwrapBenchmark
         );
 
         // Generate a wide dataset (2000 cols × 10000 rows) for key unwrap testing
-        Console.WriteLine("   Generating wide dataset (2000 cols × 10000 rows) for key unwrap testing...");
+        Console.WriteLine(
+            "   Generating wide dataset (2000 cols × 10000 rows) for key unwrap testing..."
+        );
         var unencrypted = await WideDatasetGenerator.GenerateAsync(
             2000,
             10000,

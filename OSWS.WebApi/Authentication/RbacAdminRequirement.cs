@@ -11,8 +11,7 @@ public class RbacAdminRequirement : IAuthorizationRequirement { }
 ///     Reuses the per-request cached DB lookup so no extra round trip is made
 ///     on top of what <see cref="CurrentUser" /> already does.
 /// </summary>
-public class RbacAdminHandler(CurrentUser currentUser)
-    : AuthorizationHandler<RbacAdminRequirement>
+public class RbacAdminHandler(CurrentUser currentUser) : AuthorizationHandler<RbacAdminRequirement>
 {
     protected override async Task HandleRequirementAsync(
         AuthorizationHandlerContext context,

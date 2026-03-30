@@ -103,7 +103,9 @@ public class WarpSettings
             throw new InvalidOperationException("WarpDurationSeconds must be positive");
 
         if (!new[] { "get", "put", "delete", "mixed" }.Contains(WorkloadProfile.ToLower()))
-            throw new InvalidOperationException("WorkloadProfile must be one of: get, put, delete, mixed");
+            throw new InvalidOperationException(
+                "WorkloadProfile must be one of: get, put, delete, mixed"
+            );
 
         if (LoadBalancerPort <= 0)
             throw new InvalidOperationException("LoadBalancerPort must be positive");

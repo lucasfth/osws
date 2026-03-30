@@ -4,7 +4,7 @@ namespace OSWS.Performance.Benchmarks.Warp;
 
 /// <summary>
 /// Orchestrates Warp baseline benchmarks.
-/// 
+///
 /// Responsibilities:
 /// - Start/stop multiple OSWS instances
 /// - Configure and run Warp with varying parameters
@@ -72,15 +72,14 @@ public class WarpOrchestrator
             // 6. Parse and store results
             // 7. Stop instances
 
-            _logger?.LogInformation("Benchmark completed for {InstanceCount} instances", instanceCount);
+            _logger?.LogInformation(
+                "Benchmark completed for {InstanceCount} instances",
+                instanceCount
+            );
         }
         catch (Exception ex)
         {
-            _logger?.LogError(
-                ex,
-                "Benchmark failed for {InstanceCount} instances",
-                instanceCount
-            );
+            _logger?.LogError(ex, "Benchmark failed for {InstanceCount} instances", instanceCount);
             throw;
         }
     }
@@ -98,7 +97,11 @@ public class WarpOrchestrator
         }
         catch (Exception ex)
         {
-            _logger?.LogWarning(ex, "Warp executable not found at {Path}", _settings.WarpExecutablePath);
+            _logger?.LogWarning(
+                ex,
+                "Warp executable not found at {Path}",
+                _settings.WarpExecutablePath
+            );
             return false;
         }
     }
@@ -114,7 +117,7 @@ public class WarpOrchestrator
             Arguments = arguments,
             UseShellExecute = false,
             RedirectStandardOutput = true,
-            CreateNoWindow = true
+            CreateNoWindow = true,
         };
 
         using var process = System.Diagnostics.Process.Start(processInfo);
@@ -125,7 +128,9 @@ public class WarpOrchestrator
         process.WaitForExit();
 
         if (process.ExitCode != 0)
-            throw new InvalidOperationException($"Command failed with exit code {process.ExitCode}");
+            throw new InvalidOperationException(
+                $"Command failed with exit code {process.ExitCode}"
+            );
 
         return output;
     }

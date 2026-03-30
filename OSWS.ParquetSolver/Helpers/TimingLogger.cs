@@ -22,7 +22,11 @@ public class TimingLogger
     /// <summary>
     /// Logs a single operation timing with structured data.
     /// </summary>
-    public void LogOperationTiming(string operationName, long elapsedMilliseconds, Dictionary<string, object>? additionalData = null)
+    public void LogOperationTiming(
+        string operationName,
+        long elapsedMilliseconds,
+        Dictionary<string, object>? additionalData = null
+    )
     {
         if (!_enabled || _logger == null)
             return;
@@ -32,19 +36,20 @@ public class TimingLogger
             Operation = operationName,
             ElapsedMs = elapsedMilliseconds,
             Timestamp = DateTime.UtcNow,
-            AdditionalData = additionalData
+            AdditionalData = additionalData,
         };
 
-        _logger.LogInformation(
-            "OperationTiming: {@TimingData}",
-            timingData
-        );
+        _logger.LogInformation("OperationTiming: {@TimingData}", timingData);
     }
 
     /// <summary>
     /// Executes an async operation and logs its timing.
     /// </summary>
-    public async Task<T> MeasureAsync<T>(string operationName, Func<Task<T>> operation, Dictionary<string, object>? additionalData = null)
+    public async Task<T> MeasureAsync<T>(
+        string operationName,
+        Func<Task<T>> operation,
+        Dictionary<string, object>? additionalData = null
+    )
     {
         if (!_enabled)
             return await operation();
@@ -64,7 +69,11 @@ public class TimingLogger
     /// <summary>
     /// Executes a sync operation and logs its timing.
     /// </summary>
-    public T Measure<T>(string operationName, Func<T> operation, Dictionary<string, object>? additionalData = null)
+    public T Measure<T>(
+        string operationName,
+        Func<T> operation,
+        Dictionary<string, object>? additionalData = null
+    )
     {
         if (!_enabled)
             return operation();
@@ -85,7 +94,11 @@ public class TimingLogger
     /// Records a timing measurement without executing an operation.
     /// Useful when timing is measured externally.
     /// </summary>
-    public void RecordTiming(string operationName, long elapsedMilliseconds, Dictionary<string, object>? additionalData = null)
+    public void RecordTiming(
+        string operationName,
+        long elapsedMilliseconds,
+        Dictionary<string, object>? additionalData = null
+    )
     {
         LogOperationTiming(operationName, elapsedMilliseconds, additionalData);
     }

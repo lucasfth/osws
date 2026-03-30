@@ -120,7 +120,10 @@ public class S3Get(
             {
                 // Resolve which columns the user's roles are permitted to decrypt,
                 // including all transitively inherited roles.
-                var effectiveRoles = await roleHierarchy.GetEffectiveRolesAsync(user.Id, cancellationToken);
+                var effectiveRoles = await roleHierarchy.GetEffectiveRolesAsync(
+                    user.Id,
+                    cancellationToken
+                );
                 var roleIds = effectiveRoles.Select(r => r.Id).ToList();
 
                 var allowedColumns = await db

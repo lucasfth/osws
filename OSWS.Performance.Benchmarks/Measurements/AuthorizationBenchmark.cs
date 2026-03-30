@@ -8,12 +8,12 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 
 /// <summary>
 /// Micro-benchmark: RBAC Authorization Latency
-/// 
+///
 /// Measures how long it takes to authorize a user's access to columns
 /// by varying the number of roles in the RBAC system.
-/// 
+///
 /// Parameterized by role count: 4, 64, 256
-/// 
+///
 /// This benchmark measures authorization latency with mock RBAC logic:
 /// - Time to check if a user (with N roles) can access a column
 /// - Performs 100 authorization checks per iteration
@@ -36,7 +36,9 @@ public class AuthorizationBenchmark
     [GlobalSetup]
     public void GlobalSetup()
     {
-        Console.WriteLine($"    Setting up RBAC Authorization benchmark (RoleCount={RoleCount})...");
+        Console.WriteLine(
+            $"    Setting up RBAC Authorization benchmark (RoleCount={RoleCount})..."
+        );
 
         _services = BenchmarkServiceFactory.BuildServiceProvider();
         _logger = _services.GetRequiredService<ILogger<AuthorizationBenchmark>>();
@@ -72,13 +74,20 @@ public class AuthorizationBenchmark
             _userRoleAssignments[i] = userRoles;
         }
 
-        Console.WriteLine($"   ✅ Setup complete for RBAC Authorization benchmark (RoleCount={RoleCount}, Users=100, Resources=1000)");
+        Console.WriteLine(
+            $"   ✅ Setup complete for RBAC Authorization benchmark (RoleCount={RoleCount}, Users=100, Resources=1000)"
+        );
     }
 
     [Benchmark(Description = "RBAC Authorization Check - varies by role count")]
     public int MeasureRBACAuthorization()
     {
-        if (_rbacService == null || _testUserIds == null || _testResourceIds == null || _userRoleAssignments == null)
+        if (
+            _rbacService == null
+            || _testUserIds == null
+            || _testResourceIds == null
+            || _userRoleAssignments == null
+        )
             throw new InvalidOperationException("Benchmark setup incomplete");
 
         int authorizedCount = 0;

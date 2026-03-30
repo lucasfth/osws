@@ -53,7 +53,10 @@ public class MockRbacAuthorizationService : IRbacAuthorizationService
         // User is authorized if ANY of their roles has permission
         foreach (var role in userRoles)
         {
-            if (_rolePermissions.TryGetValue(role, out var permissions) && permissions.Contains(resourceId))
+            if (
+                _rolePermissions.TryGetValue(role, out var permissions)
+                && permissions.Contains(resourceId)
+            )
             {
                 return true;
             }

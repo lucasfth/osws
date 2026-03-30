@@ -8,7 +8,10 @@ public static class Program
 {
     public static async Task Main(string[] args)
     {
-        if (args.Length > 0 && string.Equals(args[0], "seed-parquet", StringComparison.OrdinalIgnoreCase))
+        if (
+            args.Length > 0
+            && string.Equals(args[0], "seed-parquet", StringComparison.OrdinalIgnoreCase)
+        )
         {
             var exitCode = await ParquetSeedUploader.RunAsync(args.Skip(1).ToArray());
             Environment.ExitCode = exitCode;
@@ -30,12 +33,9 @@ public static class Program
 
         var benchmarkType = choice switch
         {
-            "auth" or "AuthorizationBenchmark" =>
-                typeof(AuthorizationBenchmark),
-            "unwrap" or "KeyUnwrapBenchmark" =>
-                typeof(KeyUnwrapBenchmark),
-            "decrypt" or "DecryptionBenchmark" =>
-                typeof(DecryptionBenchmark),
+            "auth" or "AuthorizationBenchmark" => typeof(AuthorizationBenchmark),
+            "unwrap" or "KeyUnwrapBenchmark" => typeof(KeyUnwrapBenchmark),
+            "decrypt" or "DecryptionBenchmark" => typeof(DecryptionBenchmark),
             _ => null, // run all benchmarks
         };
 
@@ -60,7 +60,7 @@ public static class Program
                 "auth" or "AuthorizationBenchmark" => "Authorization",
                 "unwrap" or "KeyUnwrapBenchmark" => "Key Unwrap",
                 "decrypt" or "DecryptionBenchmark" => "Decryption",
-                _ => "Unknown"
+                _ => "Unknown",
             };
             Console.WriteLine($"  Running benchmark: {benchmarkName}");
             Console.WriteLine($"   Type: {benchmarkType.Name}");

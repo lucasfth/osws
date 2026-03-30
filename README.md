@@ -35,6 +35,7 @@ The `IKeyVaultProvider` interface allows swapping providers:
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
 - PostgreSQL (for user/role management)
+- EF Core CLI: `dotnet tool install --global dotnet-ef`
 - Azure CLI (`az`) for Azure Key Vault setup
 - An Azure Key Vault with RBAC enabled
 
@@ -73,6 +74,37 @@ Authentication uses `DefaultAzureCredential` which picks up (in order):
 
 For local development, `az login` is sufficient.
 
+### Database
+
+OSWS uses PostgreSQL for user, role, and permission management via EF Core.
+
+#### Create the database
+
+```bash
+# Connect as the postgres superuser and create the database
+psql -U postgres -c "CREATE DATABASE osws_dev;"
+```
+
+#### Configure the connection string
+
+Add the connection string to `OSWS.WebApi/appsettings.Development.json`:
+
+```json
+{
+  "ConnectionStrings:OswsContext": "Host=localhost;Port=5432;Database=osws_dev;Username=postgres;Password=postgres"
+}
+```
+
+Adjust `Username` and `Password` to match your local PostgreSQL setup.
+
+#### Apply migrations
+
+```bash
+dotnet ef database update --project OSWS.KeyManager --startup-project OSWS.WebApi
+```
+
+This creates all tables (users, roles, permissions, external identities, role inheritances).
+
 ### R2 / S3 storage
 
 Set these environment variables for Cloudflare R2 (or any S3-compatible store):
@@ -106,14 +138,15 @@ curl -LO https://raw.githubusercontent.com/pocket-id/pocket-id/main/.env.example
 docker compose up -d
 ```
 
-Open `https://<your-app-url>/setup` to create the initial admin account.
+Open `http(s)://<your-app-url>/setup` to create the initial admin account.
 
 #### Create an OIDC application in PocketID
 
 1. Log in to the PocketID admin UI.
 2. Go to **Administration** → **OIDC Clients**.
-3. Set **Client Launch URL** and **Callback URLs** to `http://localhost:5173` (or your frontend URL).
+3. Fill out **Name**. Set **Client Launch URL** and **Callback URLs** to `http://localhost:5173` (or your frontend URL).
 4. Enable **Public Client** and **PKCE**
+5. Set to **Unrestricted** or restrict to groups of choice
 4. Note the **Client ID** and your PocketID URL (e.g. https://pocket-id.example.com or http://localhost:1411)
 
 #### Add a custom claim for RBAC admin

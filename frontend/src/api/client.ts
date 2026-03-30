@@ -5,7 +5,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 export function useApi() {
   const auth = useAuth();
-  const token = auth.user?.id_token;
+  const token = auth.user?.access_token;
 
   return useCallback(
     async <T>(path: string, options?: RequestInit): Promise<T> => {

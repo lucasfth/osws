@@ -11,6 +11,7 @@ using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using OSWS.WebApi.Authentication;
 using OSWS.WebApi.Endpoints;
 using OSWS.WebApi.Endpoints.Admin;
@@ -120,6 +121,7 @@ builder.Services.AddSingleton<UserInfoService>();
 // IHttpContextAccessor is required by CurrentUser to read the ClaimsPrincipal.
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<CurrentUser>();
+builder.Services.AddScoped<IAuthorizationHandler, RbacAdminHandler>();
 
 // --- CORS ---
 if (builder.Environment.IsDevelopment())
@@ -204,11 +206,7 @@ builder.Services.AddAuthorization(authOpts =>
             policy.RequireAuthenticatedUser();
             if (schemeNames.Length > 0)
                 policy.AddAuthenticationSchemes(schemeNames);
-            policy.RequireAssertion(ctx =>
-                ctx.User.HasClaim(c =>
-                    c.Type == "isAdmin" && (c.Value == "true" || c.Value == "True")
-                )
-            );
+            policy.AddRequirements(new RbacAdminRequirement());
         }
     );
 

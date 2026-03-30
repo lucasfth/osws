@@ -139,7 +139,7 @@ export function Layout() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          {profile?.isAdmin && (
+          {profile?.isRbacAdmin && (
             <SidebarGroup>
               <SidebarGroupLabel>Admin</SidebarGroupLabel>
               <SidebarGroupContent>

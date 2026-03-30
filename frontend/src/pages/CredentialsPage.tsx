@@ -44,12 +44,12 @@ export function CredentialsPage() {
   useEffect(() => {
     Promise.all([
       listCredentials(api),
-      profile?.isAdmin ? listRoles(api) : Promise.resolve([] as Role[]),
+      profile?.isRbacAdmin ? listRoles(api) : Promise.resolve([] as Role[]),
     ])
       .then(([creds, roles]) => {
         setCredentials(creds);
         // Admins see all roles; regular users see only their own roles
-        if (profile?.isAdmin) {
+        if (profile?.isRbacAdmin) {
           setAllRoles(roles);
         } else {
           setAllRoles(profile?.roles ?? []);

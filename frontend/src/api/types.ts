@@ -4,7 +4,7 @@ export interface UserProfile {
   email: string | null;
   provider: string;
   roles: Role[];
-  isAdmin: boolean;
+  isRbacAdmin: boolean;
 }
 
 export interface S3Credential {

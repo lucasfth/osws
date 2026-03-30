@@ -34,7 +34,7 @@ fi
 
 # Configuration (can be overridden from command line, .env, or appsettings.json)
 INSTANCE_COUNT="${1:-}"
-WARP_CONCURRENCY="${2:-${WARP_CONCURRENCY:-16}}"
+WARP_CONCURRENCY="${2:-${WARP_CONCURRENCY:-8}}"
 WARP_DURATION="${3:-${WARP_DURATION_SECONDS:-60}}"
 WORKLOAD_PROFILE="${4:-${WARP_WORKLOAD_PROFILE:-mixed}}"
 
@@ -332,6 +332,26 @@ start_osws_instances() {
     done
 }
 
+write_plain_json_if_possible() {
+    local source_zst=$1
+    local output_json=$2
+
+    if [[ ! -f "$source_zst" ]]; then
+        return 0
+    fi
+
+    if command -v zstd >/dev/null 2>&1; then
+        if zstd -d -f -q "$source_zst" -o "$output_json"; then
+            echo "    ✓ Saved: $output_json"
+        else
+            echo "    ! Could not extract plain JSON from $source_zst"
+        fi
+    else
+        echo "    ! zstd not found; skipping plain JSON extraction"
+        echo "      Install with: brew install zstd"
+    fi
+}
+
 for num_instances in "${INSTANCE_COUNTS[@]}"; do
     echo "════════════════════════════════════════════════════════"
     echo "Instance count: $num_instances"
@@ -371,25 +391,7 @@ for num_instances in "${INSTANCE_COUNTS[@]}"; do
     fi
     bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
 
-    echo ""write_plain_json_if_possible() {
-    local source_zst=$1
-    local output_json=$2
-
-    if [[ ! -f "$source_zst" ]]; then
-        return 0
-    fi
-
-    if command -v zstd >/dev/null 2>&1; then
-        if zstd -d -f -q "$source_zst" -o "$output_json"; then
-            echo "    ✓ Saved: $output_json"
-        else
-            echo "    ! Could not extract plain JSON from $source_zst"
-        fi
-    else
-        echo "    ! zstd not found; skipping plain JSON extraction"
-        echo "      Install with: brew install zstd"
-    fi
-
+    echo ""
 done
 
 echo "════════════════════════════════════════════════════════"

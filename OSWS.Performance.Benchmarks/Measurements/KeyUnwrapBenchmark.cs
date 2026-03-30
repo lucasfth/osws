@@ -38,6 +38,7 @@ public class KeyUnwrapBenchmark
     private ParquetWriter? _parquetWriter;
     private ParquetReader? _parquetReader;
     private byte[]? _encryptedFileBytes;
+    private readonly byte[] _readBuffer = new byte[8192];
 
     [GlobalSetup]
     public async Task GlobalSetupAsync()
@@ -81,18 +82,21 @@ public class KeyUnwrapBenchmark
     public void IterationSetup()
     {
         // Cold start: clear caches before each iteration to force key unwrapping
-        _fixture?.Dispose();
-        _fixture = new ColdStartFixture();
+        if (_fixture == null)
+        {
+            _fixture = new ColdStartFixture();
+        }
 
-        // Recreate parquetReader with fresh cache
-        if (_keyVaultProvider != null && _fixture.DekCache != null)
+        _fixture.DekCache.Clear();
+
+        if (_keyVaultProvider != null)
         {
             _parquetReader = new ParquetReader(_keyVaultProvider, _fixture.DekCache);
         }
     }
 
     [Benchmark(Description = "Key Unwrap - Time to unwrap DEKs and read encrypted parquet")]
-    public async Task MeasureKeyUnwrap()
+    public async Task<int> MeasureKeyUnwrap()
     {
         if (_encryptedFileBytes == null || _parquetReader == null)
             throw new InvalidOperationException("Benchmark setup incomplete");
@@ -104,11 +108,12 @@ public class KeyUnwrapBenchmark
         var result = await _parquetReader.ReadParquetAsync(encryptedStream);
 
         // Consume some bytes to ensure unwrapping actually happens
-        var buffer = new byte[8192];
-        await result.ReadAsync(buffer);
+        var bytesRead = await result.ReadAsync(_readBuffer);
 
         encryptedStream.Dispose();
         result.Dispose();
+
+        return bytesRead;
     }
 
     [GlobalCleanup]

@@ -671,6 +671,46 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 Chart.defaults.color = '#0f172a';
 Chart.defaults.borderColor = '#e2e8f0';
 
+const VALUE_LABEL_PLUGIN = {{
+  id: 'valueLabelOverlay',
+  afterDatasetsDraw(chart) {{
+    if (chart.config.type !== 'bar') {{
+      return;
+    }}
+
+    const {{ ctx }} = chart;
+    ctx.save();
+    ctx.fillStyle = '#0f172a';
+    ctx.font = '600 10px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+
+    const datasets = chart.data?.datasets ?? [];
+    datasets.forEach((dataset, datasetIndex) => {{
+      const meta = chart.getDatasetMeta(datasetIndex);
+      if (!meta || meta.hidden) {{
+        return;
+      }}
+
+      meta.data.forEach((element, index) => {{
+        const raw = dataset.data?.[index];
+        const value = typeof raw === 'number' ? raw : Number(raw);
+        if (!Number.isFinite(value)) {{
+          return;
+        }}
+
+        const text = value.toLocaleString(undefined, {{ maximumFractionDigits: value >= 100 ? 0 : 2 }});
+        const y = Math.max(chart.chartArea.top + 12, element.y - 4);
+        ctx.fillText(text, element.x, y);
+      }});
+    }});
+
+    ctx.restore();
+  }},
+}};
+
+Chart.register(VALUE_LABEL_PLUGIN);
+
 const AXIS_DEFAULTS = (title, log) => ({{
   title: {{ display: true, text: title, color: '#64748b', font: {{ size: 11 }}}},
   type: log ? 'logarithmic' : 'linear',

@@ -14,13 +14,13 @@ namespace OSWS.Performance.Benchmarks
     [MemoryDiagnoser]
     public class SharedBenchmarkConfig : ManualConfig
     {
-        private static int DefaultIterationCount => 5;
+        private static int DefaultIterationCount => 10;
 
         /// <summary>
         /// Number of warmup iterations to use for all jobs.  Benchmarks can reference
         /// this value when deciding whether a particular run should be recorded.
         /// </summary>
-        public static int DefaultWarmupCount => 1;
+        public static int DefaultWarmupCount => 3;
 
         /// <summary>
         /// Resolve iteration count from BENCH_ITERATIONS or BenchmarkDotNet CLI args.
@@ -65,12 +65,32 @@ namespace OSWS.Performance.Benchmarks
             return DefaultIterationCount;
         }
 
+        /// <summary>
+        /// Resolve warmup count from BENCH_WARMUP_COUNT env var.
+        /// Falls back to DefaultWarmupCount when not set.
+        /// </summary>
+        public static int GetConfiguredWarmupCount()
+        {
+            if (
+                int.TryParse(
+                    Environment.GetEnvironmentVariable("BENCH_WARMUP_COUNT"),
+                    out var envWarmup
+                )
+                && envWarmup > 0
+            )
+            {
+                return envWarmup;
+            }
+
+            return DefaultWarmupCount;
+        }
+
         public SharedBenchmarkConfig()
         {
-            // Default: 5 iterations for statistical reliability
+            // Default: 10 iterations and 3 warmups for better statistical reliability
             // Override via BENCH_ITERATIONS environment variable or --iterationCount CLI flag
             var defaultIterations = GetConfiguredIterationCount();
-            var warmupCount = DefaultWarmupCount;
+            var warmupCount = GetConfiguredWarmupCount();
 
             var defaultJob = Job
                 .Default.WithWarmupCount(warmupCount)

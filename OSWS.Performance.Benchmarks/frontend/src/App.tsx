@@ -83,12 +83,32 @@ type WarpResultFile = {
 
 type ChartDatum = { label: string; value: number };
 
-const WARP_FILES = [
-  "warp-1instances-osws-encryption-cache.json",
-  "warp-1instances-osws-encryption-no-cache.json",
-  "warp-1instances-osws-no-encryption.json",
-  "warp-1instances-s3-direct.json",
+const WARP_INSTANCE_COUNTS = [1, 2, 4, 8] as const;
+const WARP_SCENARIOS = [
+  "osws-encryption-cache",
+  "osws-encryption-no-cache",
+  "osws-no-encryption",
+  "s3-direct",
 ] as const;
+const WARP_FILES = WARP_INSTANCE_COUNTS.flatMap((instanceCount) =>
+  WARP_SCENARIOS.map(
+    (scenario) => `warp-${instanceCount}instances-${scenario}.json`,
+  ),
+);
+
+type ScalingTrend =
+  | "Improving"
+  | "Regressing"
+  | "Mixed"
+  | "Stable"
+  | "Insufficient Data";
+
+type ScenarioScalingRow = {
+  scenario: string;
+  throughputByInstance: Record<number, number | null>;
+  trend: ScalingTrend;
+  changePct: number | null;
+};
 
 function parseCsvLine(line: string): string[] {
   const cells: string[] = [];
@@ -243,25 +263,30 @@ function toWarpRun(fileName: string, json: WarpResultFile): WarpRun {
   const nameMatch = fileName.match(/^warp-(\d+)instances-(.+)\.json$/);
   const instanceCount = Number(nameMatch?.[1] ?? 1);
   const scenario = nameMatch?.[2] ?? fileName.replace(".json", "");
-  const firstClientMetrics = Object.values(json.total?.throughput_by_client ?? {})[0];
+  const firstClientMetrics = Object.values(
+    json.total?.throughput_by_client ?? {},
+  )[0];
   const totalRequests = json.total?.total_requests ?? 0;
   const totalObjects = json.total?.total_objects ?? 0;
   const totalErrors = json.total?.total_errors ?? 0;
   const totalBytes = json.total?.total_bytes ?? 0;
   const durationMs = firstClientMetrics?.measure_duration_millis ?? 0;
   const durationSec = durationMs > 0 ? durationMs / 1000 : 0;
-  const throughputMBps = durationSec > 0 ? totalBytes / durationSec / 1_000_000 : 0;
+  const throughputMBps =
+    durationSec > 0 ? totalBytes / durationSec / 1_000_000 : 0;
   const opsPerSecond = durationSec > 0 ? totalRequests / durationSec : 0;
   const fastestBps = json.total?.throughput?.segmented?.fastest_bps ?? 0;
   const medianBps = json.total?.throughput?.segmented?.median_bps ?? 0;
   const slowestBps = json.total?.throughput?.segmented?.slowest_bps ?? 0;
 
-  const opBreakdown = Object.entries(json.by_op_type ?? {}).map(([op, opStats]) => {
-    const requests = opStats.total_requests ?? 0;
-    const errors = opStats.total_errors ?? 0;
-    const avgLatencyMs = extractOpAverageLatency(opStats);
-    return { op, requests, errors, avgLatencyMs };
-  });
+  const opBreakdown = Object.entries(json.by_op_type ?? {}).map(
+    ([op, opStats]) => {
+      const requests = opStats.total_requests ?? 0;
+      const errors = opStats.total_errors ?? 0;
+      const avgLatencyMs = extractOpAverageLatency(opStats);
+      return { op, requests, errors, avgLatencyMs };
+    },
+  );
 
   return {
     fileName,
@@ -291,6 +316,54 @@ function formatNumber(value: number, decimals = 2): string {
     : "0.00";
 }
 
+function formatChartValue(value: number, scaleMax: number): string {
+  if (!Number.isFinite(value)) {
+    return "0";
+  }
+
+  const absScale = Math.abs(scaleMax);
+
+  if (absScale < 0.01) {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 4,
+      maximumFractionDigits: 4,
+    });
+  }
+
+  if (absScale < 0.1) {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 3,
+      maximumFractionDigits: 3,
+    });
+  }
+
+  if (absScale < 1) {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  if (absScale < 10) {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 1,
+      maximumFractionDigits: 1,
+    });
+  }
+
+  if (absScale < 1000) {
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 1,
+    });
+  }
+
+  return value.toLocaleString(undefined, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+}
+
 function toCsvFromChartData(data: ChartDatum[], yLabel: string): string {
   return [
     `Label,${yLabel}`,
@@ -310,6 +383,58 @@ function toMicroShortLabel(row: MicrobenchmarkRow): string {
   return `Decrypt-${row.parameterValue}`;
 }
 
+function toScenarioShortCode(scenario: string): string {
+  const mapping: Record<string, string> = {
+    "osws-encryption-cache": "OSWS-EC",
+    "osws-encryption-no-cache": "OSWS-ENC",
+    "osws-no-encryption": "OSWS-NE",
+    "s3-direct": "S3",
+  };
+
+  return mapping[scenario] ?? scenario.toUpperCase();
+}
+
+function classifyScalingTrend(values: number[]): ScalingTrend {
+  if (values.length < 2) {
+    return "Insufficient Data";
+  }
+
+  const deltas = values.slice(1).map((current, index) => {
+    const previous = values[index];
+    if (previous <= 0) {
+      return 0;
+    }
+    return ((current - previous) / previous) * 100;
+  });
+
+  const tolerancePct = 2;
+  const hasGrowth = deltas.some((delta) => delta > tolerancePct);
+  const hasDrop = deltas.some((delta) => delta < -tolerancePct);
+
+  if (!hasGrowth && !hasDrop) {
+    return "Stable";
+  }
+
+  if (hasGrowth && !hasDrop) {
+    return "Improving";
+  }
+
+  if (hasDrop && !hasGrowth) {
+    return "Regressing";
+  }
+
+  return "Mixed";
+}
+
+function toSignedPercent(value: number): string {
+  const sign = value > 0 ? "+" : "";
+  return `${sign}${formatNumber(value, 1)}%`;
+}
+
+function maxFinite(values: number[]): number {
+  return Math.max(...values.filter(Number.isFinite), 0);
+}
+
 async function copyChartSvgAsPng(svgEl: SVGSVGElement | null): Promise<void> {
   if (!svgEl) {
     throw new Error("Chart element not found");
@@ -317,7 +442,10 @@ async function copyChartSvgAsPng(svgEl: SVGSVGElement | null): Promise<void> {
 
   const serializer = new XMLSerializer();
   const exportSvg = svgEl.cloneNode(true) as SVGSVGElement;
-  const styleNode = document.createElementNS("http://www.w3.org/2000/svg", "style");
+  const styleNode = document.createElementNS(
+    "http://www.w3.org/2000/svg",
+    "style",
+  );
   styleNode.textContent = `
     .axis-line { stroke: #6483a3; stroke-width: 1; }
     .grid-line { stroke: #e1e9f3; stroke-width: 1; }
@@ -330,6 +458,12 @@ async function copyChartSvgAsPng(svgEl: SVGSVGElement | null): Promise<void> {
     .chart-meta {
       fill: #23507a;
       font-size: 12px;
+      font-weight: 700;
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+    }
+    .chart-value-label {
+      fill: #173a5c;
+      font-size: 10px;
       font-weight: 700;
       font-family: "Space Grotesk", "Segoe UI", sans-serif;
     }
@@ -350,8 +484,16 @@ async function copyChartSvgAsPng(svgEl: SVGSVGElement | null): Promise<void> {
       image.src = svgUrl;
     });
 
-    const width = Number(svgEl.getAttribute("width") ?? 980);
-    const height = Number(svgEl.getAttribute("height") ?? 360);
+    const widthAttr = Number(svgEl.getAttribute("width"));
+    const heightAttr = Number(svgEl.getAttribute("height"));
+    const width =
+      Number.isFinite(widthAttr) && widthAttr > 0
+        ? widthAttr
+        : Number(svgEl.getAttribute("data-export-width") ?? 980);
+    const height =
+      Number.isFinite(heightAttr) && heightAttr > 0
+        ? heightAttr
+        : Number(svgEl.getAttribute("data-export-height") ?? 360);
     const canvas = document.createElement("canvas");
     canvas.width = width;
     canvas.height = height;
@@ -372,7 +514,11 @@ async function copyChartSvgAsPng(svgEl: SVGSVGElement | null): Promise<void> {
       throw new Error("Failed to encode chart image");
     }
 
-    if ("ClipboardItem" in window && navigator.clipboard && "write" in navigator.clipboard) {
+    if (
+      "ClipboardItem" in window &&
+      navigator.clipboard &&
+      "write" in navigator.clipboard
+    ) {
       const clipboardItem = new ClipboardItem({ "image/png": blob });
       await navigator.clipboard.write([clipboardItem]);
       return;
@@ -388,6 +534,7 @@ type ComparisonBarChartProps = {
   title: string;
   subtitle: string;
   yLabel: string;
+  xLabel: string;
   data: ChartDatum[];
   yMax: number;
   svgRef: React.RefObject<SVGSVGElement | null>;
@@ -399,6 +546,7 @@ function ComparisonBarChart({
   title,
   subtitle,
   yLabel,
+  xLabel,
   data,
   yMax,
   svgRef,
@@ -408,7 +556,7 @@ function ComparisonBarChart({
   const width = 980;
   const height = 360;
   const chartLeft = 64;
-  const chartBottom = 52;
+  const chartBottom = 66;
   const chartTop = 26;
   const chartRight = 26;
   const innerWidth = width - chartLeft - chartRight;
@@ -438,21 +586,41 @@ function ComparisonBarChart({
       <div className="table-wrap">
         <svg
           ref={svgRef}
-          width={width}
+          width="100%"
           height={height}
+          data-export-width={width}
+          data-export-height={height}
           viewBox={`0 0 ${width} ${height}`}
           aria-label={title}
         >
-          <rect x={0} y={0} width={width} height={height} fill="#ffffff" rx={14} />
+          <rect
+            x={0}
+            y={0}
+            width={width}
+            height={height}
+            fill="#ffffff"
+            rx={14}
+          />
 
           {Array.from({ length: ticks + 1 }).map((_, index) => {
             const y = chartTop + (innerHeight / ticks) * index;
             const tickValue = safeMax - (safeMax / ticks) * index;
             return (
               <g key={`tick-${index}`}>
-                <line x1={chartLeft} y1={y} x2={width - chartRight} y2={y} className="grid-line" />
-                <text x={chartLeft - 10} y={y + 4} className="axis-label" textAnchor="end">
-                  {formatNumber(tickValue, 1)}
+                <line
+                  x1={chartLeft}
+                  y1={y}
+                  x2={width - chartRight}
+                  y2={y}
+                  className="grid-line"
+                />
+                <text
+                  x={chartLeft - 10}
+                  y={y + 4}
+                  className="axis-label"
+                  textAnchor="end"
+                >
+                  {formatChartValue(tickValue, safeMax)}
                 </text>
               </g>
             );
@@ -471,9 +639,29 @@ function ComparisonBarChart({
             const x = chartLeft + step * index + (step - barWidth) / 2;
             const barHeight = Math.max(2, ratio * innerHeight);
             const y = chartTop + innerHeight - barHeight;
+            const valueY = Math.max(chartTop + 10, y - 6);
             return (
               <g key={point.label}>
-                <rect x={x} y={y} width={barWidth} height={barHeight} rx={6} className="chart-bar" />
+                <rect
+                  x={x}
+                  y={y}
+                  width={barWidth}
+                  height={barHeight}
+                  rx={6}
+                  className="chart-bar"
+                >
+                  <title>
+                    {`${point.label}: ${formatChartValue(point.value, safeMax)} ${yLabel}`}
+                  </title>
+                </rect>
+                <text
+                  x={x + barWidth / 2}
+                  y={valueY}
+                  className="chart-value-label"
+                  textAnchor="middle"
+                >
+                  {formatChartValue(point.value, safeMax)}
+                </text>
                 <text
                   x={x + barWidth / 2}
                   y={chartTop + innerHeight + 18}
@@ -486,8 +674,22 @@ function ComparisonBarChart({
             );
           })}
 
-          <text x={chartLeft + 4} y={16} className="chart-meta" textAnchor="start">
+          <text
+            x={chartLeft + 4}
+            y={16}
+            className="chart-meta"
+            textAnchor="start"
+          >
             {yLabel}
+          </text>
+
+          <text
+            x={chartLeft + innerWidth / 2}
+            y={height - 10}
+            className="chart-meta"
+            textAnchor="middle"
+          >
+            {xLabel}
           </text>
         </svg>
       </div>
@@ -501,9 +703,14 @@ function App() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [axisMode, setAxisMode] = useState<"shared" | "auto">("auto");
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
-  const warpSvgRef = useRef<SVGSVGElement>(null);
+  const warpOswsEcSvgRef = useRef<SVGSVGElement>(null);
+  const warpOswsEncSvgRef = useRef<SVGSVGElement>(null);
+  const warpOswsNeSvgRef = useRef<SVGSVGElement>(null);
+  const warpS3SvgRef = useRef<SVGSVGElement>(null);
   const warpScalingSvgRef = useRef<SVGSVGElement>(null);
-  const microSvgRef = useRef<SVGSVGElement>(null);
+  const microAuthSvgRef = useRef<SVGSVGElement>(null);
+  const microUnwrapSvgRef = useRef<SVGSVGElement>(null);
+  const microDecryptSvgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -513,7 +720,7 @@ function App() {
         const warpPromises = WARP_FILES.map(async (fileName) => {
           const res = await fetch(`/data/warp/${fileName}`);
           if (!res.ok) {
-            throw new Error(`Failed to load ${fileName}`);
+            return null;
           }
 
           const payload = (await res.json()) as WarpResultFile;
@@ -541,17 +748,27 @@ function App() {
           }),
         ];
 
-        const [warp, authorizationCsv, unwrapCsv, decryptCsv] = await Promise.all([
-          Promise.all(warpPromises),
-          ...microPromises,
-        ]);
+        const [loadedWarp, authorizationCsv, unwrapCsv, decryptCsv] =
+          await Promise.all([Promise.all(warpPromises), ...microPromises]);
+
+        const warp = loadedWarp.filter((run): run is WarpRun => run !== null);
+
+        if (warp.length === 0) {
+          throw new Error(
+            "No WARP JSON files could be loaded from public/data/warp",
+          );
+        }
 
         if (!mounted) {
           return;
         }
 
         const micro = [
-          ...parseBdnReport(authorizationCsv, "AuthorizationBenchmark", "RoleCount"),
+          ...parseBdnReport(
+            authorizationCsv,
+            "AuthorizationBenchmark",
+            "RoleCount",
+          ),
           ...parseBdnReport(unwrapCsv, "KeyUnwrapBenchmark", "DekSizeBytes"),
           ...parseBdnReport(decryptCsv, "DecryptionBenchmark", "RowCount"),
         ].sort((a, b) => {
@@ -573,7 +790,11 @@ function App() {
         if (!mounted) {
           return;
         }
-        setLoadError(error instanceof Error ? error.message : "Failed to load benchmark data");
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "Failed to load benchmark data",
+        );
       }
     };
 
@@ -614,23 +835,46 @@ function App() {
     return Math.max(...microRows.map((row) => row.stdDevMs));
   }, [microRows]);
 
-  const warpChartData = useMemo<ChartDatum[]>(
+  const warpScenarioCharts = useMemo(
     () =>
-      warpRuns.map((run) => ({
-        label: run.label,
-        value: run.throughputMBps,
-      })),
+      WARP_SCENARIOS.map((scenario) => {
+        const data = warpRuns
+          .filter((run) => run.scenario === scenario)
+          .sort((a, b) => a.instanceCount - b.instanceCount)
+          .map((run) => ({
+            label: `${run.instanceCount}x`,
+            value: run.throughputMBps,
+          }));
+
+        return { scenario, data };
+      }).filter((entry) => entry.data.length > 0),
     [warpRuns],
   );
 
-  const microChartData = useMemo<ChartDatum[]>(
-    () =>
-      microRows.map((row) => ({
-        label: toMicroShortLabel(row),
-        value: row.meanMs,
-      })),
-    [microRows],
-  );
+  const microChartsByBenchmark = useMemo(() => {
+    const order: MicroBenchmarkKind[] = [
+      "AuthorizationBenchmark",
+      "KeyUnwrapBenchmark",
+      "DecryptionBenchmark",
+    ];
+
+    return order
+      .map((benchmark) => {
+        const rows = microRows.filter((row) => row.benchmark === benchmark);
+        const data = rows.map((row) => ({
+          label: toMicroShortLabel(row),
+          value: row.meanMs,
+        }));
+
+        return {
+          benchmark,
+          rows,
+          data,
+          runCount: rows.length,
+        };
+      })
+      .filter((item) => item.data.length > 0);
+  }, [microRows]);
 
   const warpScalingChartData = useMemo<ChartDatum[]>(() => {
     const oswsRuns = warpRuns.filter((run) => run.scenario.includes("osws"));
@@ -646,7 +890,9 @@ function App() {
       .sort((a, b) => a[0] - b[0])
       .map(([instanceCount, values]) => ({
         label: `${instanceCount}x`,
-        value: values.reduce((sum, value) => sum + value, 0) / Math.max(values.length, 1),
+        value:
+          values.reduce((sum, value) => sum + value, 0) /
+          Math.max(values.length, 1),
       }));
   }, [warpRuns]);
 
@@ -655,36 +901,170 @@ function App() {
     [warpScalingChartData],
   );
 
-  const chartGlobalMax = useMemo(
-    () => Math.max(...warpChartData.map((d) => d.value), ...microChartData.map((d) => d.value), 0),
-    [warpChartData, microChartData],
+  const scalingOverview = useMemo(() => {
+    const points = warpScalingChartData
+      .map((item) => ({
+        instanceCount: Number(item.label.replace(/x$/, "")),
+        throughput: item.value,
+      }))
+      .filter((item) => Number.isFinite(item.instanceCount))
+      .sort((a, b) => a.instanceCount - b.instanceCount);
+
+    const values = points.map((point) => point.throughput);
+    const trend = classifyScalingTrend(values);
+
+    if (points.length < 2) {
+      return {
+        trend,
+        changePct: null as number | null,
+        rangeLabel:
+          points.length === 1
+            ? `${points[0].instanceCount}x only`
+            : "No OSWS data",
+      };
+    }
+
+    const first = points[0];
+    const last = points[points.length - 1];
+    const changePct =
+      first.throughput > 0
+        ? ((last.throughput - first.throughput) / first.throughput) * 100
+        : null;
+
+    return {
+      trend,
+      changePct,
+      rangeLabel: `${first.instanceCount}x -> ${last.instanceCount}x`,
+    };
+  }, [warpScalingChartData]);
+
+  const scenarioScalingRows = useMemo<ScenarioScalingRow[]>(() => {
+    const oswsRuns = warpRuns.filter((run) => run.scenario.startsWith("osws-"));
+    const byScenario = new Map<string, Map<number, number[]>>();
+
+    for (const run of oswsRuns) {
+      const scenarioBucket =
+        byScenario.get(run.scenario) ?? new Map<number, number[]>();
+      const values = scenarioBucket.get(run.instanceCount) ?? [];
+      values.push(run.throughputMBps);
+      scenarioBucket.set(run.instanceCount, values);
+      byScenario.set(run.scenario, scenarioBucket);
+    }
+
+    return Array.from(byScenario.entries())
+      .map(([scenario, byInstance]) => {
+        const throughputByInstance: Record<number, number | null> =
+          Object.fromEntries(
+            WARP_INSTANCE_COUNTS.map((instanceCount) => {
+              const values = byInstance.get(instanceCount) ?? [];
+              if (values.length === 0) {
+                return [instanceCount, null];
+              }
+              const average =
+                values.reduce((sum, value) => sum + value, 0) / values.length;
+              return [instanceCount, average];
+            }),
+          );
+
+        const orderedValues = WARP_INSTANCE_COUNTS.map(
+          (instanceCount) => throughputByInstance[instanceCount],
+        ).filter((value): value is number => value !== null);
+        const trend = classifyScalingTrend(orderedValues);
+
+        const firstValue = throughputByInstance[WARP_INSTANCE_COUNTS[0]];
+        const lastInstance = [...WARP_INSTANCE_COUNTS]
+          .reverse()
+          .find(
+            (instanceCount) => throughputByInstance[instanceCount] !== null,
+          );
+        const lastValue = lastInstance
+          ? throughputByInstance[lastInstance]
+          : null;
+        const changePct =
+          typeof firstValue === "number" &&
+          typeof lastValue === "number" &&
+          firstValue > 0
+            ? ((lastValue - firstValue) / firstValue) * 100
+            : null;
+
+        return {
+          scenario,
+          throughputByInstance,
+          trend,
+          changePct,
+        };
+      })
+      .sort((a, b) => a.scenario.localeCompare(b.scenario));
+  }, [warpRuns]);
+
+  const warpSharedYMax = useMemo(
+    () =>
+      maxFinite([
+        ...warpScenarioCharts.flatMap((chart) =>
+          chart.data.map((d) => d.value),
+        ),
+        ...warpScalingChartData.map((d) => d.value),
+      ]),
+    [warpScenarioCharts, warpScalingChartData],
   );
 
-  const warpYMax = axisMode === "shared"
-    ? chartGlobalMax
-    : Math.max(...warpChartData.map((d) => d.value), 0);
-  const warpScalingYMax = axisMode === "shared"
-    ? chartGlobalMax
-    : Math.max(...warpScalingChartData.map((d) => d.value), 0);
-  const microYMax = axisMode === "shared"
-    ? chartGlobalMax
-    : Math.max(...microChartData.map((d) => d.value), 0);
+  const microSharedYMax = useMemo(
+    () =>
+      maxFinite(
+        microChartsByBenchmark.flatMap((chart) =>
+          chart.data.map((d) => d.value),
+        ),
+      ),
+    [microChartsByBenchmark],
+  );
+
+  const warpYMax =
+    axisMode === "shared"
+      ? warpSharedYMax
+      : maxFinite(
+          warpScenarioCharts.flatMap((chart) => chart.data.map((d) => d.value)),
+        );
+  const warpScalingYMax =
+    axisMode === "shared"
+      ? warpSharedYMax
+      : maxFinite(warpScalingChartData.map((d) => d.value));
+  const microYMaxByBenchmark = useMemo(
+    () =>
+      new Map(
+        microChartsByBenchmark.map((chart) => [
+          chart.benchmark,
+          axisMode === "shared"
+            ? microSharedYMax
+            : maxFinite(chart.data.map((d) => d.value)),
+        ]),
+      ),
+    [axisMode, microChartsByBenchmark, microSharedYMax],
+  );
 
   const setFeedback = (message: string) => {
     setCopyFeedback(message);
     window.setTimeout(() => setCopyFeedback(null), 2200);
   };
 
-  const onCopyChart = async (svgRef: React.RefObject<SVGSVGElement | null>, title: string) => {
+  const onCopyChart = async (
+    svgRef: React.RefObject<SVGSVGElement | null>,
+    title: string,
+  ) => {
     try {
       await copyChartSvgAsPng(svgRef.current);
       setFeedback(`${title} copied to clipboard`);
     } catch (error) {
-      setFeedback(error instanceof Error ? error.message : "Failed to copy chart");
+      setFeedback(
+        error instanceof Error ? error.message : "Failed to copy chart",
+      );
     }
   };
 
-  const onCopyChartData = async (data: ChartDatum[], yLabel: string, title: string) => {
+  const onCopyChartData = async (
+    data: ChartDatum[],
+    yLabel: string,
+    title: string,
+  ) => {
     try {
       await navigator.clipboard.writeText(toCsvFromChartData(data, yLabel));
       setFeedback(`${title} CSV copied to clipboard`);
@@ -693,7 +1073,11 @@ function App() {
     }
   };
 
-  const copyText = async (text: string, successMessage: string, errorMessage: string) => {
+  const copyText = async (
+    text: string,
+    successMessage: string,
+    errorMessage: string,
+  ) => {
     try {
       await navigator.clipboard.writeText(text);
       setFeedback(successMessage);
@@ -771,6 +1155,54 @@ function App() {
     [microRows],
   );
 
+  const microRowsByBenchmark = useMemo(() => {
+    const order: MicroBenchmarkKind[] = [
+      "AuthorizationBenchmark",
+      "KeyUnwrapBenchmark",
+      "DecryptionBenchmark",
+    ];
+
+    return order.map((benchmark) => ({
+      benchmark,
+      rows: microRows.filter((row) => row.benchmark === benchmark),
+    }));
+  }, [microRows]);
+
+  const warpOpRows = useMemo(
+    () =>
+      warpRuns.flatMap((run) =>
+        run.opBreakdown.map((item) => ({
+          runLabel: run.label,
+          scenario: run.scenario,
+          instanceCount: run.instanceCount,
+          op: item.op,
+          requests: item.requests,
+          errors: item.errors,
+          avgLatencyMs: item.avgLatencyMs,
+        })),
+      ),
+    [warpRuns],
+  );
+
+  const warpRefByScenario: Record<
+    string,
+    React.RefObject<SVGSVGElement | null>
+  > = {
+    "osws-encryption-cache": warpOswsEcSvgRef,
+    "osws-encryption-no-cache": warpOswsEncSvgRef,
+    "osws-no-encryption": warpOswsNeSvgRef,
+    "s3-direct": warpS3SvgRef,
+  };
+
+  const microRefByBenchmark: Record<
+    MicroBenchmarkKind,
+    React.RefObject<SVGSVGElement | null>
+  > = {
+    AuthorizationBenchmark: microAuthSvgRef,
+    KeyUnwrapBenchmark: microUnwrapSvgRef,
+    DecryptionBenchmark: microDecryptSvgRef,
+  };
+
   return (
     <main className="dashboard-shell">
       <header className="hero">
@@ -784,7 +1216,11 @@ function App() {
 
         <div className="control-box">
           <p className="toggle-title">Chart Axis Mode</p>
-          <div className="axis-toggle" role="group" aria-label="Chart axis mode">
+          <div
+            className="axis-toggle"
+            role="group"
+            aria-label="Chart axis mode"
+          >
             <button
               type="button"
               className={axisMode === "shared" ? "active-toggle" : "ghost-btn"}
@@ -801,9 +1237,12 @@ function App() {
             </button>
           </div>
           <p className="toggle-hint">
-            Shared compares charts on one common y-axis. Auto scales each chart independently.
+            Shared compares charts within each metric group. Auto scales each
+            chart independently.
           </p>
-          {copyFeedback ? <p className="copy-feedback">{copyFeedback}</p> : null}
+          {copyFeedback ? (
+            <p className="copy-feedback">{copyFeedback}</p>
+          ) : null}
         </div>
       </header>
 
@@ -815,7 +1254,11 @@ function App() {
           <button
             type="button"
             onClick={() =>
-              void copyText(kpiCsv, "KPI CSV copied to clipboard", "Failed to copy KPI CSV")
+              void copyText(
+                kpiCsv,
+                "KPI CSV copied to clipboard",
+                "Failed to copy KPI CSV",
+              )
             }
           >
             Copy KPI CSV
@@ -849,29 +1292,77 @@ function App() {
           <p>Total WARP Errors</p>
           <strong>{formatNumber(totalWarpErrors, 0)}</strong>
         </article>
+        <article className="kpi-card">
+          <p>OSWS Scaling Status</p>
+          <strong>{scalingOverview.trend}</strong>
+          <div className="kpi-subtext">
+            <span>{scalingOverview.rangeLabel}</span>
+            <span>
+              {scalingOverview.changePct === null
+                ? "n/a"
+                : toSignedPercent(scalingOverview.changePct)}
+            </span>
+          </div>
+        </article>
       </section>
 
       <section className="chart-grid">
-        <ComparisonBarChart
-          title="WARP Throughput Comparison"
-          subtitle="Higher is better"
-          yLabel="MB/s"
-          data={warpChartData}
-          yMax={warpYMax}
-          svgRef={warpSvgRef}
-          onCopyImage={() => void onCopyChart(warpSvgRef, "WARP chart")}
-          onCopyData={() =>
-            void onCopyChartData(warpChartData, "throughput_mb_per_sec", "WARP chart data")
-          }
-        />
+        <article className="panel-soft split-chart-panel">
+          <div className="panel-topline">
+            <div>
+              <h3>WARP Throughput by Scenario</h3>
+              <p>
+                Split view for readability. Each chart shows 1x, 2x, 4x, 8x only
+                ({axisMode === "shared" ? "Shared y-axis" : "Auto y-axis"}).
+              </p>
+            </div>
+          </div>
+          <div className="mini-chart-grid">
+            {warpScenarioCharts.map(({ scenario, data }) => {
+              const ref = warpRefByScenario[scenario] ?? warpOswsEcSvgRef;
+              const chartYMax =
+                axisMode === "auto"
+                  ? maxFinite(data.map((d) => d.value))
+                  : warpYMax;
+              return (
+                <ComparisonBarChart
+                  key={scenario}
+                  title={`Scenario: ${toScenarioShortCode(scenario)}`}
+                  subtitle={scenario}
+                  yLabel="MB/s"
+                  xLabel="Instance Count"
+                  data={data}
+                  yMax={chartYMax}
+                  svgRef={ref}
+                  onCopyImage={() =>
+                    void onCopyChart(
+                      ref,
+                      `${toScenarioShortCode(scenario)} chart`,
+                    )
+                  }
+                  onCopyData={() =>
+                    void onCopyChartData(
+                      data,
+                      "throughput_mb_per_sec",
+                      `${toScenarioShortCode(scenario)} chart data`,
+                    )
+                  }
+                />
+              );
+            })}
+          </div>
+        </article>
         <ComparisonBarChart
           title="OSWS Instance Scaling (Average Throughput)"
-          subtitle="Average MB/s by instance count across OSWS scenarios"
+          subtitle={`Average MB/s by instance count across OSWS scenarios (${axisMode === "shared" ? "Shared y-axis" : "Auto y-axis"})`}
           yLabel="MB/s"
+          xLabel="Instance Count"
           data={warpScalingChartData}
           yMax={warpScalingYMax}
           svgRef={warpScalingSvgRef}
-          onCopyImage={() => void onCopyChart(warpScalingSvgRef, "WARP scaling chart")}
+          onCopyImage={() =>
+            void onCopyChart(warpScalingSvgRef, "WARP scaling chart")
+          }
           onCopyData={() =>
             void onCopyChartData(
               warpScalingChartData,
@@ -882,28 +1373,59 @@ function App() {
         />
         {!hasScalingComparison ? (
           <p className="chart-note">
-            Only one OSWS instance count is currently available in loaded WARP files. Add files such
-            as <strong>warp-2instances-*.json</strong> and <strong>warp-4instances-*.json</strong>
-            under <strong>public/data/warp</strong> to visualize throughput scaling.
+            Only one OSWS instance count is currently available in loaded WARP
+            files. Add files such as <strong>warp-2instances-*.json</strong> and{" "}
+            <strong>warp-4instances-*.json</strong>
+            under <strong>public/data/warp</strong> to visualize throughput
+            scaling.
           </p>
         ) : null}
-        <ComparisonBarChart
-          title="Microbenchmark Mean Latency"
-          subtitle="Authorization, KeyUnwrap, Decryption"
-          yLabel="ms"
-          data={microChartData}
-          yMax={microYMax}
-          svgRef={microSvgRef}
-          onCopyImage={() => void onCopyChart(microSvgRef, "Micro chart")}
-          onCopyData={() =>
-            void onCopyChartData(microChartData, "mean_latency_ms", "Micro chart data")
-          }
-        />
+        <article className="panel-soft split-chart-panel">
+          <div className="panel-topline">
+            <div>
+              <h3>Microbenchmark Mean Latency</h3>
+              <p>
+                Split by benchmark for readability (
+                {axisMode === "shared" ? "Shared y-axis" : "Auto y-axis"}).
+              </p>
+            </div>
+          </div>
+          <div className="mini-chart-grid">
+            {microChartsByBenchmark.map(({ benchmark, data, runCount }) => {
+              const ref = microRefByBenchmark[benchmark];
+              const title = benchmark.replace("Benchmark", "");
+              const yMax =
+                microYMaxByBenchmark.get(benchmark) ?? microSharedYMax;
+              return (
+                <ComparisonBarChart
+                  key={benchmark}
+                  title={`Micro: ${title}`}
+                  subtitle={`Certainty: n=${runCount} runs`}
+                  yLabel="ms"
+                  xLabel="Benchmark Case"
+                  data={data}
+                  yMax={yMax}
+                  svgRef={ref}
+                  onCopyImage={() =>
+                    void onCopyChart(ref, `${title} micro chart`)
+                  }
+                  onCopyData={() =>
+                    void onCopyChartData(
+                      data,
+                      "mean_latency_ms",
+                      `${title} micro chart data`,
+                    )
+                  }
+                />
+              );
+            })}
+          </div>
+        </article>
       </section>
 
       <section className="panel">
         <div className="panel-head">
-          <h2>WARP Runs</h2>
+          <h2>WARP Run Summary</h2>
           <button
             type="button"
             className="ghost-btn"
@@ -923,6 +1445,8 @@ function App() {
             <thead>
               <tr>
                 <th>Run</th>
+                <th>Scenario</th>
+                <th>Instances</th>
                 <th>Duration</th>
                 <th>Requests</th>
                 <th>Objects</th>
@@ -931,13 +1455,14 @@ function App() {
                 <th>Throughput</th>
                 <th>Ops/s</th>
                 <th>Segmented Throughput</th>
-                <th>Operation Statistics</th>
               </tr>
             </thead>
             <tbody>
               {warpRuns.map((run) => (
                 <tr key={run.fileName}>
                   <td>{run.label}</td>
+                  <td>{run.scenario}</td>
+                  <td>{run.instanceCount}x</td>
                   <td>{formatNumber(run.durationMs, 0)} ms</td>
                   <td>{formatNumber(run.totalRequests, 0)}</td>
                   <td>{formatNumber(run.totalObjects, 0)}</td>
@@ -951,7 +1476,9 @@ function App() {
                         style={{
                           width: `${Math.max(
                             6,
-                            topThroughput > 0 ? (run.throughputMBps / topThroughput) * 100 : 0,
+                            topThroughput > 0
+                              ? (run.throughputMBps / topThroughput) * 100
+                              : 0,
                           )}%`,
                         }}
                       />
@@ -965,13 +1492,87 @@ function App() {
                     <br />
                     <strong>Slow:</strong> {formatNumber(run.slowestBps)} bps
                   </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="panel-head">
+          <h2>WARP Operation Breakdown</h2>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Run</th>
+                <th>Scenario</th>
+                <th>Instances</th>
+                <th>Operation</th>
+                <th>Requests</th>
+                <th>Errors</th>
+                <th>Avg Latency</th>
+              </tr>
+            </thead>
+            <tbody>
+              {warpOpRows.map((row) => (
+                <tr key={`${row.runLabel}-${row.op}`}>
+                  <td>{row.runLabel}</td>
+                  <td>{row.scenario}</td>
+                  <td>{row.instanceCount}x</td>
+                  <td>{row.op}</td>
+                  <td>{formatNumber(row.requests, 0)}</td>
+                  <td>{formatNumber(row.errors, 0)}</td>
+                  <td>{formatNumber(row.avgLatencyMs)} ms</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="panel-head">
+          <h2>OSWS Scaling Status by Scenario</h2>
+        </div>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Scenario</th>
+                <th>1x MB/s</th>
+                <th>2x MB/s</th>
+                <th>4x MB/s</th>
+                <th>8x MB/s</th>
+                <th>Trend</th>
+                <th>1x -&gt; 8x</th>
+              </tr>
+            </thead>
+            <tbody>
+              {scenarioScalingRows.map((row) => (
+                <tr key={row.scenario}>
+                  <td>{row.scenario}</td>
+                  {WARP_INSTANCE_COUNTS.map((instanceCount) => {
+                    const value = row.throughputByInstance[instanceCount];
+                    return (
+                      <td key={`${row.scenario}-${instanceCount}`}>
+                        {value === null ? "-" : formatNumber(value)}
+                      </td>
+                    );
+                  })}
                   <td>
-                    {run.opBreakdown.map((item) => (
-                      <div key={`${run.fileName}-${item.op}`} className="op-row">
-                        <strong>{item.op}</strong> req:{formatNumber(item.requests, 0)} err:
-                        {formatNumber(item.errors, 0)} avg:{formatNumber(item.avgLatencyMs)} ms
-                      </div>
-                    ))}
+                    <span
+                      className={`trend-pill trend-${row.trend.toLowerCase().replace(/\s+/g, "-")}`}
+                    >
+                      {row.trend}
+                    </span>
+                  </td>
+                  <td>
+                    {row.changePct === null
+                      ? "n/a"
+                      : toSignedPercent(row.changePct)}
                   </td>
                 </tr>
               ))}
@@ -997,33 +1598,40 @@ function App() {
             Copy Micro Table CSV
           </button>
         </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Benchmark</th>
-                <th>Parameter</th>
-                <th>Value</th>
-                <th>Scenario</th>
-                <th>Mean</th>
-                <th>Error</th>
-                <th>StdDev</th>
-              </tr>
-            </thead>
-            <tbody>
-              {microRows.map((row) => (
-                <tr key={row.scenario}>
-                  <td>{row.benchmark}</td>
-                  <td>{row.parameterName}</td>
-                  <td>{formatNumber(row.parameterValue, 0)}</td>
-                  <td>{row.scenario}</td>
-                  <td>{formatNumber(row.meanMs)} ms</td>
-                  <td>{formatNumber(row.errorMs)} ms</td>
-                  <td>{formatNumber(row.stdDevMs)} ms</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="split-table-stack">
+          {microRowsByBenchmark.map(({ benchmark, rows }) => (
+            <article key={benchmark} className="inner-table-panel">
+              <h3>{benchmark}</h3>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Parameter</th>
+                      <th>Value</th>
+                      <th>Scenario</th>
+                      <th>Mean</th>
+                      <th>Error</th>
+                      <th>StdDev</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => (
+                      <tr
+                        key={`${row.benchmark}-${row.scenario}-${row.parameterValue}`}
+                      >
+                        <td>{row.parameterName}</td>
+                        <td>{formatNumber(row.parameterValue, 0)}</td>
+                        <td>{row.scenario}</td>
+                        <td>{formatNumber(row.meanMs)} ms</td>
+                        <td>{formatNumber(row.errorMs)} ms</td>
+                        <td>{formatNumber(row.stdDevMs)} ms</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
     </main>

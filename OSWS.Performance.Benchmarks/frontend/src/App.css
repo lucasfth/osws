@@ -105,7 +105,7 @@ h1 {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 0.8rem;
   margin: 1.2rem 0 1.8rem;
 }
@@ -131,6 +131,15 @@ h1 {
   font-size: 1.08rem;
 }
 
+.kpi-subtext {
+  margin-top: 0.4rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.45rem;
+  font-size: 0.82rem;
+  color: #3d5978;
+}
+
 .kpi-copy-card {
   display: flex;
   flex-direction: column;
@@ -146,6 +155,16 @@ h1 {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
+}
+
+.split-chart-panel {
+  padding: 0.95rem;
+}
+
+.mini-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
 }
 
 .chart-card {
@@ -214,6 +233,12 @@ h1 {
   font-weight: 700;
 }
 
+.chart-value-label {
+  fill: #173a5c;
+  font-size: 10px;
+  font-weight: 700;
+}
+
 .panel {
   margin-top: 1rem;
   background: #ffffffbf;
@@ -260,6 +285,28 @@ h1 {
   overflow-x: auto;
 }
 
+.split-table-stack {
+  display: grid;
+  gap: 0.9rem;
+  padding: 0.9rem;
+}
+
+.inner-table-panel {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(20, 67, 104, 0.16);
+  border-radius: 0.8rem;
+  overflow: hidden;
+}
+
+.inner-table-panel h3 {
+  margin: 0;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.95rem;
+  color: #1f4468;
+  background: #f4f9ff;
+  border-bottom: 1px solid rgba(20, 67, 104, 0.12);
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -272,6 +319,7 @@ td {
   padding: 0.75rem 0.85rem;
   border-bottom: 1px solid rgba(17, 62, 96, 0.12);
   vertical-align: top;
+  white-space: nowrap;
 }
 
 th {
@@ -285,6 +333,41 @@ th {
 .op-row {
   margin-bottom: 0.25rem;
   white-space: nowrap;
+}
+
+.trend-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.trend-improving {
+  background: #dff6e4;
+  color: #1d6a2f;
+}
+
+.trend-regressing {
+  background: #ffe4e4;
+  color: #982222;
+}
+
+.trend-mixed {
+  background: #fff4dd;
+  color: #965f0f;
+}
+
+.trend-stable {
+  background: #e6f1ff;
+  color: #2f5f93;
+}
+
+.trend-insufficient-data {
+  background: #eceff3;
+  color: #4f5d6d;
 }
 
 tbody tr:hover {
@@ -310,8 +393,8 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
 
-  .kpi-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .mini-chart-grid {
+    grid-template-columns: 1fr;
   }
 
   .panel-topline {
@@ -325,10 +408,6 @@ tbody tr:hover {
 }
 
 @media (max-width: 560px) {
-  .kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .dashboard-shell {
     padding-left: 0.75rem;
     padding-right: 0.75rem;

@@ -35,6 +35,8 @@ public class DecryptionBenchmark
     private WarmStartFixture? _fixture;
     private ParquetWriter? _parquetWriter;
     private ParquetReader? _parquetReader;
+    private byte[]? _encryptedDatasetBytes;
+    private readonly byte[] _readBuffer = new byte[8192];
     private string? _plainDatasetPath;
     private string? _encryptedDatasetPath;
 
@@ -98,29 +100,29 @@ public class DecryptionBenchmark
             warmResult.Dispose();
         }
 
+        _encryptedDatasetBytes = await File.ReadAllBytesAsync(_encryptedDatasetPath);
+
         Console.WriteLine($"   ✅ Setup complete for column decryption benchmark ({RowCount:N0} rows)");
     }
 
     [Benchmark(Description = "Column Decryption - Time to fully decrypt all columns")]
-    public async Task MeasureColumnDecryption()
+    public async Task<long> MeasureColumnDecryption()
     {
-        if (string.IsNullOrWhiteSpace(_encryptedDatasetPath) || _parquetReader == null)
+        if (_encryptedDatasetBytes == null || _parquetReader == null)
             throw new InvalidOperationException("Benchmark setup incomplete");
 
-        await using var encryptedStream = new FileStream(
-            _encryptedDatasetPath,
-            FileMode.Open,
-            FileAccess.Read,
-            FileShare.Read
-        );
+        await using var encryptedStream = new MemoryStream(_encryptedDatasetBytes, writable: false);
         using var decrypted = await _parquetReader.ReadParquetAsync(encryptedStream);
 
         // Consume the decrypted stream to force full decryption
-        var buffer = new byte[8192];
-        while (await decrypted.ReadAsync(buffer) > 0)
+        long totalBytesRead = 0;
+        int bytesRead;
+        while ((bytesRead = await decrypted.ReadAsync(_readBuffer)) > 0)
         {
-            // consume
+            totalBytesRead += bytesRead;
         }
+
+        return totalBytesRead;
     }
 
     [GlobalCleanup]

@@ -105,7 +105,7 @@ public class ParquetWriter(
             keyValueMetadata
         );
 
-        Copy.CopyRowGroups(writer, reader, numColumns, numRowGroups);
+        RowGroupCopier.CopyRowGroups(writer, reader, numColumns, numRowGroups);
 
         writer.Close();
         reader.Close();

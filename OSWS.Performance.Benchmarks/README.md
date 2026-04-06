@@ -43,24 +43,28 @@ dotnet run -c Release -- auth       # Authorization latency
 Compare OSWS against S3 systems using MinIO's [Warp](https://github.com/minio/warp).
 
 **What it measures:**
+
 - IOPS and throughput performance
 - Scaling from 1 to 8 instances
 - Encryption and cache impact
 - System architecture overhead
 
 **Configurations:**
+
 - S3 direct (baseline reference)
 - OSWS without encryption
 - OSWS with encryption (file cache disabled)
 - OSWS with encryption + file cache enabled
 
 **Scale:**
+
 - 1, 2, 4, 8 OSWS instances
 - Configurable concurrency (default: 16 clients)
 - Configurable duration (default: 60 seconds)
 - Mixed workload (gets, puts, deletes)
 
 **Results:**
+
 - Saved to `warp-results/` as compressed benchmark data files (`.json.zst`)
 - Contains throughput, latency (p50, p90, p99), error rates
 
@@ -68,13 +72,14 @@ Compare OSWS against S3 systems using MinIO's [Warp](https://github.com/minio/wa
 
 Deep investigation of specific system components using **real OSWS operations**, not simulations.
 
-| Benchmark | Measures | Implementation | Notes |
-|-----------|----------|-----------------|-------|
-| **Key Unwrap** | DEK unwrap latency | Cold cache + ParquetReader | Isolates key unwrap from decryption |
-| **Decryption** | Column decryption latency | Warm cache + ParquetReader | Isolates decryption from key unwrap |
-| **Authorization** | RBAC authorization latency | Placeholder | RBAC implementation pending |
+| Benchmark         | Measures                   | Implementation             | Notes                               |
+| ----------------- | -------------------------- | -------------------------- | ----------------------------------- |
+| **Key Unwrap**    | DEK unwrap latency         | Cold cache + ParquetReader | Isolates key unwrap from decryption |
+| **Decryption**    | Column decryption latency  | Warm cache + ParquetReader | Isolates decryption from key unwrap |
+| **Authorization** | RBAC authorization latency | Placeholder                | RBAC implementation pending         |
 
 **Key Unwrap Benchmark:**
+
 - Generates 2000-column × 10,000-row encrypted parquet file
 - Sweeps DEK sizes: 16, 24, 32 bytes (128/192/256-bit AES keys)
 - Uses **cold cache** to force key unwrapping on every iteration
@@ -82,12 +87,14 @@ Deep investigation of specific system components using **real OSWS operations**,
 - Real operations via OSWS.ParquetReader and IKeyVaultProvider
 
 **Decryption Benchmark:**
+
 - Generates 2000-column × N-row encrypted parquet files (N = 5K, 10K, or 100K)
 - Uses **warm cache** (pre-populated with DEKs) to isolate decryption
 - Measures pure decryption time without key unwrap overhead
 - Real operations via OSWS.ParquetReader
 
 **Authorization Benchmark:**
+
 - Placeholder pending RBAC implementation
 - Will measure authorization checks with 4, 64, 256 roles when available
 
@@ -116,12 +123,14 @@ WARP_INSECURE_TLS=false
 ```
 
 Notes:
+
 - Direct `S3` baseline uses your configured `S3Settings__EndpointHostname`.
 - If the endpoint starts with `https://`, the benchmark script automatically enables Warp TLS mode.
 - Set `WARP_INSECURE_TLS=true` only for self-signed certificates in local/test setups.
 - For `OSWS` baseline categories, the script uses Warp `--disable-sha256-payload` to avoid aws-chunked payload framing mismatches when proxying uploads through OSWS.
 
 The `.env` file is **git-ignored** and will never be committed. Benefits:
+
 - ✅ Keeps credentials local and secure
 - ✅ Easy switching between S3 backends
 - ✅ No environment variable pollution
@@ -130,6 +139,7 @@ The `.env` file is **git-ignored** and will never be committed. Benefits:
 ### S3 Backend Options
 
 **AWS S3:**
+
 ```env
 S3Settings__AccessKeyId=AKIA...
 S3Settings__SecretAccessKey=...
@@ -138,6 +148,7 @@ S3Settings__Region=us-east-1
 ```
 
 **Cloudflare R2 (S3-compatible):**
+
 ```env
 S3Settings__AccessKeyId=your-r2-access-key
 S3Settings__SecretAccessKey=your-r2-secret-key
@@ -146,6 +157,7 @@ S3Settings__Region=auto
 ```
 
 **MinIO (Local S3 Mock):**
+
 ```bash
 # Start MinIO first
 minio server ./data
@@ -178,7 +190,7 @@ Additional settings in `OSWS.WebApi/appsettings.json`:
 ```json
 {
   "Encryption": {
-    "DisableEncryption": false  // Set to true for baseline (no encryption overhead)
+    "DisableEncryption": false // Set to true for baseline (no encryption overhead)
   },
   "WarpSettings": {
     "InstanceCounts": [1, 2, 4, 8],
@@ -251,6 +263,7 @@ For multiple instances, a load balancer (nginx) can be configured to distribute 
   - `warp-4instances-osws-encryption-cache.json.zst`
 
 Each result file contains:
+
 - Throughput metrics (requests/sec, data/sec)
 - Latency metrics (p50, p90, p99, p999 milliseconds)
 - Error rates and failure analysis
@@ -278,7 +291,7 @@ Each result file contains:
 
 ### Benchmark Execution
 
-- **Warp benchmark fails with 500 errors**: 
+- **Warp benchmark fails with 500 errors**:
   - Ensure S3 backend is configured and accessible
   - Test connectivity: `aws s3 ls` or `curl -I <endpoint>`
 - **No results files**: Check `./warp-results/` directory and verify write permissions
@@ -293,6 +306,7 @@ Each result file contains:
 ## Examples
 
 ### Run Quick Test
+
 ```bash
 cd Infrastructure
 ./run-warp-baseline.sh 1 4 10
@@ -300,6 +314,7 @@ cd Infrastructure
 ```
 
 ### Run Full Benchmark Suite
+
 ```bash
 cd Infrastructure
 ./run-warp-baseline.sh
@@ -307,6 +322,7 @@ cd Infrastructure
 ```
 
 ### Run Without Encryption (Baseline)
+
 ```bash
 # Edit .env or appsettings.json
 Encryption__DisableEncryption=true
@@ -316,6 +332,7 @@ cd Infrastructure
 ```
 
 ### Run Micro-benchmark
+
 ```bash
 cd OSWS.Performance.Benchmarks
 dotnet run -c Release -- unwrap

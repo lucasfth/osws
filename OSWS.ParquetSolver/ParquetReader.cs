@@ -86,7 +86,7 @@ public class ParquetReader(
             keyValueMetadata
         );
 
-        Copy.CopyRowGroups(
+        RowGroupCopier.CopyRowGroups(
             writer,
             reader,
             numColumns,

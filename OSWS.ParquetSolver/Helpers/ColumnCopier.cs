@@ -2,120 +2,13 @@ using ParquetSharp;
 
 namespace OSWS.ParquetSolver.Helpers;
 
-public static class Copy
+/// <summary>
+/// Handles copying individual Parquet columns between readers and writers,
+/// dispatching on physical type. Used by RowGroupCopier.
+/// </summary>
+internal static class ColumnCopier
 {
-    /// <summary>
-    /// Copy row groups from a ParquetFileReader to a ParquetFileWriter, using the physical type to copy raw data.
-    /// </summary>
-    /// <param name="parquetFileWriter"></param>
-    /// <param name="parquetFileReader"></param>
-    /// <param name="numColumns"></param>
-    /// <param name="numRowGroups"></param>
-    /// <param name="failureBehavior"></param>
-    /// <param name="onColumnDecryptionError"></param>
-    /// <param name="allowedColumns">When non-null, only columns whose names are in this set will be decrypted; all others get dummy values.</param>
-    public static void CopyRowGroups(
-        ParquetFileWriter parquetFileWriter,
-        ParquetFileReader parquetFileReader,
-        int numColumns,
-        int numRowGroups,
-        ColumnDecryptionFailureBehavior failureBehavior = ColumnDecryptionFailureBehavior.Throw,
-        Action<string, Exception>? onColumnDecryptionError = null,
-        ISet<string>? allowedColumns = null
-    )
-    {
-        var schema = parquetFileReader.FileMetaData.Schema;
-
-        for (var rg = 0; rg < numRowGroups; rg++)
-        {
-            using var rowGroupReader = parquetFileReader.RowGroup(rg);
-            var numRows = checked((int)rowGroupReader.MetaData.NumRows);
-            using var rowGroupWriter = parquetFileWriter.AppendRowGroup();
-
-            for (var col = 0; col < numColumns; col++)
-            {
-                var columnDescriptor = schema.Column(col);
-
-                // If allowedColumns is specified and this column is not permitted,
-                // skip decryption and write dummy values directly.
-                if (allowedColumns != null && !allowedColumns.Contains(columnDescriptor.Name))
-                {
-                    using var colWriter = rowGroupWriter.NextColumn();
-                    WriteDummyColumn(colWriter, columnDescriptor, numRows);
-                    continue;
-                }
-
-                CopyColumnWithFallback(
-                    rowGroupReader,
-                    rowGroupWriter,
-                    columnDescriptor,
-                    col,
-                    numRows,
-                    failureBehavior,
-                    onColumnDecryptionError
-                );
-            }
-        }
-    }
-
-    /// <summary>
-    /// Copy a column from a RowGroupReader to a RowGroupWriter, using the physical type to copy raw data.
-    /// </summary>
-    /// <param name="rowGroupReader"></param>
-    /// <param name="rowGroupWriter"></param>
-    /// <param name="columnDescriptor"></param>
-    /// <param name="colIndex"></param>
-    /// <param name="numRows"></param>
-    /// <param name="failureBehavior"></param>
-    /// <param name="onColumnDecryptionError"></param>
-    /// <exception cref="NotSupportedException"></exception>
-    private static void CopyColumnWithFallback(
-        RowGroupReader rowGroupReader,
-        RowGroupWriter rowGroupWriter,
-        ColumnDescriptor columnDescriptor,
-        int colIndex,
-        int numRows,
-        ColumnDecryptionFailureBehavior failureBehavior,
-        Action<string, Exception>? onColumnDecryptionError
-    )
-    {
-        ColumnWriter? colWriter = null;
-
-        try
-        {
-            using var colReader = rowGroupReader.Column(colIndex);
-            colWriter = rowGroupWriter.NextColumn();
-            CopyColumn(colReader, colWriter, numRows);
-        }
-        catch (Exception ex) when (failureBehavior != ColumnDecryptionFailureBehavior.Throw)
-        {
-            onColumnDecryptionError?.Invoke(columnDescriptor.Name, ex);
-
-            colWriter ??= rowGroupWriter.NextColumn();
-
-            // Copying encrypted column chunks directly into a rewritten output file is
-            // not currently feasible with ParquetSharp's managed API surface, so we
-            // fall back to writing dummy values.
-            // If it becomes possible in the future then make following if check and
-            // implement copying encrypted data without decryption here.
-            // if (failureBehavior == ColumnDecryptionFailureBehavior.CopyEncrypted)
-
-            WriteDummyColumn(colWriter, columnDescriptor, numRows);
-        }
-        finally
-        {
-            colWriter?.Dispose();
-        }
-    }
-
-    /// <summary>
-    /// Copy a column from a ColumnReader to a ColumnWriter, using the physical type to copy raw data.
-    /// </summary>
-    /// <param name="colReader"></param>
-    /// <param name="colWriter"></param>
-    /// <param name="numRows"></param>
-    /// <exception cref="NotSupportedException"></exception>
-    private static void CopyColumn(ColumnReader colReader, ColumnWriter colWriter, int numRows)
+    internal static void CopyColumn(ColumnReader colReader, ColumnWriter colWriter, int numRows)
     {
         switch (colReader.Type)
         {
@@ -149,14 +42,6 @@ public static class Copy
         }
     }
 
-    /// <summary>
-    /// Copy a column of a specific physical type from a ColumnReader to a ColumnWriter, using typed APIs for efficiency.
-    /// </summary>
-    /// <param name="colReader"></param>
-    /// <param name="colWriter"></param>
-    /// <param name="numRows"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <exception cref="InvalidOperationException"></exception>
     private static void CopyTypedColumn<T>(
         ColumnReader colReader,
         ColumnWriter colWriter,
@@ -205,13 +90,6 @@ public static class Copy
         }
     }
 
-    /// <summary>
-    /// Copy a column of ByteArray physical type from a ColumnReader to a ColumnWriter, using typed APIs for efficiency.
-    /// </summary>
-    /// <param name="colReader"></param>
-    /// <param name="colWriter"></param>
-    /// <param name="numRows"></param>
-    /// <exception cref="InvalidOperationException"></exception>
     private static void CopyByteArrayColumn(
         ColumnReader colReader,
         ColumnWriter colWriter,
@@ -259,13 +137,6 @@ public static class Copy
         }
     }
 
-    /// <summary>
-    /// Copy a column of FixedLenByteArray physical type from a ColumnReader to a ColumnWriter, using typed APIs for efficiency.
-    /// </summary>
-    /// <param name="colReader"></param>
-    /// <param name="colWriter"></param>
-    /// <param name="numRows"></param>
-    /// <exception cref="InvalidOperationException"></exception>
     private static void CopyFixedLenByteArrayColumn(
         ColumnReader colReader,
         ColumnWriter colWriter,
@@ -313,16 +184,7 @@ public static class Copy
         }
     }
 
-    /// <summary>
-    /// Write dummy values for a column based on its physical type.
-    /// This is used as a fallback when copying fails (e.g. due to decryption failure)
-    /// to allow the rest of the columns to be read.
-    /// </summary>
-    /// <param name="colWriter"></param>
-    /// <param name="columnDescriptor"></param>
-    /// <param name="numRows"></param>
-    /// <exception cref="NotSupportedException"></exception>
-    private static void WriteDummyColumn(
+    internal static void WriteDummyColumn(
         ColumnWriter colWriter,
         ColumnDescriptor columnDescriptor,
         int numRows
@@ -362,14 +224,6 @@ public static class Copy
         }
     }
 
-    /// <summary>
-    /// Write dummy values for a column of a specific physical type using typed APIs for efficiency.
-    /// </summary>
-    /// <param name="colWriter"></param>
-    /// <param name="columnDescriptor"></param>
-    /// <param name="numRows"></param>
-    /// <typeparam name="T"></typeparam>
-    /// <exception cref="InvalidOperationException"></exception>
     private static void WriteDummyTypedColumn<T>(
         ColumnWriter colWriter,
         ColumnDescriptor columnDescriptor,
@@ -423,13 +277,6 @@ public static class Copy
         typedWriter.WriteBatch(numRows, defLevels.AsSpan(), repLevels.AsSpan(), values.AsSpan());
     }
 
-    /// <summary>
-    /// Write dummy values for a column of FixedLenByteArray physical type using typed APIs for efficiency.
-    /// </summary>
-    /// <param name="colWriter"></param>
-    /// <param name="columnDescriptor"></param>
-    /// <param name="numRows"></param>
-    /// <exception cref="InvalidOperationException"></exception>
     private static void WriteDummyFixedLenByteArrayColumn(
         ColumnWriter colWriter,
         ColumnDescriptor columnDescriptor,

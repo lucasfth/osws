@@ -44,8 +44,6 @@ namespace OSWS.Performance.Benchmarks.Helpers
                 config.GetSection("Cache").Get<CacheSettings>()
                 ?? new CacheSettings { EnableFileCache = false };
             services.AddSingleton(cacheSettings);
-            services.AddSingleton<DekCache>();
-            services.AddSingleton<EncryptedFileCache>();
 
             // Logging - for ILogger injection in benchmarks
             services.AddLogging(builder =>

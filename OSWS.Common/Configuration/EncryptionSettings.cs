@@ -13,7 +13,7 @@ public class EncryptionSettings
     public bool DisableEncryption { get; set; } = false;
 
     /// <summary>
-    /// Data Encryption Key size in bits. Valid values: 256, 512, 1024, 2048.
+    /// Data Encryption Key size in bits. Valid values: 128, 192, 256 (AES standard).
     /// This controls the size of random AES DEKs generated for each column.
     /// Note: DEK size is different from the KEK (Key Encryption Key) which is RSA-2048.
     /// Default: 256 bits (32 bytes)
@@ -41,7 +41,7 @@ public class EncryptionSettings
     /// </summary>
     public void Validate()
     {
-        var validSizes = new[] { 256, 512, 1024, 2048 };
+        var validSizes = new[] { 128, 192, 256 };
         if (!validSizes.Contains(DekSizeBits))
         {
             throw new InvalidOperationException(

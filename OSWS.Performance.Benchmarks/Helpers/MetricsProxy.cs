@@ -47,31 +47,58 @@ namespace OSWS.Performance.Benchmarks.Helpers
             }
         }
 
-        private async Task AwaitAndRecordAsync(Task task, Stopwatch sw)
+    private async Task AwaitAndRecordAsync(Task task, Stopwatch sw)
+    {
+        Exception? capturedException = null;
+        try
         {
-            try
-            {
-                await task.ConfigureAwait(false);
-            }
-            finally
-            {
-                sw.Stop();
-                Record(sw.Elapsed);
-            }
+            await task.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            capturedException = ex;
+        }
+        finally
+        {
+            sw.Stop();
+            Record(sw.Elapsed);
         }
 
-        private async Task<TResult> HandleGenericTask<TResult>(Task<TResult> task, Stopwatch sw)
+        if (capturedException != null)
         {
-            try
+            var inner = capturedException switch
             {
-                return await task.ConfigureAwait(false);
-            }
-            finally
+                AggregateException ae => ae.InnerException ?? ae,
+                TargetInvocationException tie => tie.InnerException ?? tie,
+                _ => capturedException,
+            };
+
+            if (inner is TargetInvocationException targetInv)
             {
-                sw.Stop();
-                Record(sw.Elapsed);
+                throw targetInv.InnerException ?? targetInv;
             }
+            throw inner;
         }
+    }
+
+    private async Task<TResult> HandleGenericTask<TResult>(Task<TResult> task, Stopwatch sw)
+    {
+        Exception? capturedException = null;
+        try
+        {
+            return await task.ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            capturedException = ex;
+            return default!;
+        }
+        finally
+        {
+            sw.Stop();
+            Record(sw.Elapsed);
+        }
+    }
 
         private void Record(TimeSpan elapsed)
         {

@@ -18,7 +18,7 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 /// Measures how long it takes to unwrap (decrypt) a Data Encryption Key (DEK)
 /// from the Key Encryption Key (KEK).
 ///
-/// DEK size is parameterized per benchmark case (256, 512, 1024 bits).
+/// DEK size is parameterized per benchmark case (128, 192, 256 bits).
 /// This benchmark measures key unwrap time using a cold cache scenario.
 ///
 /// Method: We measure key unwrap time by using a cold cache and reading encrypted parquet.
@@ -35,7 +35,7 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 [WarmupCount(5)]
 public class KeyUnwrapBenchmark
 {
-    [Params(256, 512, 1024)]
+    [Params(128, 192, 256)]
     public int DekSizeBits { get; set; }
 
     private ServiceProvider? _services;

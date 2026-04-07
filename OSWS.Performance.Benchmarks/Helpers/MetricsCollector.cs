@@ -19,10 +19,14 @@ public class MetricsCollector
     private readonly List<TimeSpan> _cachedKvLatencies = new();
     private readonly List<TimeSpan> _s3Latencies = new();
     private readonly Dictionary<string, List<TimeSpan>> _operationLatencies = new();
+    private readonly List<double> _elapsedSamples = new();
 
     public void StartMeasurement()
     {
-        _initialMemoryBytes = GC.GetTotalMemory(false);
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        _initialMemoryBytes = GC.GetTotalMemory(true);
         _peakMemoryBytes = _initialMemoryBytes;
         _stopwatch.Restart();
     }
@@ -31,6 +35,7 @@ public class MetricsCollector
     {
         _stopwatch.Stop();
         UpdatePeakMemory();
+        _elapsedSamples.Add(_stopwatch.Elapsed.TotalMilliseconds);
     }
 
     public void RecordKvCall(TimeSpan latency)
@@ -73,15 +78,16 @@ public class MetricsCollector
     public PerformanceMetrics GetMetrics()
     {
         var elapsedMs = _stopwatch.Elapsed.TotalMilliseconds;
+        var elapsedStats = ComputeElapsedStats();
 
         return new PerformanceMetrics
         {
-            TotalElapsedMs = elapsedMs,
-            TotalElapsedMinMs = elapsedMs,
-            TotalElapsedMaxMs = elapsedMs,
-            TotalElapsedMedianMs = elapsedMs,
-            TotalElapsedP99Ms = elapsedMs,
-            TotalElapsedStdDevMs = 0,
+            TotalElapsedMs = elapsedStats.MeanMs,
+            TotalElapsedMinMs = elapsedStats.MinMs,
+            TotalElapsedMaxMs = elapsedStats.MaxMs,
+            TotalElapsedMedianMs = elapsedStats.MedianMs,
+            TotalElapsedP99Ms = elapsedStats.P99Ms,
+            TotalElapsedStdDevMs = elapsedStats.StdDevMs,
             InitialMemoryMb = _initialMemoryBytes / (1024.0 * 1024.0),
             PeakMemoryMb = _peakMemoryBytes / (1024.0 * 1024.0),
             MemoryIncreaseMb = (_peakMemoryBytes - _initialMemoryBytes) / (1024.0 * 1024.0),
@@ -95,7 +101,6 @@ public class MetricsCollector
                 : 0,
             KvTotalLatencyMs = _kvLatencies.Sum(l => l.TotalMilliseconds),
             S3TotalLatencyMs = _s3Latencies.Sum(l => l.TotalMilliseconds),
-            // Expose cached KV metrics
             CachedKvCallCount = _cachedKvCallCount,
             CachedKvAvgLatencyMs = _cachedKvLatencies.Any()
                 ? _cachedKvLatencies.Average(l => l.TotalMilliseconds)
@@ -108,6 +113,57 @@ public class MetricsCollector
                 )
             ),
         };
+    }
+
+    private ElapsedStats ComputeElapsedStats()
+    {
+        if (_elapsedSamples.Count == 0)
+        {
+            return new ElapsedStats { MinMs = 0, MaxMs = 0, MeanMs = 0, MedianMs = 0, P99Ms = 0, StdDevMs = 0 };
+        }
+
+        var sorted = _elapsedSamples.OrderBy(x => x).ToList();
+        var mean = sorted.Average();
+        var variance = sorted.Sum(x => Math.Pow(x - mean, 2)) / sorted.Count;
+        var stdDev = Math.Sqrt(variance);
+
+        return new ElapsedStats
+        {
+            MinMs = sorted[0],
+            MaxMs = sorted[^1],
+            MeanMs = mean,
+            MedianMs = Percentile(sorted, 0.5),
+            P99Ms = Percentile(sorted, 0.99),
+            StdDevMs = stdDev,
+        };
+    }
+
+    private static double Percentile(List<double> sortedValues, double percentile)
+    {
+        if (sortedValues.Count == 0)
+            return 0;
+        if (sortedValues.Count == 1)
+            return sortedValues[0];
+
+        var rank = percentile * (sortedValues.Count - 1);
+        var lower = (int)Math.Floor(rank);
+        var upper = (int)Math.Ceiling(rank);
+
+        if (lower == upper)
+            return sortedValues[lower];
+
+        var weight = rank - lower;
+        return sortedValues[lower] + (sortedValues[upper] - sortedValues[lower]) * weight;
+    }
+
+    private class ElapsedStats
+    {
+        public double MinMs { get; init; }
+        public double MaxMs { get; init; }
+        public double MeanMs { get; init; }
+        public double MedianMs { get; init; }
+        public double P99Ms { get; init; }
+        public double StdDevMs { get; init; }
     }
 
     private static OperationLatencyStats CalculateStatistics(List<TimeSpan> latencies)
@@ -130,16 +186,30 @@ public class MetricsCollector
             MinMs = sortedLatencies[0].TotalMilliseconds,
             MaxMs = sortedLatencies[count - 1].TotalMilliseconds,
             MeanMs = mean,
-            MedianMs =
-                count % 2 == 0
-                    ? (
-                        sortedLatencies[count / 2 - 1].TotalMilliseconds
-                        + sortedLatencies[count / 2].TotalMilliseconds
-                    ) / 2
-                    : sortedLatencies[count / 2].TotalMilliseconds,
-            P99Ms = sortedLatencies[(int)Math.Ceiling(count * 0.99) - 1].TotalMilliseconds,
+            MedianMs = PercentileLatency(sortedLatencies, 0.5),
+            P99Ms = PercentileLatency(sortedLatencies, 0.99),
             StdDevMs = stdDev,
         };
+    }
+
+    private static double PercentileLatency(List<TimeSpan> sorted, double percentile)
+    {
+        if (sorted.Count == 0)
+            return 0;
+        if (sorted.Count == 1)
+            return sorted[0].TotalMilliseconds;
+
+        var rank = percentile * (sorted.Count - 1);
+        var lower = (int)Math.Floor(rank);
+        var upper = (int)Math.Ceiling(rank);
+
+        if (lower == upper)
+            return sorted[lower].TotalMilliseconds;
+
+        var weight = rank - lower;
+        var lowerVal = sorted[lower].TotalMilliseconds;
+        var upperVal = sorted[upper].TotalMilliseconds;
+        return lowerVal + (upperVal - lowerVal) * weight;
     }
 
     public Dictionary<string, OperationLatencyStats> GetAggregatedLatencies()

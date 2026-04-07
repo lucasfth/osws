@@ -17,7 +17,7 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 /// Measures how long it takes to unwrap (decrypt) a Data Encryption Key (DEK)
 /// from the Key Encryption Key (KEK).
 ///
-/// DEK size is parameterized per benchmark case (16, 24, 32 bytes).
+/// DEK size is parameterized per benchmark case (256, 512, 1024 bits).
 /// This benchmark measures key unwrap time using a cold cache scenario.
 ///
 /// Method: We measure key unwrap time by using a cold cache and reading encrypted parquet.
@@ -32,8 +32,8 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 [Config(typeof(SharedBenchmarkConfig))]
 public class KeyUnwrapBenchmark
 {
-    [Params(16, 24, 32)]
-    public int DekSizeBytes { get; set; }
+    [Params(256, 512, 1024)]
+    public int DekSizeBits { get; set; }
 
     private ServiceProvider? _services;
     private IKeyVaultProvider? _keyVaultProvider;
@@ -47,9 +47,8 @@ public class KeyUnwrapBenchmark
     [GlobalSetup]
     public async Task GlobalSetupAsync()
     {
-        var dekSizeBits = DekSizeBytes * 8;
         Console.WriteLine(
-            $"    Setting up Key Unwrap benchmark (DekSizeBytes={DekSizeBytes}, DekSizeBits={dekSizeBits})..."
+            $"    Setting up Key Unwrap benchmark (DekSizeBits={DekSizeBits})..."
         );
 
         _services = BenchmarkServiceFactory.BuildServiceProvider();
@@ -65,7 +64,7 @@ public class KeyUnwrapBenchmark
             _keyVaultProvider,
             providerType,
             logger: _logger,
-            encryptionSettings: new EncryptionSettings { DekSizeBits = dekSizeBits }
+            encryptionSettings: new EncryptionSettings { DekSizeBits = DekSizeBits }
         );
 
         // Generate a narrow dataset (50 cols × 1000 rows) for key unwrap testing.
@@ -106,24 +105,20 @@ public class KeyUnwrapBenchmark
     }
 
     [Benchmark(Description = "Key Unwrap - Time to unwrap DEKs and read encrypted parquet")]
-    public async Task<int> MeasureKeyUnwrap()
+    public async Task MeasureKeyUnwrap()
     {
         if (_encryptedFileBytes == null || _parquetReader == null)
             throw new InvalidOperationException("Benchmark setup incomplete");
 
-        // Create fresh stream for this iteration
         var encryptedStream = new MemoryStream(_encryptedFileBytes);
-
-        // ReadParquetAsync will trigger DEK unwrapping
         var result = await _parquetReader.ReadParquetAsync(encryptedStream);
-
-        // Consume some bytes to ensure unwrapping actually happens
         var bytesRead = await result.ReadAsync(_readBuffer);
 
         encryptedStream.Dispose();
         result.Dispose();
 
-        return bytesRead;
+        if (bytesRead == 0)
+            throw new InvalidOperationException("No data was read during key unwrap");
     }
 
     [GlobalCleanup]

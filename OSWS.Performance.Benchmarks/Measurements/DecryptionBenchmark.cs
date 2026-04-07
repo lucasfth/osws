@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Attributes;
+using BenchmarkDotNet.Jobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,10 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 /// Uses warm cache (pre-populated with DEKs) to isolate decryption time from key unwrap.
 /// </summary>
 [Config(typeof(SharedBenchmarkConfig))]
+[IterationCount(15)]
+[WarmupCount(5)]
+[MediumRunJob]
+[RankColumn]
 public class DecryptionBenchmark
 {
     private const int ColumnCount = 2000;
@@ -122,7 +127,7 @@ public class DecryptionBenchmark
     }
 
     [Benchmark(Description = "Column Decryption - Time to fully decrypt all columns")]
-    public async Task<long> MeasureColumnDecryption()
+    public async Task MeasureColumnDecryption()
     {
         if (_encryptedDatasetBytes == null || _parquetReader == null)
             throw new InvalidOperationException("Benchmark setup incomplete");
@@ -130,7 +135,6 @@ public class DecryptionBenchmark
         await using var encryptedStream = new MemoryStream(_encryptedDatasetBytes, writable: false);
         using var decrypted = await _parquetReader.ReadParquetAsync(encryptedStream);
 
-        // Consume the decrypted stream to force full decryption
         long totalBytesRead = 0;
         int bytesRead;
         while ((bytesRead = await decrypted.ReadAsync(_readBuffer)) > 0)
@@ -138,7 +142,8 @@ public class DecryptionBenchmark
             totalBytesRead += bytesRead;
         }
 
-        return totalBytesRead;
+        if (totalBytesRead == 0)
+            throw new InvalidOperationException("No data was decrypted");
     }
 
     [GlobalCleanup]

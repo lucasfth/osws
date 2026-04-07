@@ -24,16 +24,16 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 /// Method: We measure key unwrap time by using a cold cache and reading encrypted parquet.
 /// This forces the system to unwrap DEKs without benefit of cached keys.
 ///
-/// Dataset: 20 cols × 200 rows — sized to trigger ~20 KV calls (~2 s total unwrap)
+/// Dataset: 10 cols × 100 rows — sized to trigger ~10 KV calls (~1 s total unwrap)
 /// without burying the per-call signal under thousands of sequential round-trips.
 /// (The original 2,000-col × 10,000-row dataset caused ~218 s of KV calls per iteration.)
 ///
 /// Expected outcome: Understanding key unwrap overhead independent of decryption.
 /// </summary>
-[Config(typeof(SharedBenchmarkConfig))]
-[IterationCount(15)]
-[WarmupCount(5)]
-public class KeyUnwrapBenchmark
+    [Config(typeof(SharedBenchmarkConfig))]
+    [IterationCount(30)]
+    [WarmupCount(8)]
+    public class KeyUnwrapBenchmark
 {
     [Params(128, 192, 256)]
     public int DekSizeBits { get; set; }
@@ -70,15 +70,15 @@ public class KeyUnwrapBenchmark
             encryptionSettings: new EncryptionSettings { DekSizeBits = DekSizeBits }
         );
 
-        // Generate a narrow dataset (20 cols × 200 rows) for key unwrap testing.
-        // 20 columns triggers ~20 cold KV calls (~2s), which is enough to measure
+        // Generate a narrow dataset (10 cols × 100 rows) for key unwrap testing.
+        // 10 columns triggers ~10 cold KV calls (~1s), which is enough to measure
         // per-call unwrap latency without running for minutes per iteration.
         Console.WriteLine(
-            "   Generating dataset (20 cols × 200 rows) for key unwrap testing..."
+            "   Generating dataset (10 cols × 100 rows) for key unwrap testing..."
         );
         var unencrypted = await WideDatasetGenerator.GenerateAsync(
-            20,
-            200,
+            10,
+            100,
             cancellationToken: CancellationToken.None
         );
 
@@ -115,12 +115,18 @@ public class KeyUnwrapBenchmark
 
         var encryptedStream = new MemoryStream(_encryptedFileBytes);
         var result = await _parquetReader.ReadParquetAsync(encryptedStream);
-        var bytesRead = await result.ReadAsync(_readBuffer);
+
+        long totalBytesRead = 0;
+        int bytesRead;
+        while ((bytesRead = await result.ReadAsync(_readBuffer)) > 0)
+        {
+            totalBytesRead += bytesRead;
+        }
 
         encryptedStream.Dispose();
         result.Dispose();
 
-        if (bytesRead == 0)
+        if (totalBytesRead == 0)
             throw new InvalidOperationException("No data was read during key unwrap");
     }
 

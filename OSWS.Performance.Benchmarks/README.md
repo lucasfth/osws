@@ -80,11 +80,12 @@ Deep investigation of specific system components using **real OSWS operations**,
 
 **Key Unwrap Benchmark:**
 
-- Generates 2000-column × 10,000-row encrypted parquet file
-- Sweeps DEK sizes: 16, 24, 32 bytes (128/192/256-bit AES keys)
+- Generates 10-column × 100-row encrypted parquet file (~10 cold KV calls)
+- Sweeps DEK sizes: 128, 192, 256 bits (valid AES key sizes)
 - Uses **cold cache** to force key unwrapping on every iteration
 - Measures time to read encrypted parquet (includes DEK unwrapping)
 - Real operations via OSWS.ParquetReader and IKeyVaultProvider
+- **Note:** Key unwrap time is dominated by cold cache KV calls, so results reflect overall system latency
 
 **Decryption Benchmark:**
 
@@ -116,11 +117,11 @@ To ensure statistically reliable benchmark results, the following iteration and 
 
 | Benchmark          | Iterations | Warmup Runs | Target Error Margin |
 | ------------------ | ---------- | ----------- | ------------------- |
-| KeyUnwrap          | 15         | 5           | < 5%                |
+| KeyUnwrap          | 30         | 8           | < 5%                |
 | Decryption (5K)    | 10         | 3           | < 3%                |
 | Decryption (10K)   | 10         | 3           | < 3%                |
 | Decryption (100K)  | 15         | 5           | < 5%                |
-| Authorization      | 10         | 3           | < 2%                |
+| Authorization      | 15         | 3           | < 2%                |
 
 **Notes:**
 - **Iterations**: Number of times the benchmark executes to collect timing samples

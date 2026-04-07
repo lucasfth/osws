@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
+using OSWS.Common.Configuration;
 using OSWS.Models.DTOs;
 using OSWS.Models.Interfaces;
+using OSWS.ParquetSolver.Interfaces;
 using ParquetSharp;
 
 namespace OSWS.ParquetSolver.Helpers;
@@ -15,19 +17,26 @@ public static class Cryptography
     /// <summary>
     /// Build encryption properties for a parquet file.
     /// The parquet footer remains plaintext.
-    /// Each encrypted column gets its own ephemeral AES-128 DEK, and all column DEKs for the file
+    /// Each encrypted column gets its own ephemeral DEK, and all column DEKs for the file
     /// are wrapped by a single file-level KEK created through the vault provider.
     /// </summary>
-    public static (FileEncryptionProperties Properties, EncryptionResult Metadata) BuildEncryptionProperties(
+    public static (
+        FileEncryptionProperties Properties,
+        EncryptionResult Metadata
+    ) BuildEncryptionProperties(
         SchemaDescriptor schema,
         string[]? columnsToEncrypt,
         IKeyVaultProvider keyVaultProvider,
         string role,
-        string providerType
+        string providerType,
+        EncryptionSettings? encryptionSettings = null
     )
     {
+        var dekSizeBytes = encryptionSettings?.GetDekSizeBytes() ?? 16; // Default 128 bits (16 bytes)
+
         var fileKeyName = $"{role}-file-{Guid.NewGuid():N}";
         var fileKeyId = keyVaultProvider.CreateKeyAsync(fileKeyName, role).GetAwaiter().GetResult();
+        var encryptedColumns = new List<EncryptedColumnInfo>();
 
         // Parquet still expects a footer key and key metadata even when the footer itself is plaintext.
         // Keep the footer plaintext, but wrap the footer key with the file-level KEK so readers can initialize crypto.
@@ -54,7 +63,6 @@ public static class Cryptography
         // Each encrypted column gets its own DEK, but every DEK in the file is wrapped by one KEK.
         var numColumns = schema.NumColumns;
         var columnProperties = new ColumnEncryptionProperties[numColumns];
-        var encryptedColumnInfos = new List<EncryptedColumnInfo>();
 
         for (var i = 0; i < numColumns; i++)
         {
@@ -69,8 +77,9 @@ public static class Cryptography
             if (!shouldEncrypt)
                 continue;
 
-            // Generate a unique ephemeral AES-128 DEK for this specific column (in-memory only, never persisted)
-            var columnDek = RandomNumberGenerator.GetBytes(16);
+            // Generate a unique ephemeral DEK for this specific column (in-memory only, never persisted)
+            // DEK size is configurable via EncryptionSettings
+            var columnDek = RandomNumberGenerator.GetBytes(dekSizeBytes);
 
             var encryptedColumnDek = keyVaultProvider
                 .EncryptAsync(fileKeyId!, columnDek)
@@ -92,12 +101,14 @@ public static class Cryptography
             colBuilder.KeyMetadata(columnMetadata.Serialize());
             columnProperties[i] = colBuilder.Build();
 
-            encryptedColumnInfos.Add(new EncryptedColumnInfo
-            {
-                ColumnName = colName,
-                KeyVaultId = fileKeyId!,
-                KeyName = fileKeyName!,
-            });
+            encryptedColumns.Add(
+                new EncryptedColumnInfo
+                {
+                    ColumnName = colName,
+                    KeyVaultId = fileKeyId,
+                    KeyName = fileKeyName,
+                }
+            );
         }
 
         var encryptedCols = Array.FindAll(columnProperties, p => p != null!);
@@ -106,14 +117,15 @@ public static class Cryptography
             builder.EncryptedColumns(encryptedCols!);
         }
 
-        var metadata = new EncryptionResult
-        {
-            FileKeyVaultId = fileKeyId,
-            FileKeyName = fileKeyName,
-            Columns = encryptedColumnInfos,
-        };
-
-        return (builder.Build(), metadata);
+        return (
+            builder.Build(),
+            new EncryptionResult
+            {
+                FileKeyVaultId = fileKeyId,
+                FileKeyName = fileKeyName,
+                Columns = encryptedColumns,
+            }
+        );
     }
 
     /// <summary>
@@ -123,7 +135,7 @@ public static class Cryptography
     /// </summary>
     public static FileDecryptionProperties BuildDecryptionProperties(
         IKeyVaultProvider keyVaultProvider,
-        DekCache dekCache,
+        IDekCache dekCache,
         Action<TimeSpan>? onExternalKvOperationLatency = null,
         Action<TimeSpan>? onCachedKvOperationLatency = null
     )

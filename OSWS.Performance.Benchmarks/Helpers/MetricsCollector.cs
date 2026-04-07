@@ -22,10 +22,6 @@ public class MetricsCollector
 
     public void StartMeasurement()
     {
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
-        GC.Collect();
-
         _initialMemoryBytes = GC.GetTotalMemory(false);
         _peakMemoryBytes = _initialMemoryBytes;
         _stopwatch.Restart();
@@ -76,11 +72,16 @@ public class MetricsCollector
 
     public PerformanceMetrics GetMetrics()
     {
+        var elapsedMs = _stopwatch.Elapsed.TotalMilliseconds;
+
         return new PerformanceMetrics
         {
-            TotalElapsedMs = _stopwatch.Elapsed.TotalMilliseconds,
-            TotalElapsedMedianMs = _stopwatch.Elapsed.TotalMilliseconds,
-            TotalElapsedP99Ms = _stopwatch.Elapsed.TotalMilliseconds,
+            TotalElapsedMs = elapsedMs,
+            TotalElapsedMinMs = elapsedMs,
+            TotalElapsedMaxMs = elapsedMs,
+            TotalElapsedMedianMs = elapsedMs,
+            TotalElapsedP99Ms = elapsedMs,
+            TotalElapsedStdDevMs = 0,
             InitialMemoryMb = _initialMemoryBytes / (1024.0 * 1024.0),
             PeakMemoryMb = _peakMemoryBytes / (1024.0 * 1024.0),
             MemoryIncreaseMb = (_peakMemoryBytes - _initialMemoryBytes) / (1024.0 * 1024.0),

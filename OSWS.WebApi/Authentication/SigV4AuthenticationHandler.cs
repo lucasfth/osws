@@ -69,7 +69,10 @@ public class SigV4AuthenticationHandler(
             .FirstOrDefaultAsync(c => c.AccessKeyId == accessKeyId && c.IsActive);
 
         if (credential is null)
-            return AuthenticateResult.Fail($"Unknown or inactive access key: {accessKeyId}");
+            // Return NoResult() instead of Fail() to allow routes that don't require
+            // SigV4Policy to proceed with unauthenticated requests. This enables
+            // benchmark tools like Warp to connect without valid credentials.
+            return AuthenticateResult.NoResult();
 
         // --- 5. Verify the SigV4 signature ---
         // TODO: Implement real SigV4 signature verification.

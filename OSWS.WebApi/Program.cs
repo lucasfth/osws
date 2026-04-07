@@ -2,16 +2,17 @@ using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using OSWS.Common.Configuration;
 using OSWS.KeyManager.Persistence;
 using OSWS.KeyManager.Providers;
 using OSWS.Library;
+using OSWS.Models.DTOs;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
-using Microsoft.AspNetCore.Authorization;
 using OSWS.WebApi.Authentication;
 using OSWS.WebApi.Endpoints;
 using OSWS.WebApi.Endpoints.Admin;
@@ -29,7 +30,6 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Services.AddHttpLogging(o => { });
 
-// Configure DatabaseSettings from appsettings.json
 builder.Configuration.AddEnvironmentVariables();
 builder.Services.AddDbContext<OswsContext>(opts =>
     opts.UseNpgsql(builder.Configuration.GetConnectionString("OswsContext"))
@@ -37,29 +37,43 @@ builder.Services.AddDbContext<OswsContext>(opts =>
 
 builder.Services.Configure<S3Settings>(builder.Configuration.GetSection("S3Settings"));
 
-// --- Cache Settings ---
-// Configure from appsettings.json "Cache" section or use defaults
-var cacheSettings =
-    builder.Configuration.GetSection("Cache").Get<CacheSettings>() ?? new CacheSettings();
+// --- Encryption Settings ---
+builder.Services.Configure<EncryptionSettings>(builder.Configuration.GetSection("Encryption"));
+var encryptionSettings =
+    builder.Configuration.GetSection("Encryption").Get<EncryptionSettings>()
+    ?? new EncryptionSettings();
+encryptionSettings.Validate();
+builder.Services.AddSingleton(encryptionSettings);
 
+// --- Cache ---
+builder.Services.Configure<CacheSettings>(builder.Configuration.GetSection("Cache"));
+var cacheSettings =
+    builder.Configuration.GetSection("Cache").Get<CacheSettings>()
+    ?? throw new InvalidOperationException("Missing Cache configuration.");
 builder.Services.AddSingleton(cacheSettings);
 
-// Register encrypted file cache as singleton - shared across all operations
+// Parquet file cache is always local disk
 builder.Services.AddSingleton<EncryptedFileCache>();
+
+// DEK cache is always local in-memory
+var dekTtl =
+    cacheSettings.DekTtlSeconds > 0
+        ? TimeSpan.FromSeconds(cacheSettings.DekTtlSeconds)
+        : (TimeSpan?)null;
+builder.Services.AddSingleton<IDekCache>(_ => new DekCache(cacheSettings.DekCacheCapacity, dekTtl));
 
 builder.Services.AddTransient<IS3Get, S3Get>();
 builder.Services.AddTransient<IS3Put, S3Put>();
 builder.Services.AddTransient<IS3List, S3List>();
 builder.Services.AddTransient<IS3Head, S3Head>();
+builder.Services.AddScoped<ParquetUploadService>();
 
 // --- Key Vault Provider ---
 // Configure from appsettings.json "KeyVault" section or environment variables.
 // Set Provider to "Azure" for production (requires VaultUri), or "Internal" for dev/testing though not yet set fully up
 var kvSettings =
-    builder.Configuration.GetSection("KeyVault").Get<KeyVaultSettings>() ?? new KeyVaultSettings
-    {
-        Provider = "Internal",
-    };
+    builder.Configuration.GetSection("KeyVault").Get<KeyVaultSettings>()
+    ?? new KeyVaultSettings { Provider = "Internal" };
 
 builder.Services.AddSingleton(kvSettings);
 
@@ -73,42 +87,37 @@ builder.Services.AddSingleton<IKeyVaultProvider>(sp =>
     };
 });
 
-// Register DEK cache as singleton - shared across all parquet read operations
-builder.Services.AddSingleton<DekCache>();
-
 builder.Services.AddTransient<IParquetWriter>(sp =>
 {
     var provider = sp.GetRequiredService<IKeyVaultProvider>();
-    var settings = sp.GetRequiredService<KeyVaultSettings>();
-    return new ParquetWriter(provider, settings.Provider ?? "Internal");
+    var kvSettings = sp.GetRequiredService<KeyVaultSettings>();
+    var encSettings = sp.GetRequiredService<EncryptionSettings>();
+    var logger = sp.GetRequiredService<ILogger<ParquetWriter>>();
+    return new ParquetWriter(provider, kvSettings.Provider ?? "Internal", logger, encSettings);
 });
 builder.Services.AddTransient<IParquetReader>(sp =>
 {
     var provider = sp.GetRequiredService<IKeyVaultProvider>();
-    var dekCache = sp.GetRequiredService<DekCache>();
-    return new ParquetReader(provider, dekCache);
+    var dekCache = sp.GetRequiredService<IDekCache>();
+    var encSettings = sp.GetRequiredService<EncryptionSettings>();
+    var logger = sp.GetRequiredService<ILogger<ParquetReader>>();
+    return new ParquetReader(provider, dekCache, logger, encSettings);
 });
 builder.Services.AddSingleton<IAmazonS3>(sp =>
 {
     var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<S3Settings>>().Value;
-
     var creds = new BasicAWSCredentials(opts.AccessKeyId, opts.SecretAccessKey);
     var endpoint = AwsCredentialHelper.NormalizeEndpoint(opts.EndpointHostname);
-
     var config = new AmazonS3Config
     {
         ServiceURL = string.IsNullOrEmpty(endpoint ?? string.Empty) ? null : endpoint,
         ForcePathStyle = true,
     };
-
     if (
         !string.IsNullOrWhiteSpace(opts.Region)
         && !opts.Region.Equals("auto", StringComparison.OrdinalIgnoreCase)
     )
-    {
         config.RegionEndpoint = RegionEndpoint.GetBySystemName(opts.Region);
-    }
-
     return new AmazonS3Client(creds, config);
 });
 
@@ -232,18 +241,16 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapGet("/health", () => "OSWS Web API running");
-
-// Cache debug endpoint - useful for verifying cache is working
 app.MapGet(
     "/cache-stats",
-    (EncryptedFileCache fileCache) =>
-    {
-        return Results.Text(fileCache.GetDebugInfo());
-    }
+    (EncryptedFileCache fileCache) => Results.Text(fileCache.GetDebugInfo())
 );
 
-// Map S3 routes (GET, PUT) to their handlers
 app.MapS3Routes();
+if (encryptionSettings.BenchmarkMode)
+{
+    app.MapBenchmarkS3PassthroughRoutes();
+}
 
 // Map App API routes (OIDC-protected, for the React frontend)
 app.MapAppRoutes();
@@ -251,8 +258,6 @@ app.MapCredentialRoutes();
 app.MapAdminRoutes();
 
 if (app.Environment.IsDevelopment())
-{
     app.MapOpenApi();
-}
 
 app.Run();

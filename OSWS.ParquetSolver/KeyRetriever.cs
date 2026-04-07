@@ -2,6 +2,7 @@ using System.Diagnostics;
 using OSWS.Models.DTOs;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver.Helpers;
+using OSWS.ParquetSolver.Interfaces;
 using ParquetSharp;
 
 namespace OSWS.ParquetSolver;
@@ -17,7 +18,7 @@ namespace OSWS.ParquetSolver;
 /// </summary>
 public sealed class KeyRetriever(
     IKeyVaultProvider keyVaultProvider,
-    DekCache dekCache,
+    IDekCache dekCache,
     Action<TimeSpan>? onInternalKvOperationLatency = null,
     Action<TimeSpan>? onCachedKvOperationLatency = null
 ) : DecryptionKeyRetriever

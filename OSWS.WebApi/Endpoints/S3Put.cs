@@ -1,14 +1,10 @@
-using System.Security.Claims;
 using Amazon.S3;
 using Amazon.S3.Model;
-using Microsoft.EntityFrameworkCore;
-using OSWS.KeyManager.Persistence;
 using OSWS.Library;
 using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
 using OSWS.Models.Entities;
 using OSWS.ParquetSolver.Helpers;
-using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Interfaces;
 using OSWS.WebApi.Services;
 
@@ -16,10 +12,8 @@ namespace OSWS.WebApi.Endpoints;
 
 public class S3Put(
     IAmazonS3 s3Client,
-    IParquetWriter parquetWriter,
-    EncryptedFileCache fileCache,
     CurrentUser currentUser,
-    OswsContext db
+    ParquetUploadService parquetUploadService
 ) : IS3Put
 {
     public async Task<IResult> PutObject(
@@ -61,100 +55,28 @@ public class S3Put(
         string? tempFile = null;
         FileStream? tempFs = null;
 
-        // Encrypt parquet files before uploading to S3
         if (isParquetFile)
         {
-            MemoryStream? seekableStream = null;
+            var role = user.Roles.FirstOrDefault();
+            if (role is null)
+            {
+                httpRequest.HttpContext.Response.StatusCode = 403;
+                return Results.Text(
+                    ParamValidation.CreateErrorJson("User has no roles assigned"),
+                    "application/json"
+                );
+            }
+
             try
             {
-                // for now just take the first role, need to figure out how to do this nicely
-                var role = user.Roles.FirstOrDefault();
-                if (role is null)
-                {
-                    httpRequest.HttpContext.Response.StatusCode = 403;
-                    return Results.Text(
-                        ParamValidation.CreateErrorJson("User has no roles assigned"),
-                        "application/json"
-                    );
-                }
-
-                // Copy to MemoryStream to make it seekable for Parquet library
-                seekableStream = new MemoryStream();
-                await httpRequest.Body.CopyToAsync(seekableStream, cancellationToken);
-                seekableStream.Position = 0;
-
-                var (uploadStream, encryptionResult) = await parquetWriter.WriteParquetAsync(
-                    seekableStream,
-                    role.Name
+                var uploadStream = await parquetUploadService.ProcessAsync(
+                    httpRequest.Body,
+                    role,
+                    bucket,
+                    key,
+                    cancellationToken
                 );
 
-                // Persist column, key, and permission records
-                foreach (var colInfo in encryptionResult.Columns)
-                {
-                    var column = await db.Columns.FirstOrDefaultAsync(
-                        c => c.Name == colInfo.ColumnName,
-                        cancellationToken
-                    );
-
-                    if (column is null)
-                    {
-                        column = new Column { Name = colInfo.ColumnName };
-                        db.Columns.Add(column);
-                    }
-
-                    db.Keys.Add(
-                        new Key
-                        {
-                            Name = colInfo.KeyName,
-                            KeyVaultId = colInfo.KeyVaultId,
-                            Column = column,
-                        }
-                    );
-
-                    var permissionExists = await db.Permissions.AnyAsync(
-                        p => p.RoleId == role.Id && p.Column == column,
-                        cancellationToken
-                    );
-
-                    if (!permissionExists)
-                    {
-                        db.Permissions.Add(new Permission { Role = role, Column = column });
-                    }
-                }
-
-                await db.SaveChangesAsync(cancellationToken);
-
-                // Ensure stream is at position 0 and set content length
-                uploadStream.Position = 0;
-
-                // Cache the encrypted parquet stream asynchronously
-                // Create a copy for caching to avoid stream position conflicts with S3 upload
-                var cacheKey = EncryptedFileCache.GenerateCacheKey(bucket, key);
-                var cacheStream = new MemoryStream();
-                uploadStream.Position = 0;
-                await uploadStream.CopyToAsync(cacheStream, cancellationToken);
-                cacheStream.Position = 0;
-                uploadStream.Position = 0;
-
-                // Cache asynchronously (don't await to avoid blocking the upload)
-                _ = fileCache
-                    .SetAsync(cacheKey, cacheStream, cancellationToken)
-                    .ContinueWith(
-                        task =>
-                        {
-                            if (task.IsFaulted)
-                            {
-                                // Log cache failure but don't block the upload
-                                Console.WriteLine(
-                                    $"[OSWS] Cache failure for {cacheKey}: {task.Exception?.InnerException?.Message}"
-                                );
-                            }
-                            cacheStream.Dispose();
-                        },
-                        TaskScheduler.Default
-                    );
-
-                // For parquet files, we already have a seekable stream, so set it directly
                 req.InputStream = uploadStream;
 
                 // Set content length using reflection (ContentLength property)
@@ -162,6 +84,16 @@ public class S3Put(
                 if (contentLengthProp != null && contentLengthProp.CanWrite)
                 {
                     contentLengthProp.SetValue(req, uploadStream.Length);
+                }
+
+                // Forward metadata headers
+                foreach (var h in httpRequest.Headers)
+                {
+                    var hn = h.Key;
+                    if (hn.StartsWith("x-amz-meta-", StringComparison.OrdinalIgnoreCase))
+                    {
+                        req.Metadata[hn.Substring("x-amz-meta-".Length)] = h.Value.ToString();
+                    }
                 }
             }
             catch (Exception ex)
@@ -174,24 +106,15 @@ public class S3Put(
                     "application/json"
                 );
             }
-            finally
-            {
-                seekableStream?.DisposeAsync();
-            }
         }
         else
         {
-            // For non-parquet files, use the standard buffering flow
             req.InputStream = httpRequest.Body;
-        }
 
-        try
-        {
-            // Only call PreparePutRequestAsync for non-parquet files
-            if (!isParquetFile)
+            try
             {
                 var forceBuf = ConfigHelper.GetForceUploadBuffering();
-                var prep = await HttpHeaderHelper
+                var prep = await PutRequestHelper
                     .PreparePutRequestAsync(req, httpRequest, forceBuf, cancellationToken)
                     .ConfigureAwait(false);
                 if (prep.IsError)
@@ -206,28 +129,15 @@ public class S3Put(
                 tempFile = prep.TempFile;
                 tempFs = prep.TempFileStream;
             }
-            else
+            catch
             {
-                // For parquet files, handle metadata headers and content length ourselves
-                foreach (var h in httpRequest.Headers)
-                {
-                    var hn = h.Key;
-                    if (hn.StartsWith("x-amz-meta-", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var metaKey = hn.Substring("x-amz-meta-".Length);
-                        req.Metadata[metaKey] = h.Value.ToString();
-                    }
-                }
-            }
-        }
-        catch
-        {
-            if (tempFs == null)
+                if (tempFs == null)
+                    throw;
+                await tempFs.DisposeAsync().ConfigureAwait(false);
+                if (tempFile != null && File.Exists(tempFile))
+                    File.Delete(tempFile);
                 throw;
-            await tempFs.DisposeAsync().ConfigureAwait(false);
-            if (tempFile != null && File.Exists(tempFile))
-                File.Delete(tempFile);
-            throw;
+            }
         }
 
         PutObjectResponse resp;
@@ -244,7 +154,6 @@ public class S3Put(
         {
             try
             {
-                // Clean up encrypted parquet stream
                 if (isParquetFile && req.InputStream != null)
                 {
                     await req.InputStream.DisposeAsync().ConfigureAwait(false);
@@ -266,27 +175,10 @@ public class S3Put(
             }
         }
 
-        // Forward metadata headers should probably be moved into httpheaderhelper
-        await HttpHeaderHelper.AppendS3ETag(resp, httpRequest);
+        await S3MetadataHelper.AppendS3ETag(resp, httpRequest);
 
         S3ErrorHelper.AddBufferingDebugHeaders(httpRequest.HttpContext, tempFile);
 
-        var successJson =
-            "{"
-            + "\"etag\":"
-            + (
-                resp.ETag == null
-                    ? "null"
-                    : "\"" + ParamValidation.JsonEscape(resp.ETag).Trim('"') + "\""
-            )
-            + ","
-            + "\"versionId\":"
-            + (
-                resp.VersionId == null
-                    ? "null"
-                    : "\"" + ParamValidation.JsonEscape(resp.VersionId).Trim('"') + "\""
-            )
-            + "}";
-        return Results.Text(successJson, "application/json");
+        return Results.Json(new { etag = resp.ETag, versionId = resp.VersionId });
     }
 }

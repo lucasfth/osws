@@ -3,6 +3,7 @@ using Amazon.Runtime;
 using Amazon.S3;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using OSWS.Common.Configuration;
 using OSWS.KeyManager.Persistence;
@@ -45,6 +46,13 @@ namespace OSWS.Performance.Benchmarks.Helpers
             services.AddSingleton(cacheSettings);
             services.AddSingleton<DekCache>();
             services.AddSingleton<EncryptedFileCache>();
+
+            // Logging - for ILogger injection in benchmarks
+            services.AddLogging(builder =>
+            {
+                builder.AddConsole();
+                builder.SetMinimumLevel(LogLevel.Information);
+            });
 
             // Key Vault - same as WebApi
             services.AddSingleton<IKeyVaultProvider>(sp =>

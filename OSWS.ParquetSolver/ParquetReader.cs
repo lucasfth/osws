@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using OSWS.Common.Configuration;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
@@ -8,7 +10,9 @@ namespace OSWS.ParquetSolver;
 
 public class ParquetReader(
     IKeyVaultProvider keyVaultProvider,
-    DekCache dekCache,
+    IDekCache dekCache,
+    ILogger? logger = null,
+    EncryptionSettings? encryptionSettings = null,
     Action<TimeSpan>? onExternalKvOperationLatency = null,
     Action<TimeSpan>? onCachedKvOperationLatency = null
 ) : IParquetReader
@@ -37,10 +41,22 @@ public class ParquetReader(
     public Task<MemoryStream> ReadParquetAsync(Stream input, ISet<string>? allowedColumns = null) =>
         Task.Run(() => ReadParquetInternal(input, allowedColumns));
 
-    private MemoryStream ReadParquetInternal(Stream input, ISet<string>? allowedColumns)
+    private MemoryStream ReadParquetInternal(Stream input, ISet<string>? allowedColumns = null)
     {
-        // Build decryption properties - the KeyRetriever will call IKeyVaultProvider
-        // to decrypt DEKs stored in parquet key metadata, with caching to avoid repeated calls
+        // If encryption is disabled, just pass through the input stream
+        if (encryptionSettings is { DisableEncryption: true })
+        {
+            logger?.LogInformation(
+                "[ParquetReader] Encryption disabled, reading plaintext parquet"
+            );
+            var plainTextStream = new MemoryStream();
+            input.CopyTo(plainTextStream);
+            plainTextStream.Position = 0;
+            return plainTextStream;
+        }
+
+        logger?.LogInformation("[ParquetReader] Decrypting parquet file");
+
         using var decryptionProperties = Cryptography.BuildDecryptionProperties(
             keyVaultProvider,
             dekCache,
@@ -70,7 +86,7 @@ public class ParquetReader(
             keyValueMetadata
         );
 
-        Copy.CopyRowGroups(
+        RowGroupCopier.CopyRowGroups(
             writer,
             reader,
             numColumns,

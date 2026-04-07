@@ -1,0 +1,4585 @@
+{
+  "v": 2,
+  "commandline": "warp mixed --json=true --host=localhost:8000 --access-key=*REDACTED* --secret-key=*REDACTED* --bucket=warp-benchmark-test --concurrent=16 --disable-sha256-payload=true --objects=1000 --obj.size=1M --benchdata=/Users/lucasfreytorreshanson/Desktop/code/osws/OSWS.Performance.Benchmarks/warp-results/warp-8instances-osws-no-encryption --duration=1m0s",
+  "final": true,
+  "total": {
+    "Title": "Total (Final)",
+    "total_requests": 1824,
+    "total_objects": 1824,
+    "total_errors": 0,
+    "total_bytes": 1097000000,
+    "concurrency": 16,
+    "start_time": "2026-03-29T16:15:34.039203+02:00",
+    "end_time": "2026-03-29T16:16:35.401432875+02:00",
+    "first_errors": null,
+    "hosts": ["http://localhost:8000"],
+    "clients": ["93Me"],
+    "throughput": {
+      "start_time": "2026-03-29T16:15:36+02:00",
+      "end_time": "2026-03-29T16:16:38+02:00",
+      "segmented": {
+        "fastest_start": "2026-03-29T16:16:17+02:00",
+        "median_start": "2026-03-29T16:16:08+02:00",
+        "slowest_start": "2026-03-29T16:15:53+02:00",
+        "sorted_by": "bps",
+        "segments": [
+          {
+            "start": "2026-03-29T16:15:34+02:00",
+            "bytes_per_sec": 8010676,
+            "obj_per_sec": 20.68
+          },
+          {
+            "start": "2026-03-29T16:15:35+02:00",
+            "bytes_per_sec": 12028399,
+            "obj_per_sec": 17.77
+          },
+          {
+            "start": "2026-03-29T16:15:36+02:00",
+            "bytes_per_sec": 22062979,
+            "obj_per_sec": 35.46
+          },
+          {
+            "start": "2026-03-29T16:15:37+02:00",
+            "bytes_per_sec": 22867061,
+            "obj_per_sec": 36.75
+          },
+          {
+            "start": "2026-03-29T16:15:38+02:00",
+            "bytes_per_sec": 20203576,
+            "obj_per_sec": 28.24
+          },
+          {
+            "start": "2026-03-29T16:15:39+02:00",
+            "bytes_per_sec": 21277018,
+            "obj_per_sec": 40.66
+          },
+          {
+            "start": "2026-03-29T16:15:40+02:00",
+            "bytes_per_sec": 23262792,
+            "obj_per_sec": 38.79
+          },
+          {
+            "start": "2026-03-29T16:15:41+02:00",
+            "bytes_per_sec": 22702502,
+            "obj_per_sec": 32.44
+          },
+          {
+            "start": "2026-03-29T16:15:42+02:00",
+            "bytes_per_sec": 11193102,
+            "obj_per_sec": 23.54
+          },
+          {
+            "start": "2026-03-29T16:15:43+02:00",
+            "bytes_per_sec": 8538788,
+            "obj_per_sec": 10.17
+          },
+          {
+            "start": "2026-03-29T16:15:44+02:00",
+            "bytes_per_sec": 9067685,
+            "obj_per_sec": 20.23
+          },
+          {
+            "start": "2026-03-29T16:15:45+02:00",
+            "bytes_per_sec": 17494104,
+            "obj_per_sec": 19.06
+          },
+          {
+            "start": "2026-03-29T16:15:46+02:00",
+            "bytes_per_sec": 22580496,
+            "obj_per_sec": 35.34
+          },
+          {
+            "start": "2026-03-29T16:15:47+02:00",
+            "bytes_per_sec": 24668104,
+            "obj_per_sec": 42.27
+          },
+          {
+            "start": "2026-03-29T16:15:48+02:00",
+            "bytes_per_sec": 23176142,
+            "obj_per_sec": 40.47
+          },
+          {
+            "start": "2026-03-29T16:15:49+02:00",
+            "bytes_per_sec": 25302257,
+            "obj_per_sec": 34.83
+          },
+          {
+            "start": "2026-03-29T16:15:50+02:00",
+            "bytes_per_sec": 22467758,
+            "obj_per_sec": 45.83
+          },
+          {
+            "start": "2026-03-29T16:15:51+02:00",
+            "bytes_per_sec": 19167563,
+            "obj_per_sec": 32.74
+          },
+          {
+            "start": "2026-03-29T16:15:52+02:00",
+            "bytes_per_sec": 8660582,
+            "obj_per_sec": 12.64
+          },
+          {
+            "start": "2026-03-29T16:15:53+02:00",
+            "bytes_per_sec": 7316661,
+            "obj_per_sec": 15.77
+          },
+          {
+            "start": "2026-03-29T16:15:54+02:00",
+            "bytes_per_sec": 11675841,
+            "obj_per_sec": 14.68
+          },
+          {
+            "start": "2026-03-29T16:15:55+02:00",
+            "bytes_per_sec": 22514379,
+            "obj_per_sec": 37.26
+          },
+          {
+            "start": "2026-03-29T16:15:56+02:00",
+            "bytes_per_sec": 22596392,
+            "obj_per_sec": 39.88
+          },
+          {
+            "start": "2026-03-29T16:15:57+02:00",
+            "bytes_per_sec": 24217295,
+            "obj_per_sec": 42.96
+          },
+          {
+            "start": "2026-03-29T16:15:58+02:00",
+            "bytes_per_sec": 26286649,
+            "obj_per_sec": 41.1
+          },
+          {
+            "start": "2026-03-29T16:15:59+02:00",
+            "bytes_per_sec": 25726976,
+            "obj_per_sec": 38.67
+          },
+          {
+            "start": "2026-03-29T16:16:00+02:00",
+            "bytes_per_sec": 24438914,
+            "obj_per_sec": 46.06
+          },
+          {
+            "start": "2026-03-29T16:16:01+02:00",
+            "bytes_per_sec": 14225602,
+            "obj_per_sec": 20.16
+          },
+          {
+            "start": "2026-03-29T16:16:02+02:00",
+            "bytes_per_sec": 7699721,
+            "obj_per_sec": 11.3
+          },
+          {
+            "start": "2026-03-29T16:16:03+02:00",
+            "bytes_per_sec": 8196415,
+            "obj_per_sec": 17.43
+          },
+          {
+            "start": "2026-03-29T16:16:04+02:00",
+            "bytes_per_sec": 14726581,
+            "obj_per_sec": 27.44
+          },
+          {
+            "start": "2026-03-29T16:16:05+02:00",
+            "bytes_per_sec": 19736009,
+            "obj_per_sec": 34.72
+          },
+          {
+            "start": "2026-03-29T16:16:06+02:00",
+            "bytes_per_sec": 19910235,
+            "obj_per_sec": 30.87
+          },
+          {
+            "start": "2026-03-29T16:16:07+02:00",
+            "bytes_per_sec": 19138605,
+            "obj_per_sec": 41.88
+          },
+          {
+            "start": "2026-03-29T16:16:08+02:00",
+            "bytes_per_sec": 20476538,
+            "obj_per_sec": 31.25
+          },
+          {
+            "start": "2026-03-29T16:16:09+02:00",
+            "bytes_per_sec": 18674108,
+            "obj_per_sec": 32.34
+          },
+          {
+            "start": "2026-03-29T16:16:10+02:00",
+            "bytes_per_sec": 18968188,
+            "obj_per_sec": 27.3
+          },
+          {
+            "start": "2026-03-29T16:16:11+02:00",
+            "bytes_per_sec": 9544970,
+            "obj_per_sec": 15.54
+          },
+          {
+            "start": "2026-03-29T16:16:12+02:00",
+            "bytes_per_sec": 8951052,
+            "obj_per_sec": 9.06
+          },
+          {
+            "start": "2026-03-29T16:16:13+02:00",
+            "bytes_per_sec": 9070390,
+            "obj_per_sec": 22.39
+          },
+          {
+            "start": "2026-03-29T16:16:14+02:00",
+            "bytes_per_sec": 20861684,
+            "obj_per_sec": 32.43
+          },
+          {
+            "start": "2026-03-29T16:16:15+02:00",
+            "bytes_per_sec": 23697358,
+            "obj_per_sec": 37.7
+          },
+          {
+            "start": "2026-03-29T16:16:16+02:00",
+            "bytes_per_sec": 25117846,
+            "obj_per_sec": 43.12
+          },
+          {
+            "start": "2026-03-29T16:16:17+02:00",
+            "bytes_per_sec": 26921159,
+            "obj_per_sec": 40.92
+          },
+          {
+            "start": "2026-03-29T16:16:18+02:00",
+            "bytes_per_sec": 25844270,
+            "obj_per_sec": 37.27
+          },
+          {
+            "start": "2026-03-29T16:16:19+02:00",
+            "bytes_per_sec": 25403357,
+            "obj_per_sec": 47.88
+          },
+          {
+            "start": "2026-03-29T16:16:20+02:00",
+            "bytes_per_sec": 17322017,
+            "obj_per_sec": 31.41
+          },
+          {
+            "start": "2026-03-29T16:16:21+02:00",
+            "bytes_per_sec": 9791098,
+            "obj_per_sec": 11.29
+          },
+          {
+            "start": "2026-03-29T16:16:22+02:00",
+            "bytes_per_sec": 9856237,
+            "obj_per_sec": 13.61
+          },
+          {
+            "start": "2026-03-29T16:16:23+02:00",
+            "bytes_per_sec": 14467654,
+            "obj_per_sec": 22.49
+          },
+          {
+            "start": "2026-03-29T16:16:24+02:00",
+            "bytes_per_sec": 23959289,
+            "obj_per_sec": 49.26
+          },
+          {
+            "start": "2026-03-29T16:16:25+02:00",
+            "bytes_per_sec": 25031773,
+            "obj_per_sec": 38.1
+          },
+          {
+            "start": "2026-03-29T16:16:26+02:00",
+            "bytes_per_sec": 26827399,
+            "obj_per_sec": 45.17
+          },
+          {
+            "start": "2026-03-29T16:16:27+02:00",
+            "bytes_per_sec": 24060074,
+            "obj_per_sec": 41.57
+          },
+          {
+            "start": "2026-03-29T16:16:28+02:00",
+            "bytes_per_sec": 26139962,
+            "obj_per_sec": 39.46
+          },
+          {
+            "start": "2026-03-29T16:16:29+02:00",
+            "bytes_per_sec": 23030560,
+            "obj_per_sec": 42.21
+          },
+          {
+            "start": "2026-03-29T16:16:30+02:00",
+            "bytes_per_sec": 10930373,
+            "obj_per_sec": 16.8
+          },
+          {
+            "start": "2026-03-29T16:16:31+02:00",
+            "bytes_per_sec": 7629552,
+            "obj_per_sec": 16.37
+          }
+        ],
+        "segment_duration_millis": 1000,
+        "fastest_bps": 26921159,
+        "fastest_ops": 40.92,
+        "median_bps": 20476538,
+        "median_ops": 31.25,
+        "slowest_bps": 7316661,
+        "slowest_ops": 15.77
+      },
+      "errors": 0,
+      "measure_duration_millis": 58000,
+      "bytes": 1065714795.8049409,
+      "objects": 1773.0503341803499,
+      "ops": 1772
+    },
+    "throughput_by_host": {
+      "http://localhost:8000": {
+        "start_time": "2026-03-29T16:15:34.039203+02:00",
+        "end_time": "2026-03-29T16:16:35.401432875+02:00",
+        "errors": 0,
+        "measure_duration_millis": 61361,
+        "bytes": 1097000000,
+        "objects": 1824,
+        "ops": 1824
+      }
+    },
+    "throughput_by_client": {
+      "93Me": {
+        "start_time": "2026-03-29T16:15:34.039203+02:00",
+        "end_time": "2026-03-29T16:16:35.401432875+02:00",
+        "errors": 0,
+        "measure_duration_millis": 61361,
+        "bytes": 1097000000,
+        "objects": 1824,
+        "ops": 1824
+      }
+    },
+    "requests_by_client": {
+      "93Me": [
+        {
+          "start_time": "2026-03-29T16:15:34+02:00",
+          "end_time": "2026-03-29T16:15:44+02:00",
+          "multi_sized_requests": {
+            "by_size": [
+              {
+                "first_byte": {
+                  "average_millis": 284.448931,
+                  "fastest_millis": 84.598584,
+                  "p25_millis": 191.617375,
+                  "median_millis": 250.350291,
+                  "p75_millis": 334.778833,
+                  "p90_millis": 448.196375,
+                  "p99_millis": 889.748,
+                  "slowest_millis": 889.748,
+                  "std_dev_millis": 143.996963
+                },
+                "min_size_string": "1 B",
+                "max_size_string": "1.0 MiB",
+                "bps_median": 1687595.7,
+                "avg_duration_millis": 779.05815,
+                "bps_average": 1283601.2,
+                "requests": 166,
+                "bps_90": 704740.3,
+                "bps_99": 419473.4,
+                "bps_fastest": 6785123.6,
+                "bps_slowest": 283413,
+                "avg_obj_size": 1000000,
+                "max_size": 1048576,
+                "min_size": 1,
+                "merged_entries": 1
+              }
+            ],
+            "requests": 283,
+            "avg_obj_size": 586572,
+            "merged_entries": 1
+          }
+        },
+        {
+          "start_time": "2026-03-29T16:15:44+02:00",
+          "end_time": "2026-03-29T16:15:54+02:00",
+          "multi_sized_requests": {
+            "by_size": [
+              {
+                "first_byte": {
+                  "average_millis": 269.449264,
+                  "fastest_millis": 76.460833,
+                  "p25_millis": 161.828458,
+                  "median_millis": 220.148,
+                  "p75_millis": 291.723834,
+                  "p90_millis": 579.03325,
+                  "p99_millis": 902.44875,
+                  "slowest_millis": 902.44875,
+                  "std_dev_millis": 179.16705
+                },
+                "min_size_string": "1 B",
+                "max_size_string": "1.0 MiB",
+                "bps_median": 1624576.6,
+                "avg_duration_millis": 769.674809,
+                "bps_average": 1299250,
+                "requests": 185,
+                "bps_90": 661716.7,
+                "bps_99": 308024.9,
+                "bps_fastest": 7792541.8,
+                "bps_slowest": 261894.4,
+                "avg_obj_size": 1000000,
+                "max_size": 1048576,
+                "min_size": 1,
+                "merged_entries": 1
+              }
+            ],
+            "requests": 306,
+            "avg_obj_size": 604575,
+            "merged_entries": 1
+          }
+        },
+        {
+          "start_time": "2026-03-29T16:15:54+02:00",
+          "end_time": "2026-03-29T16:16:04+02:00",
+          "multi_sized_requests": {
+            "by_size": [
+              {
+                "first_byte": {
+                  "average_millis": 249.204395,
+                  "fastest_millis": 81.462292,
+                  "p25_millis": 134.591125,
+                  "median_millis": 211.03575,
+                  "p75_millis": 309.937041,
+                  "p90_millis": 429.490542,
+                  "p99_millis": 1434.26675,
+                  "slowest_millis": 1434.26675,
+                  "std_dev_millis": 172.945261
+                },
+                "min_size_string": "1 B",
+                "max_size_string": "1.0 MiB",
+                "bps_median": 1896158.2,
+                "avg_duration_millis": 729.074639,
+                "bps_average": 1371601.7,
+                "requests": 187,
+                "bps_90": 734882.1,
+                "bps_99": 275040.5,
+                "bps_fastest": 7198588.4,
+                "bps_slowest": 255607.5,
+                "avg_obj_size": 1000000,
+                "max_size": 1048576,
+                "min_size": 1,
+                "merged_entries": 1
+              }
+            ],
+            "requests": 309,
+            "avg_obj_size": 605177,
+            "merged_entries": 1
+          }
+        },
+        {
+          "start_time": "2026-03-29T16:16:04+02:00",
+          "end_time": "2026-03-29T16:16:14+02:00",
+          "multi_sized_requests": {
+            "by_size": [
+              {
+                "first_byte": {
+                  "average_millis": 302.137588,
+                  "fastest_millis": 100.670667,
+                  "p25_millis": 159.3705,
+                  "median_millis": 228.508458,
+                  "p75_millis": 324.338042,
+                  "p90_millis": 491.626166,
+                  "p99_millis": 4447.002667,
+                  "slowest_millis": 4447.002667,
+                  "std_dev_millis": 412.801854
+                },
+                "min_size_string": "1 B",
+                "max_size_string": "1.0 MiB",
+                "bps_median": 1472660.8,
+                "avg_duration_millis": 877.242715,
+                "bps_average": 1139935.4,
+                "requests": 157,
+                "bps_90": 596718.1,
+                "bps_99": 248498.7,
+                "bps_fastest": 6708681.6,
+                "bps_slowest": 172098.5,
+                "avg_obj_size": 1000000,
+                "max_size": 1048576,
+                "min_size": 1,
+                "merged_entries": 1
+              }
+            ],
+            "requests": 270,
+            "avg_obj_size": 581481,
+            "merged_entries": 1
+          }
+        },
+        {
+          "start_time": "2026-03-29T16:16:14+02:00",
+          "end_time": "2026-03-29T16:16:24+02:00",
+          "multi_sized_requests": {
+            "by_size": [
+              {
+                "first_byte": {
+                  "average_millis": 215.034728,
+                  "fastest_millis": 83.711625,
+                  "p25_millis": 119.334333,
+                  "median_millis": 173.83425,
+                  "p75_millis": 248.616833,
+                  "p90_millis": 401.276416,
+                  "p99_millis": 1000.269125,
+                  "slowest_millis": 1000.269125,
+                  "std_dev_millis": 143.839584
+                },
+                "min_size_string": "1 B",
+                "max_size_string": "1.0 MiB",
+                "bps_median": 1654812.6,
+                "avg_duration_millis": 737.89549,
+                "bps_average": 1355205.5,
+                "requests": 193,
+                "bps_90": 727538.3,
+                "bps_99": 293747.4,
+                "bps_fastest": 8021741.6,
+                "bps_slowest": 268749.5,
+                "avg_obj_size": 1000000,
+                "max_size": 1048576,
+                "min_size": 1,
+                "merged_entries": 1
+              }
+            ],
+            "requests": 313,
+            "avg_obj_size": 616613,
+            "merged_entries": 1
+          }
+        },
+        {
+          "start_time": "2026-03-29T16:16:24+02:00",
+          "end_time": "2026-03-29T16:16:34+02:00",
+          "multi_sized_requests": {
+            "by_size": [
+              {
+                "first_byte": {
+                  "average_millis": 228.53064,
+                  "fastest_millis": 79.441333,
+                  "p25_millis": 130.280917,
+                  "median_millis": 184.900042,
+                  "p75_millis": 292.870667,
+                  "p90_millis": 451.850541,
+                  "p99_millis": 712.47775,
+                  "slowest_millis": 712.47775,
+                  "std_dev_millis": 136.244279
+                },
+                "min_size_string": "1 B",
+                "max_size_string": "1.0 MiB",
+                "bps_median": 1886788.4,
+                "avg_duration_millis": 730.948932,
+                "bps_average": 1368084.6,
+                "requests": 193,
+                "bps_90": 552036.6,
+                "bps_99": 364797,
+                "bps_fastest": 7946559.4,
+                "bps_slowest": 323930.8,
+                "avg_obj_size": 1000000,
+                "max_size": 1048576,
+                "min_size": 1,
+                "merged_entries": 1
+              }
+            ],
+            "requests": 326,
+            "avg_obj_size": 592024,
+            "merged_entries": 1
+          }
+        },
+        {
+          "start_time": "2026-03-29T16:16:34+02:00",
+          "end_time": "2026-03-29T16:16:44+02:00",
+          "multi_sized_requests": {
+            "by_size": [
+              {
+                "min_size_string": "",
+                "max_size_string": "",
+                "bps_median": 0,
+                "avg_duration_millis": 0,
+                "bps_average": 0,
+                "requests": 0,
+                "bps_90": 0,
+                "bps_99": 0,
+                "bps_fastest": 0,
+                "bps_slowest": 0,
+                "avg_obj_size": 0,
+                "max_size": 0,
+                "min_size": 0,
+                "merged_entries": 0
+              },
+              {
+                "min_size_string": "",
+                "max_size_string": "",
+                "bps_median": 0,
+                "avg_duration_millis": 0,
+                "bps_average": 0,
+                "requests": 0,
+                "bps_90": 0,
+                "bps_99": 0,
+                "bps_fastest": 0,
+                "bps_slowest": 0,
+                "avg_obj_size": 0,
+                "max_size": 0,
+                "min_size": 0,
+                "merged_entries": 0
+              },
+              {
+                "min_size_string": "",
+                "max_size_string": "",
+                "bps_median": 0,
+                "avg_duration_millis": 0,
+                "bps_average": 0,
+                "requests": 0,
+                "bps_90": 0,
+                "bps_99": 0,
+                "bps_fastest": 0,
+                "bps_slowest": 0,
+                "avg_obj_size": 0,
+                "max_size": 0,
+                "min_size": 0,
+                "merged_entries": 0
+              },
+              {
+                "min_size_string": "",
+                "max_size_string": "",
+                "bps_median": 0,
+                "avg_duration_millis": 0,
+                "bps_average": 0,
+                "requests": 0,
+                "bps_90": 0,
+                "bps_99": 0,
+                "bps_fastest": 0,
+                "bps_slowest": 0,
+                "avg_obj_size": 0,
+                "max_size": 0,
+                "min_size": 0,
+                "merged_entries": 0
+              },
+              {
+                "min_size_string": "",
+                "max_size_string": "",
+                "bps_median": 0,
+                "avg_duration_millis": 0,
+                "bps_average": 0,
+                "requests": 0,
+                "bps_90": 0,
+                "bps_99": 0,
+                "bps_fastest": 0,
+                "bps_slowest": 0,
+                "avg_obj_size": 0,
+                "max_size": 0,
+                "min_size": 0,
+                "merged_entries": 0
+              },
+              {
+                "first_byte": {
+                  "average_millis": 331.919579,
+                  "fastest_millis": 125.886791,
+                  "p25_millis": 207.939708,
+                  "median_millis": 282.718042,
+                  "p75_millis": 671.1655,
+                  "p90_millis": 685.640041,
+                  "p99_millis": 685.640041,
+                  "slowest_millis": 685.640041,
+                  "std_dev_millis": 204.863382
+                },
+                "min_size_string": "100KiB",
+                "max_size_string": "1MiB",
+                "bps_median": 796595.5,
+                "avg_duration_millis": 1493.437614,
+                "bps_average": 669596.1,
+                "requests": 16,
+                "bps_90": 419063.5,
+                "bps_99": 308607,
+                "bps_fastest": 1458682.3,
+                "bps_slowest": 308607,
+                "avg_obj_size": 1000000,
+                "max_size": 1048576,
+                "min_size": 102400,
+                "merged_entries": 1
+              },
+              {
+                "min_size_string": "",
+                "max_size_string": "",
+                "bps_median": 0,
+                "avg_duration_millis": 0,
+                "bps_average": 0,
+                "requests": 0,
+                "bps_90": 0,
+                "bps_99": 0,
+                "bps_fastest": 0,
+                "bps_slowest": 0,
+                "avg_obj_size": 0,
+                "max_size": 0,
+                "min_size": 0,
+                "merged_entries": 0
+              }
+            ],
+            "requests": 17,
+            "avg_obj_size": 941176,
+            "merged_entries": 1
+          }
+        }
+      ]
+    }
+  },
+  "by_op_type": {
+    "DELETE": {
+      "Title": "Operation: DELETE (Final)",
+      "total_requests": 180,
+      "total_objects": 180,
+      "total_errors": 0,
+      "total_bytes": 0,
+      "concurrency": 16,
+      "start_time": "2026-03-29T16:15:34.039647+02:00",
+      "end_time": "2026-03-29T16:16:33.878869584+02:00",
+      "first_errors": null,
+      "hosts": ["http://localhost:8000"],
+      "clients": ["93Me"],
+      "throughput": {
+        "start_time": "2026-03-29T16:15:36+02:00",
+        "end_time": "2026-03-29T16:16:36+02:00",
+        "segmented": {
+          "fastest_start": "2026-03-29T16:15:39+02:00",
+          "median_start": "2026-03-29T16:15:44+02:00",
+          "slowest_start": "2026-03-29T16:16:12+02:00",
+          "sorted_by": "ops",
+          "segments": [
+            {
+              "start": "2026-03-29T16:15:34+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1.95
+            },
+            {
+              "start": "2026-03-29T16:15:35+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0.88
+            },
+            {
+              "start": "2026-03-29T16:15:36+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 3.12
+            },
+            {
+              "start": "2026-03-29T16:15:37+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2.75
+            },
+            {
+              "start": "2026-03-29T16:15:38+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2.25
+            },
+            {
+              "start": "2026-03-29T16:15:39+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 8.69
+            },
+            {
+              "start": "2026-03-29T16:15:40+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 3.22
+            },
+            {
+              "start": "2026-03-29T16:15:41+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 3.59
+            },
+            {
+              "start": "2026-03-29T16:15:42+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 3.5
+            },
+            {
+              "start": "2026-03-29T16:15:43+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0.95
+            },
+            {
+              "start": "2026-03-29T16:15:44+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2.84
+            },
+            {
+              "start": "2026-03-29T16:15:45+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1.21
+            },
+            {
+              "start": "2026-03-29T16:15:46+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1.48
+            },
+            {
+              "start": "2026-03-29T16:15:47+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4.52
+            },
+            {
+              "start": "2026-03-29T16:15:48+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1
+            },
+            {
+              "start": "2026-03-29T16:15:49+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 3
+            },
+            {
+              "start": "2026-03-29T16:15:50+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 7.7
+            },
+            {
+              "start": "2026-03-29T16:15:51+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1.78
+            },
+            {
+              "start": "2026-03-29T16:15:52+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0.52
+            },
+            {
+              "start": "2026-03-29T16:15:53+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1
+            },
+            {
+              "start": "2026-03-29T16:15:54+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0
+            },
+            {
+              "start": "2026-03-29T16:15:55+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 3
+            },
+            {
+              "start": "2026-03-29T16:15:56+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2
+            },
+            {
+              "start": "2026-03-29T16:15:57+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4.9
+            },
+            {
+              "start": "2026-03-29T16:15:58+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 5.7
+            },
+            {
+              "start": "2026-03-29T16:15:59+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2.47
+            },
+            {
+              "start": "2026-03-29T16:16:00+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4.93
+            },
+            {
+              "start": "2026-03-29T16:16:01+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1
+            },
+            {
+              "start": "2026-03-29T16:16:02+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1.6
+            },
+            {
+              "start": "2026-03-29T16:16:03+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4.4
+            },
+            {
+              "start": "2026-03-29T16:16:04+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 3
+            },
+            {
+              "start": "2026-03-29T16:16:05+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 5
+            },
+            {
+              "start": "2026-03-29T16:16:06+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4
+            },
+            {
+              "start": "2026-03-29T16:16:07+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4
+            },
+            {
+              "start": "2026-03-29T16:16:08+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2
+            },
+            {
+              "start": "2026-03-29T16:16:09+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4
+            },
+            {
+              "start": "2026-03-29T16:16:10+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2
+            },
+            {
+              "start": "2026-03-29T16:16:11+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1
+            },
+            {
+              "start": "2026-03-29T16:16:12+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0
+            },
+            {
+              "start": "2026-03-29T16:16:13+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4.73
+            },
+            {
+              "start": "2026-03-29T16:16:14+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 5.27
+            },
+            {
+              "start": "2026-03-29T16:16:15+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 3
+            },
+            {
+              "start": "2026-03-29T16:16:16+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 6
+            },
+            {
+              "start": "2026-03-29T16:16:17+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 5
+            },
+            {
+              "start": "2026-03-29T16:16:18+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1
+            },
+            {
+              "start": "2026-03-29T16:16:19+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 5
+            },
+            {
+              "start": "2026-03-29T16:16:20+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1
+            },
+            {
+              "start": "2026-03-29T16:16:21+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0.42
+            },
+            {
+              "start": "2026-03-29T16:16:22+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2.58
+            },
+            {
+              "start": "2026-03-29T16:16:23+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1
+            },
+            {
+              "start": "2026-03-29T16:16:24+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 7
+            },
+            {
+              "start": "2026-03-29T16:16:25+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2.55
+            },
+            {
+              "start": "2026-03-29T16:16:26+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2.24
+            },
+            {
+              "start": "2026-03-29T16:16:27+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2.95
+            },
+            {
+              "start": "2026-03-29T16:16:28+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1.26
+            },
+            {
+              "start": "2026-03-29T16:16:29+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 7
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 0,
+          "fastest_ops": 8.69,
+          "median_bps": 0,
+          "median_ops": 2.84,
+          "slowest_bps": 0,
+          "slowest_ops": 0
+        },
+        "errors": 0,
+        "measure_duration_millis": 56000,
+        "bytes": 0,
+        "objects": 168.95424869121402,
+        "ops": 167
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-29T16:15:34.039647+02:00",
+          "end_time": "2026-03-29T16:16:33.878869584+02:00",
+          "errors": 0,
+          "measure_duration_millis": 59838,
+          "bytes": 0,
+          "objects": 180,
+          "ops": 180
+        }
+      },
+      "throughput_by_client": {
+        "93Me": {
+          "start_time": "2026-03-29T16:15:34.039647+02:00",
+          "end_time": "2026-03-29T16:16:33.878869584+02:00",
+          "errors": 0,
+          "measure_duration_millis": 59838,
+          "bytes": 0,
+          "objects": 180,
+          "ops": 180
+        }
+      },
+      "requests_by_client": {
+        "93Me": [
+          {
+            "start_time": "2026-03-29T16:15:34+02:00",
+            "end_time": "2026-03-29T16:15:44+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 147.613292,
+              "fastest_millis": 92.286541,
+              "slowest_millis": 529.834208,
+              "std_dev_millis": 118.202048,
+              "dur_99_millis": 529.834208,
+              "dur_90_millis": 430.836917,
+              "dur_avg_millis": 191.723528,
+              "requests": 32,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:44+02:00",
+            "end_time": "2026-03-29T16:15:54+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 148.863333,
+              "fastest_millis": 99.690959,
+              "slowest_millis": 685.402041,
+              "std_dev_millis": 119.923118,
+              "dur_99_millis": 685.402041,
+              "dur_90_millis": 239.053084,
+              "dur_avg_millis": 174.942824,
+              "requests": 28,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:54+02:00",
+            "end_time": "2026-03-29T16:16:04+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 144.69425,
+              "fastest_millis": 99.574417,
+              "slowest_millis": 522.562792,
+              "std_dev_millis": 102.865469,
+              "dur_99_millis": 522.562792,
+              "dur_90_millis": 239.0955,
+              "dur_avg_millis": 174.385051,
+              "requests": 26,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:04+02:00",
+            "end_time": "2026-03-29T16:16:14+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 187.238916,
+              "fastest_millis": 115.98275,
+              "slowest_millis": 463.554667,
+              "std_dev_millis": 98.38869,
+              "dur_99_millis": 463.554667,
+              "dur_90_millis": 404.20225,
+              "dur_avg_millis": 214.790175,
+              "requests": 31,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:14+02:00",
+            "end_time": "2026-03-29T16:16:24+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 139.407542,
+              "fastest_millis": 93.579,
+              "slowest_millis": 529.461708,
+              "std_dev_millis": 95.531349,
+              "dur_99_millis": 529.461708,
+              "dur_90_millis": 272.619958,
+              "dur_avg_millis": 162.806025,
+              "requests": 31,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:24+02:00",
+            "end_time": "2026-03-29T16:16:34+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 147.284125,
+              "fastest_millis": 102.35825,
+              "slowest_millis": 787.961083,
+              "std_dev_millis": 176.114975,
+              "dur_99_millis": 787.961083,
+              "dur_90_millis": 614.328583,
+              "dur_avg_millis": 227.182139,
+              "requests": 32,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    },
+    "GET": {
+      "Title": "Operation: GET (Final)",
+      "total_requests": 816,
+      "total_objects": 816,
+      "total_errors": 0,
+      "total_bytes": 816000000,
+      "concurrency": 16,
+      "start_time": "2026-03-29T16:15:34.039209+02:00",
+      "end_time": "2026-03-29T16:16:35.401432875+02:00",
+      "first_errors": null,
+      "hosts": ["http://localhost:8000"],
+      "clients": ["93Me"],
+      "throughput": {
+        "start_time": "2026-03-29T16:15:36+02:00",
+        "end_time": "2026-03-29T16:16:38+02:00",
+        "segmented": {
+          "fastest_start": "2026-03-29T16:16:19+02:00",
+          "median_start": "2026-03-29T16:15:39+02:00",
+          "slowest_start": "2026-03-29T16:16:12+02:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-29T16:15:34+02:00",
+              "bytes_per_sec": 4867821,
+              "obj_per_sec": 4.87
+            },
+            {
+              "start": "2026-03-29T16:15:35+02:00",
+              "bytes_per_sec": 7446962,
+              "obj_per_sec": 7.45
+            },
+            {
+              "start": "2026-03-29T16:15:36+02:00",
+              "bytes_per_sec": 13087723,
+              "obj_per_sec": 13.09
+            },
+            {
+              "start": "2026-03-29T16:15:37+02:00",
+              "bytes_per_sec": 20515899,
+              "obj_per_sec": 20.52
+            },
+            {
+              "start": "2026-03-29T16:15:38+02:00",
+              "bytes_per_sec": 9626882,
+              "obj_per_sec": 9.63
+            },
+            {
+              "start": "2026-03-29T16:15:39+02:00",
+              "bytes_per_sec": 14199968,
+              "obj_per_sec": 14.2
+            },
+            {
+              "start": "2026-03-29T16:15:40+02:00",
+              "bytes_per_sec": 17233256,
+              "obj_per_sec": 17.23
+            },
+            {
+              "start": "2026-03-29T16:15:41+02:00",
+              "bytes_per_sec": 16895517,
+              "obj_per_sec": 16.9
+            },
+            {
+              "start": "2026-03-29T16:15:42+02:00",
+              "bytes_per_sec": 9071648,
+              "obj_per_sec": 9.07
+            },
+            {
+              "start": "2026-03-29T16:15:43+02:00",
+              "bytes_per_sec": 6797052,
+              "obj_per_sec": 6.8
+            },
+            {
+              "start": "2026-03-29T16:15:44+02:00",
+              "bytes_per_sec": 7217643,
+              "obj_per_sec": 7.22
+            },
+            {
+              "start": "2026-03-29T16:15:45+02:00",
+              "bytes_per_sec": 12566728,
+              "obj_per_sec": 12.57
+            },
+            {
+              "start": "2026-03-29T16:15:46+02:00",
+              "bytes_per_sec": 18254463,
+              "obj_per_sec": 18.25
+            },
+            {
+              "start": "2026-03-29T16:15:47+02:00",
+              "bytes_per_sec": 24352456,
+              "obj_per_sec": 24.35
+            },
+            {
+              "start": "2026-03-29T16:15:48+02:00",
+              "bytes_per_sec": 17747042,
+              "obj_per_sec": 17.75
+            },
+            {
+              "start": "2026-03-29T16:15:49+02:00",
+              "bytes_per_sec": 17873423,
+              "obj_per_sec": 17.87
+            },
+            {
+              "start": "2026-03-29T16:15:50+02:00",
+              "bytes_per_sec": 16086524,
+              "obj_per_sec": 16.09
+            },
+            {
+              "start": "2026-03-29T16:15:51+02:00",
+              "bytes_per_sec": 12809853,
+              "obj_per_sec": 12.81
+            },
+            {
+              "start": "2026-03-29T16:15:52+02:00",
+              "bytes_per_sec": 4854799,
+              "obj_per_sec": 4.85
+            },
+            {
+              "start": "2026-03-29T16:15:53+02:00",
+              "bytes_per_sec": 5568532,
+              "obj_per_sec": 5.57
+            },
+            {
+              "start": "2026-03-29T16:15:54+02:00",
+              "bytes_per_sec": 8567121,
+              "obj_per_sec": 8.57
+            },
+            {
+              "start": "2026-03-29T16:15:55+02:00",
+              "bytes_per_sec": 17530612,
+              "obj_per_sec": 17.53
+            },
+            {
+              "start": "2026-03-29T16:15:56+02:00",
+              "bytes_per_sec": 16658053,
+              "obj_per_sec": 16.66
+            },
+            {
+              "start": "2026-03-29T16:15:57+02:00",
+              "bytes_per_sec": 17287775,
+              "obj_per_sec": 17.29
+            },
+            {
+              "start": "2026-03-29T16:15:58+02:00",
+              "bytes_per_sec": 19218711,
+              "obj_per_sec": 19.22
+            },
+            {
+              "start": "2026-03-29T16:15:59+02:00",
+              "bytes_per_sec": 16191048,
+              "obj_per_sec": 16.19
+            },
+            {
+              "start": "2026-03-29T16:16:00+02:00",
+              "bytes_per_sec": 19580353,
+              "obj_per_sec": 19.58
+            },
+            {
+              "start": "2026-03-29T16:16:01+02:00",
+              "bytes_per_sec": 12651720,
+              "obj_per_sec": 12.65
+            },
+            {
+              "start": "2026-03-29T16:16:02+02:00",
+              "bytes_per_sec": 7043220,
+              "obj_per_sec": 7.04
+            },
+            {
+              "start": "2026-03-29T16:16:03+02:00",
+              "bytes_per_sec": 6354434,
+              "obj_per_sec": 6.35
+            },
+            {
+              "start": "2026-03-29T16:16:04+02:00",
+              "bytes_per_sec": 9767926,
+              "obj_per_sec": 9.77
+            },
+            {
+              "start": "2026-03-29T16:16:05+02:00",
+              "bytes_per_sec": 18340591,
+              "obj_per_sec": 18.34
+            },
+            {
+              "start": "2026-03-29T16:16:06+02:00",
+              "bytes_per_sec": 18175821,
+              "obj_per_sec": 18.18
+            },
+            {
+              "start": "2026-03-29T16:16:07+02:00",
+              "bytes_per_sec": 12468976,
+              "obj_per_sec": 12.47
+            },
+            {
+              "start": "2026-03-29T16:16:08+02:00",
+              "bytes_per_sec": 12264532,
+              "obj_per_sec": 12.26
+            },
+            {
+              "start": "2026-03-29T16:16:09+02:00",
+              "bytes_per_sec": 16121948,
+              "obj_per_sec": 16.12
+            },
+            {
+              "start": "2026-03-29T16:16:10+02:00",
+              "bytes_per_sec": 13079383,
+              "obj_per_sec": 13.08
+            },
+            {
+              "start": "2026-03-29T16:16:11+02:00",
+              "bytes_per_sec": 4932525,
+              "obj_per_sec": 4.93
+            },
+            {
+              "start": "2026-03-29T16:16:12+02:00",
+              "bytes_per_sec": 4820146,
+              "obj_per_sec": 4.82
+            },
+            {
+              "start": "2026-03-29T16:16:13+02:00",
+              "bytes_per_sec": 6956410,
+              "obj_per_sec": 6.96
+            },
+            {
+              "start": "2026-03-29T16:16:14+02:00",
+              "bytes_per_sec": 13835198,
+              "obj_per_sec": 13.84
+            },
+            {
+              "start": "2026-03-29T16:16:15+02:00",
+              "bytes_per_sec": 20027032,
+              "obj_per_sec": 20.03
+            },
+            {
+              "start": "2026-03-29T16:16:16+02:00",
+              "bytes_per_sec": 17778504,
+              "obj_per_sec": 17.78
+            },
+            {
+              "start": "2026-03-29T16:16:17+02:00",
+              "bytes_per_sec": 19995558,
+              "obj_per_sec": 20
+            },
+            {
+              "start": "2026-03-29T16:16:18+02:00",
+              "bytes_per_sec": 21106651,
+              "obj_per_sec": 21.11
+            },
+            {
+              "start": "2026-03-29T16:16:19+02:00",
+              "bytes_per_sec": 24813992,
+              "obj_per_sec": 24.81
+            },
+            {
+              "start": "2026-03-29T16:16:20+02:00",
+              "bytes_per_sec": 13072960,
+              "obj_per_sec": 13.07
+            },
+            {
+              "start": "2026-03-29T16:16:21+02:00",
+              "bytes_per_sec": 7169775,
+              "obj_per_sec": 7.17
+            },
+            {
+              "start": "2026-03-29T16:16:22+02:00",
+              "bytes_per_sec": 6277411,
+              "obj_per_sec": 6.28
+            },
+            {
+              "start": "2026-03-29T16:16:23+02:00",
+              "bytes_per_sec": 11442610,
+              "obj_per_sec": 11.44
+            },
+            {
+              "start": "2026-03-29T16:16:24+02:00",
+              "bytes_per_sec": 16532308,
+              "obj_per_sec": 16.53
+            },
+            {
+              "start": "2026-03-29T16:16:25+02:00",
+              "bytes_per_sec": 16026494,
+              "obj_per_sec": 16.03
+            },
+            {
+              "start": "2026-03-29T16:16:26+02:00",
+              "bytes_per_sec": 19971193,
+              "obj_per_sec": 19.97
+            },
+            {
+              "start": "2026-03-29T16:16:27+02:00",
+              "bytes_per_sec": 18518147,
+              "obj_per_sec": 18.52
+            },
+            {
+              "start": "2026-03-29T16:16:28+02:00",
+              "bytes_per_sec": 19743168,
+              "obj_per_sec": 19.74
+            },
+            {
+              "start": "2026-03-29T16:16:29+02:00",
+              "bytes_per_sec": 14956510,
+              "obj_per_sec": 14.96
+            },
+            {
+              "start": "2026-03-29T16:16:30+02:00",
+              "bytes_per_sec": 9452488,
+              "obj_per_sec": 9.45
+            },
+            {
+              "start": "2026-03-29T16:16:31+02:00",
+              "bytes_per_sec": 5709433,
+              "obj_per_sec": 5.71
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 24813992,
+          "fastest_ops": 24.81,
+          "median_bps": 14199968,
+          "median_ops": 14.2,
+          "slowest_bps": 4820146,
+          "slowest_ops": 4.82
+        },
+        "errors": 0,
+        "measure_duration_millis": 58000,
+        "bytes": 791514956.1232767,
+        "objects": 791.514956123277,
+        "ops": 795
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-29T16:15:34.039209+02:00",
+          "end_time": "2026-03-29T16:16:35.401432875+02:00",
+          "errors": 0,
+          "measure_duration_millis": 61361,
+          "bytes": 816000000,
+          "objects": 816,
+          "ops": 816
+        }
+      },
+      "throughput_by_client": {
+        "93Me": {
+          "start_time": "2026-03-29T16:15:34.039209+02:00",
+          "end_time": "2026-03-29T16:16:35.401432875+02:00",
+          "errors": 0,
+          "measure_duration_millis": 61361,
+          "bytes": 816000000,
+          "objects": 816,
+          "ops": 816
+        }
+      },
+      "requests_by_client": {
+        "93Me": [
+          {
+            "start_time": "2026-03-29T16:15:34+02:00",
+            "end_time": "2026-03-29T16:15:44+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 284.448931,
+                "fastest_millis": 84.598584,
+                "p25_millis": 191.617375,
+                "median_millis": 250.350291,
+                "p75_millis": 334.778833,
+                "p90_millis": 448.196375,
+                "p99_millis": 889.748,
+                "slowest_millis": 889.748,
+                "std_dev_millis": 143.996963
+              },
+              "dur_median_millis": 736.967042,
+              "fastest_millis": 147.38125,
+              "slowest_millis": 3528.419375,
+              "std_dev_millis": 533.434041,
+              "dur_99_millis": 3528.419375,
+              "dur_90_millis": 1541.135542,
+              "dur_avg_millis": 845.560734,
+              "requests": 116,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:44+02:00",
+            "end_time": "2026-03-29T16:15:54+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 269.449264,
+                "fastest_millis": 76.460833,
+                "p25_millis": 161.828458,
+                "median_millis": 220.148,
+                "p75_millis": 291.723834,
+                "p90_millis": 579.03325,
+                "p99_millis": 902.44875,
+                "slowest_millis": 902.44875,
+                "std_dev_millis": 179.16705
+              },
+              "dur_median_millis": 703.34975,
+              "fastest_millis": 128.327833,
+              "slowest_millis": 3818.332375,
+              "std_dev_millis": 658.751002,
+              "dur_99_millis": 3818.332375,
+              "dur_90_millis": 1699.543875,
+              "dur_avg_millis": 833.027951,
+              "requests": 145,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:54+02:00",
+            "end_time": "2026-03-29T16:16:04+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 249.204395,
+                "fastest_millis": 81.462292,
+                "p25_millis": 134.591125,
+                "median_millis": 211.03575,
+                "p75_millis": 309.937041,
+                "p90_millis": 429.490542,
+                "p99_millis": 1434.26675,
+                "slowest_millis": 1434.26675,
+                "std_dev_millis": 172.945261
+              },
+              "dur_median_millis": 589.986375,
+              "fastest_millis": 138.916125,
+              "slowest_millis": 3912.248167,
+              "std_dev_millis": 705.581542,
+              "dur_99_millis": 3912.248167,
+              "dur_90_millis": 1823.176291,
+              "dur_avg_millis": 808.789805,
+              "requests": 136,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:04+02:00",
+            "end_time": "2026-03-29T16:16:14+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 302.137588,
+                "fastest_millis": 100.670667,
+                "p25_millis": 159.3705,
+                "median_millis": 228.508458,
+                "p75_millis": 324.338042,
+                "p90_millis": 491.626166,
+                "p99_millis": 4447.002667,
+                "slowest_millis": 4447.002667,
+                "std_dev_millis": 412.801854
+              },
+              "dur_median_millis": 874.753583,
+              "fastest_millis": 149.060584,
+              "slowest_millis": 5810.625167,
+              "std_dev_millis": 800.036346,
+              "dur_99_millis": 5810.625167,
+              "dur_90_millis": 1816.209583,
+              "dur_avg_millis": 1000.861647,
+              "requests": 120,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:14+02:00",
+            "end_time": "2026-03-29T16:16:24+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 215.034728,
+                "fastest_millis": 83.711625,
+                "p25_millis": 119.334333,
+                "median_millis": 173.83425,
+                "p75_millis": 248.616833,
+                "p90_millis": 401.276416,
+                "p99_millis": 1000.269125,
+                "slowest_millis": 1000.269125,
+                "std_dev_millis": 143.839584
+              },
+              "dur_median_millis": 636.515458,
+              "fastest_millis": 124.661208,
+              "slowest_millis": 3720.937417,
+              "std_dev_millis": 616.620089,
+              "dur_99_millis": 3720.937417,
+              "dur_90_millis": 1449.78325,
+              "dur_avg_millis": 792.513085,
+              "requests": 149,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:24+02:00",
+            "end_time": "2026-03-29T16:16:34+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 228.53064,
+                "fastest_millis": 79.441333,
+                "p25_millis": 130.280917,
+                "median_millis": 184.900042,
+                "p75_millis": 292.870667,
+                "p90_millis": 451.850541,
+                "p99_millis": 712.47775,
+                "slowest_millis": 712.47775,
+                "std_dev_millis": 136.244279
+              },
+              "dur_median_millis": 602.078375,
+              "fastest_millis": 125.840625,
+              "slowest_millis": 3087.079416,
+              "std_dev_millis": 634.847622,
+              "dur_99_millis": 3087.079416,
+              "dur_90_millis": 1867.703542,
+              "dur_avg_millis": 827.284251,
+              "requests": 140,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:34+02:00",
+            "end_time": "2026-03-29T16:16:44+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 331.919579,
+                "fastest_millis": 125.886791,
+                "p25_millis": 207.939708,
+                "median_millis": 282.718042,
+                "p75_millis": 671.1655,
+                "p90_millis": 685.640041,
+                "p99_millis": 685.640041,
+                "slowest_millis": 685.640041,
+                "std_dev_millis": 204.863382
+              },
+              "dur_median_millis": 1712.080875,
+              "fastest_millis": 685.55025,
+              "slowest_millis": 3240.36675,
+              "std_dev_millis": 730.518344,
+              "dur_99_millis": 3240.36675,
+              "dur_90_millis": 3240.36675,
+              "dur_avg_millis": 1780.363058,
+              "requests": 10,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    },
+    "PUT": {
+      "Title": "Operation: PUT (Final)",
+      "total_requests": 281,
+      "total_objects": 281,
+      "total_errors": 0,
+      "total_bytes": 281000000,
+      "concurrency": 16,
+      "start_time": "2026-03-29T16:15:34.147776+02:00",
+      "end_time": "2026-03-29T16:16:34.990736667+02:00",
+      "first_errors": null,
+      "hosts": ["http://localhost:8000"],
+      "clients": ["93Me"],
+      "throughput": {
+        "start_time": "2026-03-29T16:15:36+02:00",
+        "end_time": "2026-03-29T16:16:37+02:00",
+        "segmented": {
+          "fastest_start": "2026-03-29T16:15:38+02:00",
+          "median_start": "2026-03-29T16:15:45+02:00",
+          "slowest_start": "2026-03-29T16:15:47+02:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-29T16:15:34+02:00",
+              "bytes_per_sec": 3142855,
+              "obj_per_sec": 3.14
+            },
+            {
+              "start": "2026-03-29T16:15:35+02:00",
+              "bytes_per_sec": 4581436,
+              "obj_per_sec": 4.58
+            },
+            {
+              "start": "2026-03-29T16:15:36+02:00",
+              "bytes_per_sec": 8975255,
+              "obj_per_sec": 8.98
+            },
+            {
+              "start": "2026-03-29T16:15:37+02:00",
+              "bytes_per_sec": 2351161,
+              "obj_per_sec": 2.35
+            },
+            {
+              "start": "2026-03-29T16:15:38+02:00",
+              "bytes_per_sec": 10576693,
+              "obj_per_sec": 10.58
+            },
+            {
+              "start": "2026-03-29T16:15:39+02:00",
+              "bytes_per_sec": 7077049,
+              "obj_per_sec": 7.08
+            },
+            {
+              "start": "2026-03-29T16:15:40+02:00",
+              "bytes_per_sec": 6029535,
+              "obj_per_sec": 6.03
+            },
+            {
+              "start": "2026-03-29T16:15:41+02:00",
+              "bytes_per_sec": 5806984,
+              "obj_per_sec": 5.81
+            },
+            {
+              "start": "2026-03-29T16:15:42+02:00",
+              "bytes_per_sec": 2121453,
+              "obj_per_sec": 2.12
+            },
+            {
+              "start": "2026-03-29T16:15:43+02:00",
+              "bytes_per_sec": 1741735,
+              "obj_per_sec": 1.74
+            },
+            {
+              "start": "2026-03-29T16:15:44+02:00",
+              "bytes_per_sec": 1850041,
+              "obj_per_sec": 1.85
+            },
+            {
+              "start": "2026-03-29T16:15:45+02:00",
+              "bytes_per_sec": 4927376,
+              "obj_per_sec": 4.93
+            },
+            {
+              "start": "2026-03-29T16:15:46+02:00",
+              "bytes_per_sec": 4326033,
+              "obj_per_sec": 4.33
+            },
+            {
+              "start": "2026-03-29T16:15:47+02:00",
+              "bytes_per_sec": 315648,
+              "obj_per_sec": 0.32
+            },
+            {
+              "start": "2026-03-29T16:15:48+02:00",
+              "bytes_per_sec": 5429099,
+              "obj_per_sec": 5.43
+            },
+            {
+              "start": "2026-03-29T16:15:49+02:00",
+              "bytes_per_sec": 7428834,
+              "obj_per_sec": 7.43
+            },
+            {
+              "start": "2026-03-29T16:15:50+02:00",
+              "bytes_per_sec": 6381234,
+              "obj_per_sec": 6.38
+            },
+            {
+              "start": "2026-03-29T16:15:51+02:00",
+              "bytes_per_sec": 6357709,
+              "obj_per_sec": 6.36
+            },
+            {
+              "start": "2026-03-29T16:15:52+02:00",
+              "bytes_per_sec": 3805782,
+              "obj_per_sec": 3.81
+            },
+            {
+              "start": "2026-03-29T16:15:53+02:00",
+              "bytes_per_sec": 1748128,
+              "obj_per_sec": 1.75
+            },
+            {
+              "start": "2026-03-29T16:15:54+02:00",
+              "bytes_per_sec": 3108720,
+              "obj_per_sec": 3.11
+            },
+            {
+              "start": "2026-03-29T16:15:55+02:00",
+              "bytes_per_sec": 4983766,
+              "obj_per_sec": 4.98
+            },
+            {
+              "start": "2026-03-29T16:15:56+02:00",
+              "bytes_per_sec": 5938338,
+              "obj_per_sec": 5.94
+            },
+            {
+              "start": "2026-03-29T16:15:57+02:00",
+              "bytes_per_sec": 6929520,
+              "obj_per_sec": 6.93
+            },
+            {
+              "start": "2026-03-29T16:15:58+02:00",
+              "bytes_per_sec": 7067937,
+              "obj_per_sec": 7.07
+            },
+            {
+              "start": "2026-03-29T16:15:59+02:00",
+              "bytes_per_sec": 9535927,
+              "obj_per_sec": 9.54
+            },
+            {
+              "start": "2026-03-29T16:16:00+02:00",
+              "bytes_per_sec": 4858560,
+              "obj_per_sec": 4.86
+            },
+            {
+              "start": "2026-03-29T16:16:01+02:00",
+              "bytes_per_sec": 1573882,
+              "obj_per_sec": 1.57
+            },
+            {
+              "start": "2026-03-29T16:16:02+02:00",
+              "bytes_per_sec": 656500,
+              "obj_per_sec": 0.66
+            },
+            {
+              "start": "2026-03-29T16:16:03+02:00",
+              "bytes_per_sec": 1841981,
+              "obj_per_sec": 1.84
+            },
+            {
+              "start": "2026-03-29T16:16:04+02:00",
+              "bytes_per_sec": 4958655,
+              "obj_per_sec": 4.96
+            },
+            {
+              "start": "2026-03-29T16:16:05+02:00",
+              "bytes_per_sec": 1395417,
+              "obj_per_sec": 1.4
+            },
+            {
+              "start": "2026-03-29T16:16:06+02:00",
+              "bytes_per_sec": 1734414,
+              "obj_per_sec": 1.73
+            },
+            {
+              "start": "2026-03-29T16:16:07+02:00",
+              "bytes_per_sec": 6669628,
+              "obj_per_sec": 6.67
+            },
+            {
+              "start": "2026-03-29T16:16:08+02:00",
+              "bytes_per_sec": 8212006,
+              "obj_per_sec": 8.21
+            },
+            {
+              "start": "2026-03-29T16:16:09+02:00",
+              "bytes_per_sec": 2552159,
+              "obj_per_sec": 2.55
+            },
+            {
+              "start": "2026-03-29T16:16:10+02:00",
+              "bytes_per_sec": 5888805,
+              "obj_per_sec": 5.89
+            },
+            {
+              "start": "2026-03-29T16:16:11+02:00",
+              "bytes_per_sec": 4612444,
+              "obj_per_sec": 4.61
+            },
+            {
+              "start": "2026-03-29T16:16:12+02:00",
+              "bytes_per_sec": 4130906,
+              "obj_per_sec": 4.13
+            },
+            {
+              "start": "2026-03-29T16:16:13+02:00",
+              "bytes_per_sec": 2113979,
+              "obj_per_sec": 2.11
+            },
+            {
+              "start": "2026-03-29T16:16:14+02:00",
+              "bytes_per_sec": 7026486,
+              "obj_per_sec": 7.03
+            },
+            {
+              "start": "2026-03-29T16:16:15+02:00",
+              "bytes_per_sec": 3670326,
+              "obj_per_sec": 3.67
+            },
+            {
+              "start": "2026-03-29T16:16:16+02:00",
+              "bytes_per_sec": 7339341,
+              "obj_per_sec": 7.34
+            },
+            {
+              "start": "2026-03-29T16:16:17+02:00",
+              "bytes_per_sec": 6925601,
+              "obj_per_sec": 6.93
+            },
+            {
+              "start": "2026-03-29T16:16:18+02:00",
+              "bytes_per_sec": 4737618,
+              "obj_per_sec": 4.74
+            },
+            {
+              "start": "2026-03-29T16:16:19+02:00",
+              "bytes_per_sec": 589365,
+              "obj_per_sec": 0.59
+            },
+            {
+              "start": "2026-03-29T16:16:20+02:00",
+              "bytes_per_sec": 4249057,
+              "obj_per_sec": 4.25
+            },
+            {
+              "start": "2026-03-29T16:16:21+02:00",
+              "bytes_per_sec": 2621323,
+              "obj_per_sec": 2.62
+            },
+            {
+              "start": "2026-03-29T16:16:22+02:00",
+              "bytes_per_sec": 3578825,
+              "obj_per_sec": 3.58
+            },
+            {
+              "start": "2026-03-29T16:16:23+02:00",
+              "bytes_per_sec": 3025043,
+              "obj_per_sec": 3.03
+            },
+            {
+              "start": "2026-03-29T16:16:24+02:00",
+              "bytes_per_sec": 7426981,
+              "obj_per_sec": 7.43
+            },
+            {
+              "start": "2026-03-29T16:16:25+02:00",
+              "bytes_per_sec": 9005279,
+              "obj_per_sec": 9.01
+            },
+            {
+              "start": "2026-03-29T16:16:26+02:00",
+              "bytes_per_sec": 6856205,
+              "obj_per_sec": 6.86
+            },
+            {
+              "start": "2026-03-29T16:16:27+02:00",
+              "bytes_per_sec": 5541927,
+              "obj_per_sec": 5.54
+            },
+            {
+              "start": "2026-03-29T16:16:28+02:00",
+              "bytes_per_sec": 6396794,
+              "obj_per_sec": 6.4
+            },
+            {
+              "start": "2026-03-29T16:16:29+02:00",
+              "bytes_per_sec": 8074050,
+              "obj_per_sec": 8.07
+            },
+            {
+              "start": "2026-03-29T16:16:30+02:00",
+              "bytes_per_sec": 1477885,
+              "obj_per_sec": 1.48
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 10576693,
+          "fastest_ops": 10.58,
+          "median_bps": 4927376,
+          "median_ops": 4.93,
+          "slowest_bps": 315648,
+          "slowest_ops": 0.32
+        },
+        "errors": 0,
+        "measure_duration_millis": 57000,
+        "bytes": 272279719.7746494,
+        "objects": 272.2797197746494,
+        "ops": 271
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-29T16:15:34.147776+02:00",
+          "end_time": "2026-03-29T16:16:34.990736667+02:00",
+          "errors": 0,
+          "measure_duration_millis": 60842,
+          "bytes": 281000000,
+          "objects": 281,
+          "ops": 281
+        }
+      },
+      "throughput_by_client": {
+        "93Me": {
+          "start_time": "2026-03-29T16:15:34.147776+02:00",
+          "end_time": "2026-03-29T16:16:34.990736667+02:00",
+          "errors": 0,
+          "measure_duration_millis": 60842,
+          "bytes": 281000000,
+          "objects": 281,
+          "ops": 281
+        }
+      },
+      "requests_by_client": {
+        "93Me": [
+          {
+            "start_time": "2026-03-29T16:15:35+02:00",
+            "end_time": "2026-03-29T16:15:45+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 496.146667,
+              "fastest_millis": 247.666833,
+              "slowest_millis": 1882.586917,
+              "std_dev_millis": 395.465394,
+              "dur_99_millis": 1882.586917,
+              "dur_90_millis": 1413.424041,
+              "dur_avg_millis": 613.12796,
+              "requests": 52,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:45+02:00",
+            "end_time": "2026-03-29T16:15:55+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 462.581458,
+              "fastest_millis": 270.174625,
+              "slowest_millis": 1484.38725,
+              "std_dev_millis": 291.9433,
+              "dur_99_millis": 1484.38725,
+              "dur_90_millis": 993.50375,
+              "dur_avg_millis": 571.957763,
+              "requests": 42,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:55+02:00",
+            "end_time": "2026-03-29T16:16:05+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 397.506917,
+              "fastest_millis": 254.754375,
+              "slowest_millis": 2408.940041,
+              "std_dev_millis": 350.216633,
+              "dur_99_millis": 2408.940041,
+              "dur_90_millis": 797.979291,
+              "dur_avg_millis": 495.235288,
+              "requests": 47,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:05+02:00",
+            "end_time": "2026-03-29T16:16:15+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 418.145542,
+              "fastest_millis": 241.94825,
+              "slowest_millis": 1523.227375,
+              "std_dev_millis": 356.438525,
+              "dur_99_millis": 1523.227375,
+              "dur_90_millis": 1232.889125,
+              "dur_avg_millis": 545.923369,
+              "requests": 40,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:15+02:00",
+            "end_time": "2026-03-29T16:16:25+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 381.478833,
+              "fastest_millis": 267.485167,
+              "slowest_millis": 1377.05775,
+              "std_dev_millis": 336.005747,
+              "dur_99_millis": 1377.05775,
+              "dur_90_millis": 1247.470834,
+              "dur_avg_millis": 533.051456,
+              "requests": 44,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:25+02:00",
+            "end_time": "2026-03-29T16:16:35+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 371.533167,
+              "fastest_millis": 241.108958,
+              "slowest_millis": 1897.5175,
+              "std_dev_millis": 324.638272,
+              "dur_99_millis": 1897.5175,
+              "dur_90_millis": 972.840084,
+              "dur_avg_millis": 500.118027,
+              "requests": 56,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    },
+    "STAT": {
+      "Title": "Operation: STAT (Final)",
+      "total_requests": 547,
+      "total_objects": 547,
+      "total_errors": 0,
+      "total_bytes": 0,
+      "concurrency": 16,
+      "start_time": "2026-03-29T16:15:34.039203+02:00",
+      "end_time": "2026-03-29T16:16:34.077133875+02:00",
+      "first_errors": null,
+      "hosts": ["http://localhost:8000"],
+      "clients": ["93Me"],
+      "throughput": {
+        "start_time": "2026-03-29T16:15:36+02:00",
+        "end_time": "2026-03-29T16:16:37+02:00",
+        "segmented": {
+          "fastest_start": "2026-03-29T16:16:07+02:00",
+          "median_start": "2026-03-29T16:16:05+02:00",
+          "slowest_start": "2026-03-29T16:16:12+02:00",
+          "sorted_by": "ops",
+          "segments": [
+            {
+              "start": "2026-03-29T16:15:34+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 10.71
+            },
+            {
+              "start": "2026-03-29T16:15:35+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4.86
+            },
+            {
+              "start": "2026-03-29T16:15:36+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 10.28
+            },
+            {
+              "start": "2026-03-29T16:15:37+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 11.14
+            },
+            {
+              "start": "2026-03-29T16:15:38+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 5.79
+            },
+            {
+              "start": "2026-03-29T16:15:39+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 10.69
+            },
+            {
+              "start": "2026-03-29T16:15:40+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 12.31
+            },
+            {
+              "start": "2026-03-29T16:15:41+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 6.15
+            },
+            {
+              "start": "2026-03-29T16:15:42+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 8.85
+            },
+            {
+              "start": "2026-03-29T16:15:43+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0.68
+            },
+            {
+              "start": "2026-03-29T16:15:44+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 8.32
+            },
+            {
+              "start": "2026-03-29T16:15:45+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0.36
+            },
+            {
+              "start": "2026-03-29T16:15:46+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 11.28
+            },
+            {
+              "start": "2026-03-29T16:15:47+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 13.08
+            },
+            {
+              "start": "2026-03-29T16:15:48+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 16.3
+            },
+            {
+              "start": "2026-03-29T16:15:49+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 6.53
+            },
+            {
+              "start": "2026-03-29T16:15:50+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 15.67
+            },
+            {
+              "start": "2026-03-29T16:15:51+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 11.79
+            },
+            {
+              "start": "2026-03-29T16:15:52+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 3.46
+            },
+            {
+              "start": "2026-03-29T16:15:53+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 7.45
+            },
+            {
+              "start": "2026-03-29T16:15:54+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 3.01
+            },
+            {
+              "start": "2026-03-29T16:15:55+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 11.75
+            },
+            {
+              "start": "2026-03-29T16:15:56+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 15.28
+            },
+            {
+              "start": "2026-03-29T16:15:57+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 13.84
+            },
+            {
+              "start": "2026-03-29T16:15:58+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 9.11
+            },
+            {
+              "start": "2026-03-29T16:15:59+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 10.47
+            },
+            {
+              "start": "2026-03-29T16:16:00+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 16.69
+            },
+            {
+              "start": "2026-03-29T16:16:01+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4.93
+            },
+            {
+              "start": "2026-03-29T16:16:02+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 2
+            },
+            {
+              "start": "2026-03-29T16:16:03+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4.83
+            },
+            {
+              "start": "2026-03-29T16:16:04+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 9.71
+            },
+            {
+              "start": "2026-03-29T16:16:05+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 9.98
+            },
+            {
+              "start": "2026-03-29T16:16:06+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 6.96
+            },
+            {
+              "start": "2026-03-29T16:16:07+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 18.74
+            },
+            {
+              "start": "2026-03-29T16:16:08+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 8.77
+            },
+            {
+              "start": "2026-03-29T16:16:09+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 9.67
+            },
+            {
+              "start": "2026-03-29T16:16:10+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 6.33
+            },
+            {
+              "start": "2026-03-29T16:16:11+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 5
+            },
+            {
+              "start": "2026-03-29T16:16:12+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 0.11
+            },
+            {
+              "start": "2026-03-29T16:16:13+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 8.59
+            },
+            {
+              "start": "2026-03-29T16:16:14+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 6.3
+            },
+            {
+              "start": "2026-03-29T16:16:15+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 11
+            },
+            {
+              "start": "2026-03-29T16:16:16+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 12
+            },
+            {
+              "start": "2026-03-29T16:16:17+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 9
+            },
+            {
+              "start": "2026-03-29T16:16:18+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 10.43
+            },
+            {
+              "start": "2026-03-29T16:16:19+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 17.48
+            },
+            {
+              "start": "2026-03-29T16:16:20+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 13.09
+            },
+            {
+              "start": "2026-03-29T16:16:21+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1.07
+            },
+            {
+              "start": "2026-03-29T16:16:22+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 1.18
+            },
+            {
+              "start": "2026-03-29T16:16:23+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 7.02
+            },
+            {
+              "start": "2026-03-29T16:16:24+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 18.3
+            },
+            {
+              "start": "2026-03-29T16:16:25+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 10.53
+            },
+            {
+              "start": "2026-03-29T16:16:26+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 16.1
+            },
+            {
+              "start": "2026-03-29T16:16:27+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 14.56
+            },
+            {
+              "start": "2026-03-29T16:16:28+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 12.06
+            },
+            {
+              "start": "2026-03-29T16:16:29+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 12.18
+            },
+            {
+              "start": "2026-03-29T16:16:30+02:00",
+              "bytes_per_sec": 0,
+              "obj_per_sec": 4.24
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 0,
+          "fastest_ops": 18.74,
+          "median_bps": 0,
+          "median_ops": 9.98,
+          "slowest_bps": 0,
+          "slowest_ops": 0.11
+        },
+        "errors": 0,
+        "measure_duration_millis": 57000,
+        "bytes": 0,
+        "objects": 528.012854000027,
+        "ops": 524
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-29T16:15:34.039203+02:00",
+          "end_time": "2026-03-29T16:16:34.077133875+02:00",
+          "errors": 0,
+          "measure_duration_millis": 60037,
+          "bytes": 0,
+          "objects": 547,
+          "ops": 547
+        }
+      },
+      "throughput_by_client": {
+        "93Me": {
+          "start_time": "2026-03-29T16:15:34.039203+02:00",
+          "end_time": "2026-03-29T16:16:34.077133875+02:00",
+          "errors": 0,
+          "measure_duration_millis": 60037,
+          "bytes": 0,
+          "objects": 547,
+          "ops": 547
+        }
+      },
+      "requests_by_client": {
+        "93Me": [
+          {
+            "start_time": "2026-03-29T16:15:34+02:00",
+            "end_time": "2026-03-29T16:15:44+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 138.226209,
+              "fastest_millis": 67.131667,
+              "slowest_millis": 743.052708,
+              "std_dev_millis": 134.308431,
+              "dur_99_millis": 743.052708,
+              "dur_90_millis": 429.49425,
+              "dur_avg_millis": 190.454391,
+              "requests": 85,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:44+02:00",
+            "end_time": "2026-03-29T16:15:54+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 120.839917,
+              "fastest_millis": 72.916458,
+              "slowest_millis": 488.114375,
+              "std_dev_millis": 63.300413,
+              "dur_99_millis": 488.114375,
+              "dur_90_millis": 212.776375,
+              "dur_avg_millis": 136.905732,
+              "requests": 93,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:54+02:00",
+            "end_time": "2026-03-29T16:16:04+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 119.719292,
+              "fastest_millis": 70.751791,
+              "slowest_millis": 635.896375,
+              "std_dev_millis": 109.915235,
+              "dur_99_millis": 635.896375,
+              "dur_90_millis": 297.272625,
+              "dur_avg_millis": 157.335133,
+              "requests": 96,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:04+02:00",
+            "end_time": "2026-03-29T16:16:14+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 129.957917,
+              "fastest_millis": 81.048375,
+              "slowest_millis": 518.344167,
+              "std_dev_millis": 103.630775,
+              "dur_99_millis": 518.344167,
+              "dur_90_millis": 368.662584,
+              "dur_avg_millis": 169.163379,
+              "requests": 82,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:14+02:00",
+            "end_time": "2026-03-29T16:16:24+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 122.385334,
+              "fastest_millis": 67.265041,
+              "slowest_millis": 507.566333,
+              "std_dev_millis": 87.869572,
+              "dur_99_millis": 507.566333,
+              "dur_90_millis": 220.182167,
+              "dur_avg_millis": 141.892139,
+              "requests": 89,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:24+02:00",
+            "end_time": "2026-03-29T16:16:34+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 117.205708,
+              "fastest_millis": 62.747875,
+              "slowest_millis": 600.658167,
+              "std_dev_millis": 100.423611,
+              "dur_99_millis": 600.658167,
+              "dur_90_millis": 252.659917,
+              "dur_avg_millis": 148.728429,
+              "requests": 101,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:34+02:00",
+            "end_time": "2026-03-29T16:16:44+02:00",
+            "single_sized_requests": {
+              "dur_median_millis": 198.207875,
+              "fastest_millis": 198.207875,
+              "slowest_millis": 198.207875,
+              "std_dev_millis": 0,
+              "dur_99_millis": 198.207875,
+              "dur_90_millis": 198.207875,
+              "dur_avg_millis": 198.207875,
+              "requests": 1,
+              "obj_size": 0,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "by_host": {
+    "http://localhost:8000": {
+      "Title": "Host: http://localhost:8000 (Final)",
+      "total_requests": 1824,
+      "total_objects": 1824,
+      "total_errors": 0,
+      "total_bytes": 1097000000,
+      "concurrency": 16,
+      "start_time": "2026-03-29T16:15:34.039203+02:00",
+      "end_time": "2026-03-29T16:16:35.401432875+02:00",
+      "first_errors": null,
+      "hosts": ["http://localhost:8000"],
+      "clients": ["93Me"],
+      "throughput": {
+        "start_time": "2026-03-29T16:15:36+02:00",
+        "end_time": "2026-03-29T16:16:38+02:00",
+        "segmented": {
+          "fastest_start": "2026-03-29T16:16:17+02:00",
+          "median_start": "2026-03-29T16:16:08+02:00",
+          "slowest_start": "2026-03-29T16:15:53+02:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-29T16:15:34+02:00",
+              "bytes_per_sec": 8010676,
+              "obj_per_sec": 20.68
+            },
+            {
+              "start": "2026-03-29T16:15:35+02:00",
+              "bytes_per_sec": 12028399,
+              "obj_per_sec": 17.77
+            },
+            {
+              "start": "2026-03-29T16:15:36+02:00",
+              "bytes_per_sec": 22062979,
+              "obj_per_sec": 35.46
+            },
+            {
+              "start": "2026-03-29T16:15:37+02:00",
+              "bytes_per_sec": 22867061,
+              "obj_per_sec": 36.75
+            },
+            {
+              "start": "2026-03-29T16:15:38+02:00",
+              "bytes_per_sec": 20203576,
+              "obj_per_sec": 28.24
+            },
+            {
+              "start": "2026-03-29T16:15:39+02:00",
+              "bytes_per_sec": 21277018,
+              "obj_per_sec": 40.66
+            },
+            {
+              "start": "2026-03-29T16:15:40+02:00",
+              "bytes_per_sec": 23262792,
+              "obj_per_sec": 38.79
+            },
+            {
+              "start": "2026-03-29T16:15:41+02:00",
+              "bytes_per_sec": 22702502,
+              "obj_per_sec": 32.44
+            },
+            {
+              "start": "2026-03-29T16:15:42+02:00",
+              "bytes_per_sec": 11193102,
+              "obj_per_sec": 23.54
+            },
+            {
+              "start": "2026-03-29T16:15:43+02:00",
+              "bytes_per_sec": 8538788,
+              "obj_per_sec": 10.17
+            },
+            {
+              "start": "2026-03-29T16:15:44+02:00",
+              "bytes_per_sec": 9067685,
+              "obj_per_sec": 20.23
+            },
+            {
+              "start": "2026-03-29T16:15:45+02:00",
+              "bytes_per_sec": 17494104,
+              "obj_per_sec": 19.06
+            },
+            {
+              "start": "2026-03-29T16:15:46+02:00",
+              "bytes_per_sec": 22580496,
+              "obj_per_sec": 35.34
+            },
+            {
+              "start": "2026-03-29T16:15:47+02:00",
+              "bytes_per_sec": 24668104,
+              "obj_per_sec": 42.27
+            },
+            {
+              "start": "2026-03-29T16:15:48+02:00",
+              "bytes_per_sec": 23176142,
+              "obj_per_sec": 40.47
+            },
+            {
+              "start": "2026-03-29T16:15:49+02:00",
+              "bytes_per_sec": 25302257,
+              "obj_per_sec": 34.83
+            },
+            {
+              "start": "2026-03-29T16:15:50+02:00",
+              "bytes_per_sec": 22467758,
+              "obj_per_sec": 45.83
+            },
+            {
+              "start": "2026-03-29T16:15:51+02:00",
+              "bytes_per_sec": 19167563,
+              "obj_per_sec": 32.74
+            },
+            {
+              "start": "2026-03-29T16:15:52+02:00",
+              "bytes_per_sec": 8660582,
+              "obj_per_sec": 12.64
+            },
+            {
+              "start": "2026-03-29T16:15:53+02:00",
+              "bytes_per_sec": 7316661,
+              "obj_per_sec": 15.77
+            },
+            {
+              "start": "2026-03-29T16:15:54+02:00",
+              "bytes_per_sec": 11675841,
+              "obj_per_sec": 14.68
+            },
+            {
+              "start": "2026-03-29T16:15:55+02:00",
+              "bytes_per_sec": 22514379,
+              "obj_per_sec": 37.26
+            },
+            {
+              "start": "2026-03-29T16:15:56+02:00",
+              "bytes_per_sec": 22596392,
+              "obj_per_sec": 39.88
+            },
+            {
+              "start": "2026-03-29T16:15:57+02:00",
+              "bytes_per_sec": 24217295,
+              "obj_per_sec": 42.96
+            },
+            {
+              "start": "2026-03-29T16:15:58+02:00",
+              "bytes_per_sec": 26286649,
+              "obj_per_sec": 41.1
+            },
+            {
+              "start": "2026-03-29T16:15:59+02:00",
+              "bytes_per_sec": 25726976,
+              "obj_per_sec": 38.67
+            },
+            {
+              "start": "2026-03-29T16:16:00+02:00",
+              "bytes_per_sec": 24438914,
+              "obj_per_sec": 46.06
+            },
+            {
+              "start": "2026-03-29T16:16:01+02:00",
+              "bytes_per_sec": 14225602,
+              "obj_per_sec": 20.16
+            },
+            {
+              "start": "2026-03-29T16:16:02+02:00",
+              "bytes_per_sec": 7699721,
+              "obj_per_sec": 11.3
+            },
+            {
+              "start": "2026-03-29T16:16:03+02:00",
+              "bytes_per_sec": 8196415,
+              "obj_per_sec": 17.43
+            },
+            {
+              "start": "2026-03-29T16:16:04+02:00",
+              "bytes_per_sec": 14726581,
+              "obj_per_sec": 27.44
+            },
+            {
+              "start": "2026-03-29T16:16:05+02:00",
+              "bytes_per_sec": 19736009,
+              "obj_per_sec": 34.72
+            },
+            {
+              "start": "2026-03-29T16:16:06+02:00",
+              "bytes_per_sec": 19910235,
+              "obj_per_sec": 30.87
+            },
+            {
+              "start": "2026-03-29T16:16:07+02:00",
+              "bytes_per_sec": 19138605,
+              "obj_per_sec": 41.88
+            },
+            {
+              "start": "2026-03-29T16:16:08+02:00",
+              "bytes_per_sec": 20476538,
+              "obj_per_sec": 31.25
+            },
+            {
+              "start": "2026-03-29T16:16:09+02:00",
+              "bytes_per_sec": 18674108,
+              "obj_per_sec": 32.34
+            },
+            {
+              "start": "2026-03-29T16:16:10+02:00",
+              "bytes_per_sec": 18968188,
+              "obj_per_sec": 27.3
+            },
+            {
+              "start": "2026-03-29T16:16:11+02:00",
+              "bytes_per_sec": 9544970,
+              "obj_per_sec": 15.54
+            },
+            {
+              "start": "2026-03-29T16:16:12+02:00",
+              "bytes_per_sec": 8951052,
+              "obj_per_sec": 9.06
+            },
+            {
+              "start": "2026-03-29T16:16:13+02:00",
+              "bytes_per_sec": 9070390,
+              "obj_per_sec": 22.39
+            },
+            {
+              "start": "2026-03-29T16:16:14+02:00",
+              "bytes_per_sec": 20861684,
+              "obj_per_sec": 32.43
+            },
+            {
+              "start": "2026-03-29T16:16:15+02:00",
+              "bytes_per_sec": 23697358,
+              "obj_per_sec": 37.7
+            },
+            {
+              "start": "2026-03-29T16:16:16+02:00",
+              "bytes_per_sec": 25117846,
+              "obj_per_sec": 43.12
+            },
+            {
+              "start": "2026-03-29T16:16:17+02:00",
+              "bytes_per_sec": 26921159,
+              "obj_per_sec": 40.92
+            },
+            {
+              "start": "2026-03-29T16:16:18+02:00",
+              "bytes_per_sec": 25844270,
+              "obj_per_sec": 37.27
+            },
+            {
+              "start": "2026-03-29T16:16:19+02:00",
+              "bytes_per_sec": 25403357,
+              "obj_per_sec": 47.88
+            },
+            {
+              "start": "2026-03-29T16:16:20+02:00",
+              "bytes_per_sec": 17322017,
+              "obj_per_sec": 31.41
+            },
+            {
+              "start": "2026-03-29T16:16:21+02:00",
+              "bytes_per_sec": 9791098,
+              "obj_per_sec": 11.29
+            },
+            {
+              "start": "2026-03-29T16:16:22+02:00",
+              "bytes_per_sec": 9856237,
+              "obj_per_sec": 13.61
+            },
+            {
+              "start": "2026-03-29T16:16:23+02:00",
+              "bytes_per_sec": 14467654,
+              "obj_per_sec": 22.49
+            },
+            {
+              "start": "2026-03-29T16:16:24+02:00",
+              "bytes_per_sec": 23959289,
+              "obj_per_sec": 49.26
+            },
+            {
+              "start": "2026-03-29T16:16:25+02:00",
+              "bytes_per_sec": 25031773,
+              "obj_per_sec": 38.1
+            },
+            {
+              "start": "2026-03-29T16:16:26+02:00",
+              "bytes_per_sec": 26827399,
+              "obj_per_sec": 45.17
+            },
+            {
+              "start": "2026-03-29T16:16:27+02:00",
+              "bytes_per_sec": 24060074,
+              "obj_per_sec": 41.57
+            },
+            {
+              "start": "2026-03-29T16:16:28+02:00",
+              "bytes_per_sec": 26139962,
+              "obj_per_sec": 39.46
+            },
+            {
+              "start": "2026-03-29T16:16:29+02:00",
+              "bytes_per_sec": 23030560,
+              "obj_per_sec": 42.21
+            },
+            {
+              "start": "2026-03-29T16:16:30+02:00",
+              "bytes_per_sec": 10930373,
+              "obj_per_sec": 16.8
+            },
+            {
+              "start": "2026-03-29T16:16:31+02:00",
+              "bytes_per_sec": 7629552,
+              "obj_per_sec": 16.37
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 26921159,
+          "fastest_ops": 40.92,
+          "median_bps": 20476538,
+          "median_ops": 31.25,
+          "slowest_bps": 7316661,
+          "slowest_ops": 15.77
+        },
+        "errors": 0,
+        "measure_duration_millis": 58000,
+        "bytes": 1065714795.8049409,
+        "objects": 1773.0503341803499,
+        "ops": 1772
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-29T16:15:34.039203+02:00",
+          "end_time": "2026-03-29T16:16:35.401432875+02:00",
+          "errors": 0,
+          "measure_duration_millis": 61361,
+          "bytes": 1097000000,
+          "objects": 1824,
+          "ops": 1824
+        }
+      },
+      "throughput_by_client": {
+        "93Me": {
+          "start_time": "2026-03-29T16:15:34.039203+02:00",
+          "end_time": "2026-03-29T16:16:35.401432875+02:00",
+          "errors": 0,
+          "measure_duration_millis": 61361,
+          "bytes": 1097000000,
+          "objects": 1824,
+          "ops": 1824
+        }
+      },
+      "requests_by_client": {
+        "93Me": [
+          {
+            "start_time": "2026-03-29T16:15:34+02:00",
+            "end_time": "2026-03-29T16:15:44+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 284.448931,
+                    "fastest_millis": 84.598584,
+                    "p25_millis": 191.617375,
+                    "median_millis": 250.350291,
+                    "p75_millis": 334.778833,
+                    "p90_millis": 448.196375,
+                    "p99_millis": 889.748,
+                    "slowest_millis": 889.748,
+                    "std_dev_millis": 143.996963
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1687595.7,
+                  "avg_duration_millis": 779.05815,
+                  "bps_average": 1283601.2,
+                  "requests": 166,
+                  "bps_90": 704740.3,
+                  "bps_99": 419473.4,
+                  "bps_fastest": 6785123.6,
+                  "bps_slowest": 283413,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 283,
+              "avg_obj_size": 586572,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:44+02:00",
+            "end_time": "2026-03-29T16:15:54+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 269.449264,
+                    "fastest_millis": 76.460833,
+                    "p25_millis": 161.828458,
+                    "median_millis": 220.148,
+                    "p75_millis": 291.723834,
+                    "p90_millis": 579.03325,
+                    "p99_millis": 902.44875,
+                    "slowest_millis": 902.44875,
+                    "std_dev_millis": 179.16705
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1624576.6,
+                  "avg_duration_millis": 769.674809,
+                  "bps_average": 1299250,
+                  "requests": 185,
+                  "bps_90": 661716.7,
+                  "bps_99": 308024.9,
+                  "bps_fastest": 7792541.8,
+                  "bps_slowest": 261894.4,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 306,
+              "avg_obj_size": 604575,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:54+02:00",
+            "end_time": "2026-03-29T16:16:04+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 249.204395,
+                    "fastest_millis": 81.462292,
+                    "p25_millis": 134.591125,
+                    "median_millis": 211.03575,
+                    "p75_millis": 309.937041,
+                    "p90_millis": 429.490542,
+                    "p99_millis": 1434.26675,
+                    "slowest_millis": 1434.26675,
+                    "std_dev_millis": 172.945261
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1896158.2,
+                  "avg_duration_millis": 729.074639,
+                  "bps_average": 1371601.7,
+                  "requests": 187,
+                  "bps_90": 734882.1,
+                  "bps_99": 275040.5,
+                  "bps_fastest": 7198588.4,
+                  "bps_slowest": 255607.5,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 309,
+              "avg_obj_size": 605177,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:04+02:00",
+            "end_time": "2026-03-29T16:16:14+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 302.137588,
+                    "fastest_millis": 100.670667,
+                    "p25_millis": 159.3705,
+                    "median_millis": 228.508458,
+                    "p75_millis": 324.338042,
+                    "p90_millis": 491.626166,
+                    "p99_millis": 4447.002667,
+                    "slowest_millis": 4447.002667,
+                    "std_dev_millis": 412.801854
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1472660.8,
+                  "avg_duration_millis": 877.242715,
+                  "bps_average": 1139935.4,
+                  "requests": 157,
+                  "bps_90": 596718.1,
+                  "bps_99": 248498.7,
+                  "bps_fastest": 6708681.6,
+                  "bps_slowest": 172098.5,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 270,
+              "avg_obj_size": 581481,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:14+02:00",
+            "end_time": "2026-03-29T16:16:24+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 215.034728,
+                    "fastest_millis": 83.711625,
+                    "p25_millis": 119.334333,
+                    "median_millis": 173.83425,
+                    "p75_millis": 248.616833,
+                    "p90_millis": 401.276416,
+                    "p99_millis": 1000.269125,
+                    "slowest_millis": 1000.269125,
+                    "std_dev_millis": 143.839584
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1654812.6,
+                  "avg_duration_millis": 737.89549,
+                  "bps_average": 1355205.5,
+                  "requests": 193,
+                  "bps_90": 727538.3,
+                  "bps_99": 293747.4,
+                  "bps_fastest": 8021741.6,
+                  "bps_slowest": 268749.5,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 313,
+              "avg_obj_size": 616613,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:24+02:00",
+            "end_time": "2026-03-29T16:16:34+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 228.53064,
+                    "fastest_millis": 79.441333,
+                    "p25_millis": 130.280917,
+                    "median_millis": 184.900042,
+                    "p75_millis": 292.870667,
+                    "p90_millis": 451.850541,
+                    "p99_millis": 712.47775,
+                    "slowest_millis": 712.47775,
+                    "std_dev_millis": 136.244279
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1886788.4,
+                  "avg_duration_millis": 730.948932,
+                  "bps_average": 1368084.6,
+                  "requests": 193,
+                  "bps_90": 552036.6,
+                  "bps_99": 364797,
+                  "bps_fastest": 7946559.4,
+                  "bps_slowest": 323930.8,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 326,
+              "avg_obj_size": 592024,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:34+02:00",
+            "end_time": "2026-03-29T16:16:44+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                },
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                },
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                },
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                },
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                },
+                {
+                  "first_byte": {
+                    "average_millis": 331.919579,
+                    "fastest_millis": 125.886791,
+                    "p25_millis": 207.939708,
+                    "median_millis": 282.718042,
+                    "p75_millis": 671.1655,
+                    "p90_millis": 685.640041,
+                    "p99_millis": 685.640041,
+                    "slowest_millis": 685.640041,
+                    "std_dev_millis": 204.863382
+                  },
+                  "min_size_string": "100KiB",
+                  "max_size_string": "1MiB",
+                  "bps_median": 796595.5,
+                  "avg_duration_millis": 1493.437614,
+                  "bps_average": 669596.1,
+                  "requests": 16,
+                  "bps_90": 419063.5,
+                  "bps_99": 308607,
+                  "bps_fastest": 1458682.3,
+                  "bps_slowest": 308607,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 102400,
+                  "merged_entries": 1
+                },
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                }
+              ],
+              "requests": 17,
+              "avg_obj_size": 941176,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "by_obj_log_2_size": {
+    "20": {
+      "Title": "Size: 0-\u003e1048575 (Final)",
+      "total_requests": 1097,
+      "total_objects": 1097,
+      "total_errors": 0,
+      "total_bytes": 1097000000,
+      "concurrency": 16,
+      "start_time": "2026-03-29T16:15:34.039209+02:00",
+      "end_time": "2026-03-29T16:16:35.401432875+02:00",
+      "first_errors": null,
+      "hosts": ["http://localhost:8000"],
+      "clients": ["93Me"],
+      "throughput": {
+        "start_time": "2026-03-29T16:15:36+02:00",
+        "end_time": "2026-03-29T16:16:38+02:00",
+        "segmented": {
+          "fastest_start": "2026-03-29T16:16:17+02:00",
+          "median_start": "2026-03-29T16:16:08+02:00",
+          "slowest_start": "2026-03-29T16:15:53+02:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-29T16:15:34+02:00",
+              "bytes_per_sec": 8010676,
+              "obj_per_sec": 8.01
+            },
+            {
+              "start": "2026-03-29T16:15:35+02:00",
+              "bytes_per_sec": 12028399,
+              "obj_per_sec": 12.03
+            },
+            {
+              "start": "2026-03-29T16:15:36+02:00",
+              "bytes_per_sec": 22062979,
+              "obj_per_sec": 22.06
+            },
+            {
+              "start": "2026-03-29T16:15:37+02:00",
+              "bytes_per_sec": 22867061,
+              "obj_per_sec": 22.87
+            },
+            {
+              "start": "2026-03-29T16:15:38+02:00",
+              "bytes_per_sec": 20203576,
+              "obj_per_sec": 20.2
+            },
+            {
+              "start": "2026-03-29T16:15:39+02:00",
+              "bytes_per_sec": 21277018,
+              "obj_per_sec": 21.28
+            },
+            {
+              "start": "2026-03-29T16:15:40+02:00",
+              "bytes_per_sec": 23262792,
+              "obj_per_sec": 23.26
+            },
+            {
+              "start": "2026-03-29T16:15:41+02:00",
+              "bytes_per_sec": 22702502,
+              "obj_per_sec": 22.7
+            },
+            {
+              "start": "2026-03-29T16:15:42+02:00",
+              "bytes_per_sec": 11193102,
+              "obj_per_sec": 11.19
+            },
+            {
+              "start": "2026-03-29T16:15:43+02:00",
+              "bytes_per_sec": 8538788,
+              "obj_per_sec": 8.54
+            },
+            {
+              "start": "2026-03-29T16:15:44+02:00",
+              "bytes_per_sec": 9067685,
+              "obj_per_sec": 9.07
+            },
+            {
+              "start": "2026-03-29T16:15:45+02:00",
+              "bytes_per_sec": 17494104,
+              "obj_per_sec": 17.49
+            },
+            {
+              "start": "2026-03-29T16:15:46+02:00",
+              "bytes_per_sec": 22580496,
+              "obj_per_sec": 22.58
+            },
+            {
+              "start": "2026-03-29T16:15:47+02:00",
+              "bytes_per_sec": 24668104,
+              "obj_per_sec": 24.67
+            },
+            {
+              "start": "2026-03-29T16:15:48+02:00",
+              "bytes_per_sec": 23176142,
+              "obj_per_sec": 23.18
+            },
+            {
+              "start": "2026-03-29T16:15:49+02:00",
+              "bytes_per_sec": 25302257,
+              "obj_per_sec": 25.3
+            },
+            {
+              "start": "2026-03-29T16:15:50+02:00",
+              "bytes_per_sec": 22467758,
+              "obj_per_sec": 22.47
+            },
+            {
+              "start": "2026-03-29T16:15:51+02:00",
+              "bytes_per_sec": 19167563,
+              "obj_per_sec": 19.17
+            },
+            {
+              "start": "2026-03-29T16:15:52+02:00",
+              "bytes_per_sec": 8660582,
+              "obj_per_sec": 8.66
+            },
+            {
+              "start": "2026-03-29T16:15:53+02:00",
+              "bytes_per_sec": 7316661,
+              "obj_per_sec": 7.32
+            },
+            {
+              "start": "2026-03-29T16:15:54+02:00",
+              "bytes_per_sec": 11675841,
+              "obj_per_sec": 11.68
+            },
+            {
+              "start": "2026-03-29T16:15:55+02:00",
+              "bytes_per_sec": 22514379,
+              "obj_per_sec": 22.51
+            },
+            {
+              "start": "2026-03-29T16:15:56+02:00",
+              "bytes_per_sec": 22596392,
+              "obj_per_sec": 22.6
+            },
+            {
+              "start": "2026-03-29T16:15:57+02:00",
+              "bytes_per_sec": 24217295,
+              "obj_per_sec": 24.22
+            },
+            {
+              "start": "2026-03-29T16:15:58+02:00",
+              "bytes_per_sec": 26286649,
+              "obj_per_sec": 26.29
+            },
+            {
+              "start": "2026-03-29T16:15:59+02:00",
+              "bytes_per_sec": 25726976,
+              "obj_per_sec": 25.73
+            },
+            {
+              "start": "2026-03-29T16:16:00+02:00",
+              "bytes_per_sec": 24438914,
+              "obj_per_sec": 24.44
+            },
+            {
+              "start": "2026-03-29T16:16:01+02:00",
+              "bytes_per_sec": 14225602,
+              "obj_per_sec": 14.23
+            },
+            {
+              "start": "2026-03-29T16:16:02+02:00",
+              "bytes_per_sec": 7699721,
+              "obj_per_sec": 7.7
+            },
+            {
+              "start": "2026-03-29T16:16:03+02:00",
+              "bytes_per_sec": 8196415,
+              "obj_per_sec": 8.2
+            },
+            {
+              "start": "2026-03-29T16:16:04+02:00",
+              "bytes_per_sec": 14726581,
+              "obj_per_sec": 14.73
+            },
+            {
+              "start": "2026-03-29T16:16:05+02:00",
+              "bytes_per_sec": 19736009,
+              "obj_per_sec": 19.74
+            },
+            {
+              "start": "2026-03-29T16:16:06+02:00",
+              "bytes_per_sec": 19910235,
+              "obj_per_sec": 19.91
+            },
+            {
+              "start": "2026-03-29T16:16:07+02:00",
+              "bytes_per_sec": 19138605,
+              "obj_per_sec": 19.14
+            },
+            {
+              "start": "2026-03-29T16:16:08+02:00",
+              "bytes_per_sec": 20476538,
+              "obj_per_sec": 20.48
+            },
+            {
+              "start": "2026-03-29T16:16:09+02:00",
+              "bytes_per_sec": 18674108,
+              "obj_per_sec": 18.67
+            },
+            {
+              "start": "2026-03-29T16:16:10+02:00",
+              "bytes_per_sec": 18968188,
+              "obj_per_sec": 18.97
+            },
+            {
+              "start": "2026-03-29T16:16:11+02:00",
+              "bytes_per_sec": 9544970,
+              "obj_per_sec": 9.54
+            },
+            {
+              "start": "2026-03-29T16:16:12+02:00",
+              "bytes_per_sec": 8951052,
+              "obj_per_sec": 8.95
+            },
+            {
+              "start": "2026-03-29T16:16:13+02:00",
+              "bytes_per_sec": 9070390,
+              "obj_per_sec": 9.07
+            },
+            {
+              "start": "2026-03-29T16:16:14+02:00",
+              "bytes_per_sec": 20861684,
+              "obj_per_sec": 20.86
+            },
+            {
+              "start": "2026-03-29T16:16:15+02:00",
+              "bytes_per_sec": 23697358,
+              "obj_per_sec": 23.7
+            },
+            {
+              "start": "2026-03-29T16:16:16+02:00",
+              "bytes_per_sec": 25117846,
+              "obj_per_sec": 25.12
+            },
+            {
+              "start": "2026-03-29T16:16:17+02:00",
+              "bytes_per_sec": 26921159,
+              "obj_per_sec": 26.92
+            },
+            {
+              "start": "2026-03-29T16:16:18+02:00",
+              "bytes_per_sec": 25844270,
+              "obj_per_sec": 25.84
+            },
+            {
+              "start": "2026-03-29T16:16:19+02:00",
+              "bytes_per_sec": 25403357,
+              "obj_per_sec": 25.4
+            },
+            {
+              "start": "2026-03-29T16:16:20+02:00",
+              "bytes_per_sec": 17322017,
+              "obj_per_sec": 17.32
+            },
+            {
+              "start": "2026-03-29T16:16:21+02:00",
+              "bytes_per_sec": 9791098,
+              "obj_per_sec": 9.79
+            },
+            {
+              "start": "2026-03-29T16:16:22+02:00",
+              "bytes_per_sec": 9856237,
+              "obj_per_sec": 9.86
+            },
+            {
+              "start": "2026-03-29T16:16:23+02:00",
+              "bytes_per_sec": 14467654,
+              "obj_per_sec": 14.47
+            },
+            {
+              "start": "2026-03-29T16:16:24+02:00",
+              "bytes_per_sec": 23959289,
+              "obj_per_sec": 23.96
+            },
+            {
+              "start": "2026-03-29T16:16:25+02:00",
+              "bytes_per_sec": 25031773,
+              "obj_per_sec": 25.03
+            },
+            {
+              "start": "2026-03-29T16:16:26+02:00",
+              "bytes_per_sec": 26827399,
+              "obj_per_sec": 26.83
+            },
+            {
+              "start": "2026-03-29T16:16:27+02:00",
+              "bytes_per_sec": 24060074,
+              "obj_per_sec": 24.06
+            },
+            {
+              "start": "2026-03-29T16:16:28+02:00",
+              "bytes_per_sec": 26139962,
+              "obj_per_sec": 26.14
+            },
+            {
+              "start": "2026-03-29T16:16:29+02:00",
+              "bytes_per_sec": 23030560,
+              "obj_per_sec": 23.03
+            },
+            {
+              "start": "2026-03-29T16:16:30+02:00",
+              "bytes_per_sec": 10930373,
+              "obj_per_sec": 10.93
+            },
+            {
+              "start": "2026-03-29T16:16:31+02:00",
+              "bytes_per_sec": 7629552,
+              "obj_per_sec": 7.63
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 26921159,
+          "fastest_ops": 26.92,
+          "median_bps": 20476538,
+          "median_ops": 20.48,
+          "slowest_bps": 7316661,
+          "slowest_ops": 7.32
+        },
+        "errors": 0,
+        "measure_duration_millis": 58000,
+        "bytes": 1065714795.8049409,
+        "objects": 1065.7147958049404,
+        "ops": 1071
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-29T16:15:34.039209+02:00",
+          "end_time": "2026-03-29T16:16:35.401432875+02:00",
+          "errors": 0,
+          "measure_duration_millis": 61361,
+          "bytes": 1097000000,
+          "objects": 1097,
+          "ops": 1097
+        }
+      },
+      "throughput_by_client": {
+        "93Me": {
+          "start_time": "2026-03-29T16:15:34.039209+02:00",
+          "end_time": "2026-03-29T16:16:35.401432875+02:00",
+          "errors": 0,
+          "measure_duration_millis": 61361,
+          "bytes": 1097000000,
+          "objects": 1097,
+          "ops": 1097
+        }
+      },
+      "requests_by_client": {
+        "93Me": [
+          {
+            "start_time": "2026-03-29T16:15:34+02:00",
+            "end_time": "2026-03-29T16:15:44+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 284.448931,
+                "fastest_millis": 84.598584,
+                "p25_millis": 191.617375,
+                "median_millis": 250.350291,
+                "p75_millis": 334.778833,
+                "p90_millis": 448.196375,
+                "p99_millis": 889.748,
+                "slowest_millis": 889.748,
+                "std_dev_millis": 143.996963
+              },
+              "dur_median_millis": 592.559,
+              "fastest_millis": 147.38125,
+              "slowest_millis": 3528.419375,
+              "std_dev_millis": 505.85315,
+              "dur_99_millis": 2383.941333,
+              "dur_90_millis": 1418.962334,
+              "dur_avg_millis": 779.05815,
+              "requests": 166,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:44+02:00",
+            "end_time": "2026-03-29T16:15:54+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 269.449264,
+                "fastest_millis": 76.460833,
+                "p25_millis": 161.828458,
+                "median_millis": 220.148,
+                "p75_millis": 291.723834,
+                "p90_millis": 579.03325,
+                "p99_millis": 902.44875,
+                "slowest_millis": 902.44875,
+                "std_dev_millis": 179.16705
+              },
+              "dur_median_millis": 615.545,
+              "fastest_millis": 128.327833,
+              "slowest_millis": 3818.332375,
+              "std_dev_millis": 610.109525,
+              "dur_99_millis": 3246.490458,
+              "dur_90_millis": 1511.220625,
+              "dur_avg_millis": 769.674809,
+              "requests": 185,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:54+02:00",
+            "end_time": "2026-03-29T16:16:04+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 249.204395,
+                "fastest_millis": 81.462292,
+                "p25_millis": 134.591125,
+                "median_millis": 211.03575,
+                "p75_millis": 309.937041,
+                "p90_millis": 429.490542,
+                "p99_millis": 1434.26675,
+                "slowest_millis": 1434.26675,
+                "std_dev_millis": 172.945261
+              },
+              "dur_median_millis": 527.382167,
+              "fastest_millis": 138.916125,
+              "slowest_millis": 3912.248167,
+              "std_dev_millis": 640.955232,
+              "dur_99_millis": 3635.82775,
+              "dur_90_millis": 1360.762542,
+              "dur_avg_millis": 729.074639,
+              "requests": 187,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:04+02:00",
+            "end_time": "2026-03-29T16:16:14+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 302.137588,
+                "fastest_millis": 100.670667,
+                "p25_millis": 159.3705,
+                "median_millis": 228.508458,
+                "p75_millis": 324.338042,
+                "p90_millis": 491.626166,
+                "p99_millis": 4447.002667,
+                "slowest_millis": 4447.002667,
+                "std_dev_millis": 412.801854
+              },
+              "dur_median_millis": 679.043,
+              "fastest_millis": 149.060584,
+              "slowest_millis": 5810.625167,
+              "std_dev_millis": 744.503674,
+              "dur_99_millis": 4024.166042,
+              "dur_90_millis": 1675.833125,
+              "dur_avg_millis": 877.242715,
+              "requests": 157,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:14+02:00",
+            "end_time": "2026-03-29T16:16:24+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 215.034728,
+                "fastest_millis": 83.711625,
+                "p25_millis": 119.334333,
+                "median_millis": 173.83425,
+                "p75_millis": 248.616833,
+                "p90_millis": 401.276416,
+                "p99_millis": 1000.269125,
+                "slowest_millis": 1000.269125,
+                "std_dev_millis": 143.839584
+              },
+              "dur_median_millis": 604.298042,
+              "fastest_millis": 124.661208,
+              "slowest_millis": 3720.937417,
+              "std_dev_millis": 578.868282,
+              "dur_99_millis": 3404.285291,
+              "dur_90_millis": 1374.498084,
+              "dur_avg_millis": 737.89549,
+              "requests": 193,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:24+02:00",
+            "end_time": "2026-03-29T16:16:34+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 228.53064,
+                "fastest_millis": 79.441333,
+                "p25_millis": 130.280917,
+                "median_millis": 184.900042,
+                "p75_millis": 292.870667,
+                "p90_millis": 451.850541,
+                "p99_millis": 712.47775,
+                "slowest_millis": 712.47775,
+                "std_dev_millis": 136.244279
+              },
+              "dur_median_millis": 530.001125,
+              "fastest_millis": 125.840625,
+              "slowest_millis": 3087.079416,
+              "std_dev_millis": 586.555061,
+              "dur_99_millis": 2741.250875,
+              "dur_90_millis": 1811.474042,
+              "dur_avg_millis": 730.948932,
+              "requests": 193,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:34+02:00",
+            "end_time": "2026-03-29T16:16:44+02:00",
+            "single_sized_requests": {
+              "first_byte": {
+                "average_millis": 331.919579,
+                "fastest_millis": 125.886791,
+                "p25_millis": 207.939708,
+                "median_millis": 282.718042,
+                "p75_millis": 671.1655,
+                "p90_millis": 685.640041,
+                "p99_millis": 685.640041,
+                "slowest_millis": 685.640041,
+                "std_dev_millis": 204.863382
+              },
+              "dur_median_millis": 1255.34225,
+              "fastest_millis": 685.55025,
+              "slowest_millis": 3240.36675,
+              "std_dev_millis": 684.647163,
+              "dur_99_millis": 3240.36675,
+              "dur_90_millis": 2386.273417,
+              "dur_avg_millis": 1493.437614,
+              "requests": 16,
+              "obj_size": 1000000,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  },
+  "by_client": {
+    "93Me": {
+      "Title": "Client: 93Me (Final)",
+      "total_requests": 1824,
+      "total_objects": 1824,
+      "total_errors": 0,
+      "total_bytes": 1097000000,
+      "concurrency": 16,
+      "start_time": "2026-03-29T16:15:34.039203+02:00",
+      "end_time": "2026-03-29T16:16:35.401432875+02:00",
+      "first_errors": null,
+      "hosts": ["http://localhost:8000"],
+      "clients": ["93Me"],
+      "throughput": {
+        "start_time": "2026-03-29T16:15:36+02:00",
+        "end_time": "2026-03-29T16:16:38+02:00",
+        "segmented": {
+          "fastest_start": "2026-03-29T16:16:17+02:00",
+          "median_start": "2026-03-29T16:16:08+02:00",
+          "slowest_start": "2026-03-29T16:15:53+02:00",
+          "sorted_by": "bps",
+          "segments": [
+            {
+              "start": "2026-03-29T16:15:34+02:00",
+              "bytes_per_sec": 8010676,
+              "obj_per_sec": 20.68
+            },
+            {
+              "start": "2026-03-29T16:15:35+02:00",
+              "bytes_per_sec": 12028399,
+              "obj_per_sec": 17.77
+            },
+            {
+              "start": "2026-03-29T16:15:36+02:00",
+              "bytes_per_sec": 22062979,
+              "obj_per_sec": 35.46
+            },
+            {
+              "start": "2026-03-29T16:15:37+02:00",
+              "bytes_per_sec": 22867061,
+              "obj_per_sec": 36.75
+            },
+            {
+              "start": "2026-03-29T16:15:38+02:00",
+              "bytes_per_sec": 20203576,
+              "obj_per_sec": 28.24
+            },
+            {
+              "start": "2026-03-29T16:15:39+02:00",
+              "bytes_per_sec": 21277018,
+              "obj_per_sec": 40.66
+            },
+            {
+              "start": "2026-03-29T16:15:40+02:00",
+              "bytes_per_sec": 23262792,
+              "obj_per_sec": 38.79
+            },
+            {
+              "start": "2026-03-29T16:15:41+02:00",
+              "bytes_per_sec": 22702502,
+              "obj_per_sec": 32.44
+            },
+            {
+              "start": "2026-03-29T16:15:42+02:00",
+              "bytes_per_sec": 11193102,
+              "obj_per_sec": 23.54
+            },
+            {
+              "start": "2026-03-29T16:15:43+02:00",
+              "bytes_per_sec": 8538788,
+              "obj_per_sec": 10.17
+            },
+            {
+              "start": "2026-03-29T16:15:44+02:00",
+              "bytes_per_sec": 9067685,
+              "obj_per_sec": 20.23
+            },
+            {
+              "start": "2026-03-29T16:15:45+02:00",
+              "bytes_per_sec": 17494104,
+              "obj_per_sec": 19.06
+            },
+            {
+              "start": "2026-03-29T16:15:46+02:00",
+              "bytes_per_sec": 22580496,
+              "obj_per_sec": 35.34
+            },
+            {
+              "start": "2026-03-29T16:15:47+02:00",
+              "bytes_per_sec": 24668104,
+              "obj_per_sec": 42.27
+            },
+            {
+              "start": "2026-03-29T16:15:48+02:00",
+              "bytes_per_sec": 23176142,
+              "obj_per_sec": 40.47
+            },
+            {
+              "start": "2026-03-29T16:15:49+02:00",
+              "bytes_per_sec": 25302257,
+              "obj_per_sec": 34.83
+            },
+            {
+              "start": "2026-03-29T16:15:50+02:00",
+              "bytes_per_sec": 22467758,
+              "obj_per_sec": 45.83
+            },
+            {
+              "start": "2026-03-29T16:15:51+02:00",
+              "bytes_per_sec": 19167563,
+              "obj_per_sec": 32.74
+            },
+            {
+              "start": "2026-03-29T16:15:52+02:00",
+              "bytes_per_sec": 8660582,
+              "obj_per_sec": 12.64
+            },
+            {
+              "start": "2026-03-29T16:15:53+02:00",
+              "bytes_per_sec": 7316661,
+              "obj_per_sec": 15.77
+            },
+            {
+              "start": "2026-03-29T16:15:54+02:00",
+              "bytes_per_sec": 11675841,
+              "obj_per_sec": 14.68
+            },
+            {
+              "start": "2026-03-29T16:15:55+02:00",
+              "bytes_per_sec": 22514379,
+              "obj_per_sec": 37.26
+            },
+            {
+              "start": "2026-03-29T16:15:56+02:00",
+              "bytes_per_sec": 22596392,
+              "obj_per_sec": 39.88
+            },
+            {
+              "start": "2026-03-29T16:15:57+02:00",
+              "bytes_per_sec": 24217295,
+              "obj_per_sec": 42.96
+            },
+            {
+              "start": "2026-03-29T16:15:58+02:00",
+              "bytes_per_sec": 26286649,
+              "obj_per_sec": 41.1
+            },
+            {
+              "start": "2026-03-29T16:15:59+02:00",
+              "bytes_per_sec": 25726976,
+              "obj_per_sec": 38.67
+            },
+            {
+              "start": "2026-03-29T16:16:00+02:00",
+              "bytes_per_sec": 24438914,
+              "obj_per_sec": 46.06
+            },
+            {
+              "start": "2026-03-29T16:16:01+02:00",
+              "bytes_per_sec": 14225602,
+              "obj_per_sec": 20.16
+            },
+            {
+              "start": "2026-03-29T16:16:02+02:00",
+              "bytes_per_sec": 7699721,
+              "obj_per_sec": 11.3
+            },
+            {
+              "start": "2026-03-29T16:16:03+02:00",
+              "bytes_per_sec": 8196415,
+              "obj_per_sec": 17.43
+            },
+            {
+              "start": "2026-03-29T16:16:04+02:00",
+              "bytes_per_sec": 14726581,
+              "obj_per_sec": 27.44
+            },
+            {
+              "start": "2026-03-29T16:16:05+02:00",
+              "bytes_per_sec": 19736009,
+              "obj_per_sec": 34.72
+            },
+            {
+              "start": "2026-03-29T16:16:06+02:00",
+              "bytes_per_sec": 19910235,
+              "obj_per_sec": 30.87
+            },
+            {
+              "start": "2026-03-29T16:16:07+02:00",
+              "bytes_per_sec": 19138605,
+              "obj_per_sec": 41.88
+            },
+            {
+              "start": "2026-03-29T16:16:08+02:00",
+              "bytes_per_sec": 20476538,
+              "obj_per_sec": 31.25
+            },
+            {
+              "start": "2026-03-29T16:16:09+02:00",
+              "bytes_per_sec": 18674108,
+              "obj_per_sec": 32.34
+            },
+            {
+              "start": "2026-03-29T16:16:10+02:00",
+              "bytes_per_sec": 18968188,
+              "obj_per_sec": 27.3
+            },
+            {
+              "start": "2026-03-29T16:16:11+02:00",
+              "bytes_per_sec": 9544970,
+              "obj_per_sec": 15.54
+            },
+            {
+              "start": "2026-03-29T16:16:12+02:00",
+              "bytes_per_sec": 8951052,
+              "obj_per_sec": 9.06
+            },
+            {
+              "start": "2026-03-29T16:16:13+02:00",
+              "bytes_per_sec": 9070390,
+              "obj_per_sec": 22.39
+            },
+            {
+              "start": "2026-03-29T16:16:14+02:00",
+              "bytes_per_sec": 20861684,
+              "obj_per_sec": 32.43
+            },
+            {
+              "start": "2026-03-29T16:16:15+02:00",
+              "bytes_per_sec": 23697358,
+              "obj_per_sec": 37.7
+            },
+            {
+              "start": "2026-03-29T16:16:16+02:00",
+              "bytes_per_sec": 25117846,
+              "obj_per_sec": 43.12
+            },
+            {
+              "start": "2026-03-29T16:16:17+02:00",
+              "bytes_per_sec": 26921159,
+              "obj_per_sec": 40.92
+            },
+            {
+              "start": "2026-03-29T16:16:18+02:00",
+              "bytes_per_sec": 25844270,
+              "obj_per_sec": 37.27
+            },
+            {
+              "start": "2026-03-29T16:16:19+02:00",
+              "bytes_per_sec": 25403357,
+              "obj_per_sec": 47.88
+            },
+            {
+              "start": "2026-03-29T16:16:20+02:00",
+              "bytes_per_sec": 17322017,
+              "obj_per_sec": 31.41
+            },
+            {
+              "start": "2026-03-29T16:16:21+02:00",
+              "bytes_per_sec": 9791098,
+              "obj_per_sec": 11.29
+            },
+            {
+              "start": "2026-03-29T16:16:22+02:00",
+              "bytes_per_sec": 9856237,
+              "obj_per_sec": 13.61
+            },
+            {
+              "start": "2026-03-29T16:16:23+02:00",
+              "bytes_per_sec": 14467654,
+              "obj_per_sec": 22.49
+            },
+            {
+              "start": "2026-03-29T16:16:24+02:00",
+              "bytes_per_sec": 23959289,
+              "obj_per_sec": 49.26
+            },
+            {
+              "start": "2026-03-29T16:16:25+02:00",
+              "bytes_per_sec": 25031773,
+              "obj_per_sec": 38.1
+            },
+            {
+              "start": "2026-03-29T16:16:26+02:00",
+              "bytes_per_sec": 26827399,
+              "obj_per_sec": 45.17
+            },
+            {
+              "start": "2026-03-29T16:16:27+02:00",
+              "bytes_per_sec": 24060074,
+              "obj_per_sec": 41.57
+            },
+            {
+              "start": "2026-03-29T16:16:28+02:00",
+              "bytes_per_sec": 26139962,
+              "obj_per_sec": 39.46
+            },
+            {
+              "start": "2026-03-29T16:16:29+02:00",
+              "bytes_per_sec": 23030560,
+              "obj_per_sec": 42.21
+            },
+            {
+              "start": "2026-03-29T16:16:30+02:00",
+              "bytes_per_sec": 10930373,
+              "obj_per_sec": 16.8
+            },
+            {
+              "start": "2026-03-29T16:16:31+02:00",
+              "bytes_per_sec": 7629552,
+              "obj_per_sec": 16.37
+            }
+          ],
+          "segment_duration_millis": 1000,
+          "fastest_bps": 26921159,
+          "fastest_ops": 40.92,
+          "median_bps": 20476538,
+          "median_ops": 31.25,
+          "slowest_bps": 7316661,
+          "slowest_ops": 15.77
+        },
+        "errors": 0,
+        "measure_duration_millis": 58000,
+        "bytes": 1065714795.8049409,
+        "objects": 1773.0503341803499,
+        "ops": 1772
+      },
+      "throughput_by_host": {
+        "http://localhost:8000": {
+          "start_time": "2026-03-29T16:15:34.039203+02:00",
+          "end_time": "2026-03-29T16:16:35.401432875+02:00",
+          "errors": 0,
+          "measure_duration_millis": 61361,
+          "bytes": 1097000000,
+          "objects": 1824,
+          "ops": 1824
+        }
+      },
+      "throughput_by_client": {
+        "93Me": {
+          "start_time": "2026-03-29T16:15:34.039203+02:00",
+          "end_time": "2026-03-29T16:16:35.401432875+02:00",
+          "errors": 0,
+          "measure_duration_millis": 61361,
+          "bytes": 1097000000,
+          "objects": 1824,
+          "ops": 1824
+        }
+      },
+      "requests_by_client": {
+        "93Me": [
+          {
+            "start_time": "2026-03-29T16:15:34+02:00",
+            "end_time": "2026-03-29T16:15:44+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 284.448931,
+                    "fastest_millis": 84.598584,
+                    "p25_millis": 191.617375,
+                    "median_millis": 250.350291,
+                    "p75_millis": 334.778833,
+                    "p90_millis": 448.196375,
+                    "p99_millis": 889.748,
+                    "slowest_millis": 889.748,
+                    "std_dev_millis": 143.996963
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1687595.7,
+                  "avg_duration_millis": 779.05815,
+                  "bps_average": 1283601.2,
+                  "requests": 166,
+                  "bps_90": 704740.3,
+                  "bps_99": 419473.4,
+                  "bps_fastest": 6785123.6,
+                  "bps_slowest": 283413,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 283,
+              "avg_obj_size": 586572,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:44+02:00",
+            "end_time": "2026-03-29T16:15:54+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 269.449264,
+                    "fastest_millis": 76.460833,
+                    "p25_millis": 161.828458,
+                    "median_millis": 220.148,
+                    "p75_millis": 291.723834,
+                    "p90_millis": 579.03325,
+                    "p99_millis": 902.44875,
+                    "slowest_millis": 902.44875,
+                    "std_dev_millis": 179.16705
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1624576.6,
+                  "avg_duration_millis": 769.674809,
+                  "bps_average": 1299250,
+                  "requests": 185,
+                  "bps_90": 661716.7,
+                  "bps_99": 308024.9,
+                  "bps_fastest": 7792541.8,
+                  "bps_slowest": 261894.4,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 306,
+              "avg_obj_size": 604575,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:15:54+02:00",
+            "end_time": "2026-03-29T16:16:04+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 249.204395,
+                    "fastest_millis": 81.462292,
+                    "p25_millis": 134.591125,
+                    "median_millis": 211.03575,
+                    "p75_millis": 309.937041,
+                    "p90_millis": 429.490542,
+                    "p99_millis": 1434.26675,
+                    "slowest_millis": 1434.26675,
+                    "std_dev_millis": 172.945261
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1896158.2,
+                  "avg_duration_millis": 729.074639,
+                  "bps_average": 1371601.7,
+                  "requests": 187,
+                  "bps_90": 734882.1,
+                  "bps_99": 275040.5,
+                  "bps_fastest": 7198588.4,
+                  "bps_slowest": 255607.5,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 309,
+              "avg_obj_size": 605177,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:04+02:00",
+            "end_time": "2026-03-29T16:16:14+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 302.137588,
+                    "fastest_millis": 100.670667,
+                    "p25_millis": 159.3705,
+                    "median_millis": 228.508458,
+                    "p75_millis": 324.338042,
+                    "p90_millis": 491.626166,
+                    "p99_millis": 4447.002667,
+                    "slowest_millis": 4447.002667,
+                    "std_dev_millis": 412.801854
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1472660.8,
+                  "avg_duration_millis": 877.242715,
+                  "bps_average": 1139935.4,
+                  "requests": 157,
+                  "bps_90": 596718.1,
+                  "bps_99": 248498.7,
+                  "bps_fastest": 6708681.6,
+                  "bps_slowest": 172098.5,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 270,
+              "avg_obj_size": 581481,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:14+02:00",
+            "end_time": "2026-03-29T16:16:24+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 215.034728,
+                    "fastest_millis": 83.711625,
+                    "p25_millis": 119.334333,
+                    "median_millis": 173.83425,
+                    "p75_millis": 248.616833,
+                    "p90_millis": 401.276416,
+                    "p99_millis": 1000.269125,
+                    "slowest_millis": 1000.269125,
+                    "std_dev_millis": 143.839584
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1654812.6,
+                  "avg_duration_millis": 737.89549,
+                  "bps_average": 1355205.5,
+                  "requests": 193,
+                  "bps_90": 727538.3,
+                  "bps_99": 293747.4,
+                  "bps_fastest": 8021741.6,
+                  "bps_slowest": 268749.5,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 313,
+              "avg_obj_size": 616613,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:24+02:00",
+            "end_time": "2026-03-29T16:16:34+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "first_byte": {
+                    "average_millis": 228.53064,
+                    "fastest_millis": 79.441333,
+                    "p25_millis": 130.280917,
+                    "median_millis": 184.900042,
+                    "p75_millis": 292.870667,
+                    "p90_millis": 451.850541,
+                    "p99_millis": 712.47775,
+                    "slowest_millis": 712.47775,
+                    "std_dev_millis": 136.244279
+                  },
+                  "min_size_string": "1 B",
+                  "max_size_string": "1.0 MiB",
+                  "bps_median": 1886788.4,
+                  "avg_duration_millis": 730.948932,
+                  "bps_average": 1368084.6,
+                  "requests": 193,
+                  "bps_90": 552036.6,
+                  "bps_99": 364797,
+                  "bps_fastest": 7946559.4,
+                  "bps_slowest": 323930.8,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 1,
+                  "merged_entries": 1
+                }
+              ],
+              "requests": 326,
+              "avg_obj_size": 592024,
+              "merged_entries": 1
+            }
+          },
+          {
+            "start_time": "2026-03-29T16:16:34+02:00",
+            "end_time": "2026-03-29T16:16:44+02:00",
+            "multi_sized_requests": {
+              "by_size": [
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                },
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                },
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                },
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                },
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                },
+                {
+                  "first_byte": {
+                    "average_millis": 331.919579,
+                    "fastest_millis": 125.886791,
+                    "p25_millis": 207.939708,
+                    "median_millis": 282.718042,
+                    "p75_millis": 671.1655,
+                    "p90_millis": 685.640041,
+                    "p99_millis": 685.640041,
+                    "slowest_millis": 685.640041,
+                    "std_dev_millis": 204.863382
+                  },
+                  "min_size_string": "100KiB",
+                  "max_size_string": "1MiB",
+                  "bps_median": 796595.5,
+                  "avg_duration_millis": 1493.437614,
+                  "bps_average": 669596.1,
+                  "requests": 16,
+                  "bps_90": 419063.5,
+                  "bps_99": 308607,
+                  "bps_fastest": 1458682.3,
+                  "bps_slowest": 308607,
+                  "avg_obj_size": 1000000,
+                  "max_size": 1048576,
+                  "min_size": 102400,
+                  "merged_entries": 1
+                },
+                {
+                  "min_size_string": "",
+                  "max_size_string": "",
+                  "bps_median": 0,
+                  "avg_duration_millis": 0,
+                  "bps_average": 0,
+                  "requests": 0,
+                  "bps_90": 0,
+                  "bps_99": 0,
+                  "bps_fastest": 0,
+                  "bps_slowest": 0,
+                  "avg_obj_size": 0,
+                  "max_size": 0,
+                  "min_size": 0,
+                  "merged_entries": 0
+                }
+              ],
+              "requests": 17,
+              "avg_obj_size": 941176,
+              "merged_entries": 1
+            }
+          }
+        ]
+      }
+    }
+  }
+}

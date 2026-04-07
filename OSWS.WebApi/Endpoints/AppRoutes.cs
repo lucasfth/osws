@@ -78,7 +78,12 @@ public static class AppRoutes
                 if (identity is null)
                 {
                     // JIT: provision a new user on first OIDC login
-                    var user = new User { Name = name, Email = email, IsRbacAdmin = isRbacAdmin };
+                    var user = new User
+                    {
+                        Name = name,
+                        Email = email,
+                        IsRbacAdmin = isRbacAdmin,
+                    };
 
                     identity = new ExternalIdentity
                     {

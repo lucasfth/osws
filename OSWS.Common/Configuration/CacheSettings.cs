@@ -1,26 +1,48 @@
 namespace OSWS.Common.Configuration;
 
 /// <summary>
-/// Configuration for encrypted parquet file caching.
-/// Bind from appsettings.json section "Cache".
+/// Configuration for all caching in OSWS. Bind from appsettings.json section "Cache".
 /// </summary>
 public class CacheSettings
 {
+    // -----------------------------------------------------------------------
+    // DEK cache
+    // -----------------------------------------------------------------------
+
     /// <summary>
-    /// Enable disk-based caching of encrypted parquet files.
-    /// When enabled, encrypted files fetched from S3 are cached locally to reduce S3 API calls.
+    /// Provider for the DEK (Data Encryption Key) cache.
+    /// "Local" (default) — in-memory, single-node only.
+    /// </summary>
+    public string DekCacheProvider { get; set; } = "Local";
+
+    /// <summary>
+    /// Maximum in-memory DEK entries (default 2500).
+    /// </summary>
+    public int DekCacheCapacity { get; set; } = 2500;
+
+    /// <summary>
+    /// TTL in seconds for cached DEKs.
+    /// 0 means no expiry until RBAC TTLs are wired in.
+    /// TODO (RBAC): This will be superseded by per-entry TTLs derived from the caller's role.
+    /// </summary>
+    public int DekTtlSeconds { get; set; } = 0;
+
+    // -----------------------------------------------------------------------
+    // Encrypted parquet file cache (always local disk — not Redis)
+    // -----------------------------------------------------------------------
+
+    /// <summary>
+    /// Enable disk caching of encrypted parquet files. When disabled, files are always fetched from S3.
     /// </summary>
     public bool EnableFileCache { get; set; } = true;
 
     /// <summary>
-    /// Maximum total size of cached files in bytes (default: 10GB).
-    /// When limit is reached, least recently used files are evicted.
+    /// Maximum total size of cached files in bytes (default 10 GB). LRU eviction when exceeded.
     /// </summary>
-    public long MaxCacheSizeBytes { get; set; } = 10L * 1024 * 1024 * 1024; // 10GB
+    public long MaxCacheSizeBytes { get; set; } = 10L * 1024 * 1024 * 1024;
 
     /// <summary>
-    /// Directory path for cached files. If null or empty, uses system temp directory.
-    /// Directory will be created if it doesn't exist.
+    /// Directory for cached parquet files. Defaults to system temp directory.
     /// </summary>
     public string? CacheDirectory { get; set; }
 }

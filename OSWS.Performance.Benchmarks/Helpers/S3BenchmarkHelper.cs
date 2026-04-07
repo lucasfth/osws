@@ -205,7 +205,7 @@ public static class S3BenchmarkHelper
         var wideUnenc = await WideDatasetGenerator.GenerateAsync(
             encryptionObj.WideCols,
             encryptionObj.WideRows,
-            CancellationToken.None
+            cancellationToken: CancellationToken.None
         );
         (encryptionObj.WideEnc, _) = await RetryWithBackoffAsync(
             () => encryptionObj.ParquetWriter.WriteParquetAsync(wideUnenc, "default"),

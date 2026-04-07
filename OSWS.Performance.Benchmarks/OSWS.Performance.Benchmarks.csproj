@@ -4,6 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <OutputType>Exe</OutputType>
+    <StartupObject>OSWS.Performance.Benchmarks.Program</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,5 +35,10 @@
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Infrastructure\warp-results\" />
+    <Folder Include="warp-results\" />
   </ItemGroup>
 </Project>

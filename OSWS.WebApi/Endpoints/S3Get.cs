@@ -51,7 +51,7 @@ public class S3Get(
             // VersionId = string.IsNullOrEmpty(prms.Version) ? null : prms.Version,
         };
 
-        var rangeSpec = await HttpHeaderHelper.ParseRange(httpRequest);
+        var rangeSpec = await RangeHelper.ParseRange(httpRequest);
         if (rangeSpec.IsInvalidSpec)
         {
             return Results.StatusCode(400);
@@ -120,7 +120,10 @@ public class S3Get(
             {
                 // Resolve which columns the user's roles are permitted to decrypt,
                 // including all transitively inherited roles.
-                var effectiveRoles = await roleHierarchy.GetEffectiveRolesAsync(user.Id, cancellationToken);
+                var effectiveRoles = await roleHierarchy.GetEffectiveRolesAsync(
+                    user.Id,
+                    cancellationToken
+                );
                 var roleIds = effectiveRoles.Select(r => r.Id).ToList();
 
                 var allowedColumns = await db
@@ -216,8 +219,8 @@ public class S3Get(
 
             if (resp != null)
             {
-                await HttpHeaderHelper.ForwardS3ETag(resp, httpResponse);
-                await HttpHeaderHelper.ForwardS3LastModified(resp, httpResponse);
+                await S3MetadataHelper.ForwardS3ETag(resp, httpResponse);
+                await S3MetadataHelper.ForwardS3LastModified(resp, httpResponse);
             }
             else if (metadataResp != null)
             {
@@ -228,7 +231,7 @@ public class S3Get(
                         .LastModified.GetValueOrDefault()
                         .ToString("R");
             }
-            await HttpHeaderHelper.ForwardS3ContentRelatedHeaders(
+            await S3MetadataHelper.ForwardS3ContentRelatedHeaders(
                 httpResponse,
                 bounds.Start,
                 bounds.End,

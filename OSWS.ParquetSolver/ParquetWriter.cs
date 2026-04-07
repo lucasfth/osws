@@ -1,3 +1,5 @@
+using Microsoft.Extensions.Logging;
+using OSWS.Common.Configuration;
 using OSWS.Models.DTOs;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver.Helpers;
@@ -7,12 +9,13 @@ using ParquetSharp.IO;
 
 namespace OSWS.ParquetSolver;
 
-public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerType = "Azure")
-    : IParquetWriter
+public class ParquetWriter(
+    IKeyVaultProvider keyVaultProvider,
+    string providerType = "Azure",
+    ILogger? logger = null,
+    EncryptionSettings? encryptionSettings = null
+) : IParquetWriter
 {
-    private readonly IKeyVaultProvider _keyVaultProvider =
-        keyVaultProvider ?? throw new ArgumentNullException(nameof(keyVaultProvider));
-
     /// <summary>
     /// Read an unencrypted parquet file and write an encrypted version.
     /// Encrypts specified columns (or all columns if null) using the configured
@@ -26,14 +29,46 @@ public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerTy
     public Task<(Stream Stream, EncryptionResult Metadata)> WriteParquetAsync(
         Stream input,
         string role,
-        string[]? columnsToEncrypt = null
+        string[]? columnsToEncrypt = null,
+        Stream? output = null
     )
     {
-        return Task.Run(() => WriteParquetInternal(input, role, columnsToEncrypt));
+        return Task.Run(() => WriteParquetInternal(input, role, columnsToEncrypt, output));
     }
 
-    private (Stream Stream, EncryptionResult Metadata) WriteParquetInternal(Stream input, string role, string[]? columnsToEncrypt)
+    private (Stream Stream, EncryptionResult Metadata) WriteParquetInternal(
+        Stream input,
+        string role,
+        string[]? columnsToEncrypt,
+        Stream? output
+    )
     {
+        // If encryption is disabled, just pass through the input stream
+        if (encryptionSettings is { DisableEncryption: true })
+        {
+            logger?.LogInformation(
+                "[ParquetWriter] Encryption disabled, writing plaintext parquet"
+            );
+            var plainTextStream = new MemoryStream();
+            input.CopyTo(plainTextStream);
+            plainTextStream.Position = 0;
+            return (
+                plainTextStream,
+                new EncryptionResult
+                {
+                    FileKeyVaultId = string.Empty,
+                    FileKeyName = string.Empty,
+                    Columns = new List<EncryptedColumnInfo>(),
+                }
+            );
+        }
+
+        logger?.LogInformation(
+            "[ParquetWriter] Encrypting parquet with role: {Role}, columns: {ColumnCount}",
+            role,
+            columnsToEncrypt?.Length.ToString() ?? "all"
+        );
+
         using var inputRaf = new ManagedRandomAccessFile(input, leaveOpen: true);
         using var reader = new ParquetFileReader(inputRaf);
 
@@ -47,9 +82,10 @@ public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerTy
         var (encryptionProperties, encryptionMetadata) = Cryptography.BuildEncryptionProperties(
             schema,
             columnsToEncrypt,
-            _keyVaultProvider,
+            keyVaultProvider,
             role,
-            providerType
+            providerType,
+            encryptionSettings
         );
 
         Console.WriteLine(
@@ -60,7 +96,7 @@ public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerTy
         writerPropertiesBuilder.Encryption(encryptionProperties);
         using var writerProperties = writerPropertiesBuilder.Build();
 
-        var outputStream = new MemoryStream();
+        var outputStream = output ?? new MemoryStream();
         using var outputMos = new ManagedOutputStream(outputStream, leaveOpen: true);
         using var writer = new ParquetFileWriter(
             outputMos,
@@ -69,12 +105,15 @@ public class ParquetWriter(IKeyVaultProvider keyVaultProvider, string providerTy
             keyValueMetadata
         );
 
-        Copy.CopyRowGroups(writer, reader, numColumns, numRowGroups);
+        RowGroupCopier.CopyRowGroups(writer, reader, numColumns, numRowGroups);
 
         writer.Close();
         reader.Close();
 
-        outputStream.Position = 0;
+        if (outputStream.CanSeek)
+        {
+            outputStream.Position = 0;
+        }
         return (outputStream, encryptionMetadata);
     }
 }

@@ -4,14 +4,14 @@ Object Storage Web Service - an S3-compatible API with Parquet Modular Encryptio
 
 ## Architecture
 
-| Project | Role |
-| --- | --- |
-| **OSWS.WebApi** | ASP.NET minimal API host. Registers S3 endpoints, Parquet services, and the key vault provider. |
-| **OSWS.Library** | S3 client infrastructure - `S3ClientFactory` dynamically creates `IAmazonS3` clients from per-request options. |
-| **OSWS.Models** | Shared DTOs and EF Core entities (`User`, `Role`, `RoleAssignment`). Defines `IKeyVaultProvider` interface. |
-| **OSWS.KeyManager** | EF Core DbContext (PostgreSQL) and key vault provider implementations (Azure, Internal). |
-| **OSWS.ParquetSolver** | Parquet Modular Encryption via ParquetSharp. Uses envelope encryption through `IKeyVaultProvider`. |
-| **OSWS.Common** | Shared configuration models. |
+| Project                | Role                                                                                                           |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **OSWS.WebApi**        | ASP.NET minimal API host. Registers S3 endpoints, Parquet services, and the key vault provider.                |
+| **OSWS.Library**       | S3 client infrastructure - `S3ClientFactory` dynamically creates `IAmazonS3` clients from per-request options. |
+| **OSWS.Models**        | Shared DTOs and EF Core entities (`User`, `Role`, `RoleAssignment`). Defines `IKeyVaultProvider` interface.    |
+| **OSWS.KeyManager**    | EF Core DbContext (PostgreSQL) and key vault provider implementations (Azure, Internal).                       |
+| **OSWS.ParquetSolver** | Parquet Modular Encryption via ParquetSharp. Uses envelope encryption through `IKeyVaultProvider`.             |
+| **OSWS.Common**        | Shared configuration models.                                                                                   |
 
 ## Encryption design
 
@@ -26,10 +26,10 @@ Raw keys never leave Azure Key Vault. Access control is enforced at the vault le
 
 The `IKeyVaultProvider` interface allows swapping providers:
 
-| Provider | Config value | Use case |
-| --- | --- | --- |
-| **Azure Key Vault** | `"Azure"` | Production - RSA-2048 KEKs, RSA-OAEP-256 wrapping |
-| **Internal (in-memory)** | `"Internal"` | Development/testing only - keys lost on restart |
+| Provider                 | Config value | Use case                                          |
+| ------------------------ | ------------ | ------------------------------------------------- |
+| **Azure Key Vault**      | `"Azure"`    | Production - RSA-2048 KEKs, RSA-OAEP-256 wrapping |
+| **Internal (in-memory)** | `"Internal"` | Development/testing only - keys lost on restart   |
 
 ## Prerequisites
 
@@ -147,7 +147,7 @@ Open `http(s)://<your-app-url>/setup` to create the initial admin account.
 3. Fill out **Name**. Set **Client Launch URL** and **Callback URLs** to `http://localhost:5173` (or your frontend URL).
 4. Enable **Public Client** and **PKCE**
 5. Set to **Unrestricted** or restrict to groups of choice
-4. Note the **Client ID** and your PocketID URL (e.g. https://pocket-id.example.com or http://localhost:1411)
+6. Note the **Client ID** and your PocketID URL (e.g. https://pocket-id.example.com or http://localhost:1411)
 
 #### Add a custom claim for RBAC admin
 

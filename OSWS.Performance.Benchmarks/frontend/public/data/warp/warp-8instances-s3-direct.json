@@ -15,9 +15,7 @@
     "hosts": [
       "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
     ],
-    "clients": [
-      "JSkS"
-    ],
+    "clients": ["JSkS"],
     "throughput": {
       "start_time": "2026-03-29T16:12:00+02:00",
       "end_time": "2026-03-29T16:13:02+02:00",
@@ -735,9 +733,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "JSkS"
-      ],
+      "clients": ["JSkS"],
       "throughput": {
         "start_time": "2026-03-29T16:12:00+02:00",
         "end_time": "2026-03-29T16:13:01+02:00",
@@ -1183,9 +1179,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "JSkS"
-      ],
+      "clients": ["JSkS"],
       "throughput": {
         "start_time": "2026-03-29T16:12:00+02:00",
         "end_time": "2026-03-29T16:13:02+02:00",
@@ -1729,9 +1723,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "JSkS"
-      ],
+      "clients": ["JSkS"],
       "throughput": {
         "start_time": "2026-03-29T16:12:01+02:00",
         "end_time": "2026-03-29T16:13:02+02:00",
@@ -2193,9 +2185,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "JSkS"
-      ],
+      "clients": ["JSkS"],
       "throughput": {
         "start_time": "2026-03-29T16:12:00+02:00",
         "end_time": "2026-03-29T16:13:02+02:00",
@@ -2664,9 +2654,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "JSkS"
-      ],
+      "clients": ["JSkS"],
       "throughput": {
         "start_time": "2026-03-29T16:12:00+02:00",
         "end_time": "2026-03-29T16:13:02+02:00",
@@ -3385,9 +3373,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "JSkS"
-      ],
+      "clients": ["JSkS"],
       "throughput": {
         "start_time": "2026-03-29T16:12:00+02:00",
         "end_time": "2026-03-29T16:13:02+02:00",
@@ -3933,9 +3919,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "JSkS"
-      ],
+      "clients": ["JSkS"],
       "throughput": {
         "start_time": "2026-03-29T16:12:00+02:00",
         "end_time": "2026-03-29T16:13:02+02:00",

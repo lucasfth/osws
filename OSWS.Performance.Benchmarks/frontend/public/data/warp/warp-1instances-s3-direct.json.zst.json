@@ -15,9 +15,7 @@
     "hosts": [
       "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
     ],
-    "clients": [
-      "QozC"
-    ],
+    "clients": ["QozC"],
     "throughput": {
       "start_time": "2026-03-24T20:46:11+01:00",
       "end_time": "2026-03-24T20:47:12+01:00",
@@ -634,9 +632,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "QozC"
-      ],
+      "clients": ["QozC"],
       "throughput": {
         "start_time": "2026-03-24T20:46:11+01:00",
         "end_time": "2026-03-24T20:47:12+01:00",
@@ -1098,9 +1094,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "QozC"
-      ],
+      "clients": ["QozC"],
       "throughput": {
         "start_time": "2026-03-24T20:46:11+01:00",
         "end_time": "2026-03-24T20:47:12+01:00",
@@ -1639,9 +1633,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "QozC"
-      ],
+      "clients": ["QozC"],
       "throughput": {
         "start_time": "2026-03-24T20:46:11+01:00",
         "end_time": "2026-03-24T20:47:12+01:00",
@@ -2103,9 +2095,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "QozC"
-      ],
+      "clients": ["QozC"],
       "throughput": {
         "start_time": "2026-03-24T20:46:11+01:00",
         "end_time": "2026-03-24T20:47:12+01:00",
@@ -2569,9 +2559,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "QozC"
-      ],
+      "clients": ["QozC"],
       "throughput": {
         "start_time": "2026-03-24T20:46:11+01:00",
         "end_time": "2026-03-24T20:47:12+01:00",
@@ -3189,9 +3177,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "QozC"
-      ],
+      "clients": ["QozC"],
       "throughput": {
         "start_time": "2026-03-24T20:46:11+01:00",
         "end_time": "2026-03-24T20:47:12+01:00",
@@ -3732,9 +3718,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "QozC"
-      ],
+      "clients": ["QozC"],
       "throughput": {
         "start_time": "2026-03-24T20:46:11+01:00",
         "end_time": "2026-03-24T20:47:12+01:00",

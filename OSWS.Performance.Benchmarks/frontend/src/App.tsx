@@ -728,19 +728,19 @@ function App() {
         });
 
         const microPromises = [
-          fetch("/data/micro/authorization-report.csv").then((res) => {
+          fetch("/data/micro/OSWS.Performance.Benchmarks.Measurements.AuthorizationBenchmark-report.csv").then((res) => {
             if (!res.ok) {
               throw new Error("Failed to load authorization report");
             }
             return res.text();
           }),
-          fetch("/data/micro/keyunwrap-report.csv").then((res) => {
+          fetch("/data/micro/OSWS.Performance.Benchmarks.Measurements.KeyUnwrapBenchmark-report.csv").then((res) => {
             if (!res.ok) {
               throw new Error("Failed to load key unwrap report");
             }
             return res.text();
           }),
-          fetch("/data/micro/decryption-report.csv").then((res) => {
+          fetch("/data/micro/OSWS.Performance.Benchmarks.Measurements.DecryptionBenchmark-report.csv").then((res) => {
             if (!res.ok) {
               throw new Error("Failed to load decryption report");
             }

@@ -15,9 +15,7 @@
     "hosts": [
       "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
     ],
-    "clients": [
-      "oC0r"
-    ],
+    "clients": ["oC0r"],
     "throughput": {
       "start_time": "2026-03-29T15:31:03+02:00",
       "end_time": "2026-03-29T15:32:05+02:00",
@@ -562,9 +560,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "oC0r"
-      ],
+      "clients": ["oC0r"],
       "throughput": {
         "start_time": "2026-03-29T15:31:03+02:00",
         "end_time": "2026-03-29T15:32:05+02:00",
@@ -1110,9 +1106,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "oC0r"
-      ],
+      "clients": ["oC0r"],
       "throughput": {
         "start_time": "2026-03-29T15:31:03+02:00",
         "end_time": "2026-03-29T15:32:05+02:00",
@@ -1658,9 +1652,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "oC0r"
-      ],
+      "clients": ["oC0r"],
       "throughput": {
         "start_time": "2026-03-29T15:31:03+02:00",
         "end_time": "2026-03-29T15:32:05+02:00",
@@ -2206,9 +2198,7 @@
       "hosts": [
         "https://f2087fdd677819f9e9095e98c80537b9.r2.cloudflarestorage.com"
       ],
-      "clients": [
-        "oC0r"
-      ],
+      "clients": ["oC0r"],
       "throughput": {
         "start_time": "2026-03-29T15:31:03+02:00",
         "end_time": "2026-03-29T15:32:05+02:00",

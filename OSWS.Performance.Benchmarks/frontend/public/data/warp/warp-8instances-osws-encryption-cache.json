@@ -12,12 +12,8 @@
     "start_time": "2026-03-29T16:23:02.27516+02:00",
     "end_time": "2026-03-29T16:24:03.145920291+02:00",
     "first_errors": null,
-    "hosts": [
-      "http://localhost:8000"
-    ],
-    "clients": [
-      "YXCm"
-    ],
+    "hosts": ["http://localhost:8000"],
+    "clients": ["YXCm"],
     "throughput": {
       "start_time": "2026-03-29T16:23:04+02:00",
       "end_time": "2026-03-29T16:24:06+02:00",
@@ -636,12 +632,8 @@
       "start_time": "2026-03-29T16:23:02.278145+02:00",
       "end_time": "2026-03-29T16:24:02.294758333+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "YXCm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["YXCm"],
       "throughput": {
         "start_time": "2026-03-29T16:23:04+02:00",
         "end_time": "2026-03-29T16:24:05+02:00",
@@ -1100,12 +1092,8 @@
       "start_time": "2026-03-29T16:23:02.275246+02:00",
       "end_time": "2026-03-29T16:24:03.145920291+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "YXCm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["YXCm"],
       "throughput": {
         "start_time": "2026-03-29T16:23:04+02:00",
         "end_time": "2026-03-29T16:24:06+02:00",
@@ -1646,12 +1634,8 @@
       "start_time": "2026-03-29T16:23:02.375644+02:00",
       "end_time": "2026-03-29T16:24:02.3825055+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "YXCm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["YXCm"],
       "throughput": {
         "start_time": "2026-03-29T16:23:04+02:00",
         "end_time": "2026-03-29T16:24:05+02:00",
@@ -2110,12 +2094,8 @@
       "start_time": "2026-03-29T16:23:02.27516+02:00",
       "end_time": "2026-03-29T16:24:02.493010458+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "YXCm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["YXCm"],
       "throughput": {
         "start_time": "2026-03-29T16:23:04+02:00",
         "end_time": "2026-03-29T16:24:05+02:00",
@@ -2576,12 +2556,8 @@
       "start_time": "2026-03-29T16:23:02.27516+02:00",
       "end_time": "2026-03-29T16:24:03.145920291+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "YXCm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["YXCm"],
       "throughput": {
         "start_time": "2026-03-29T16:23:04+02:00",
         "end_time": "2026-03-29T16:24:06+02:00",
@@ -3201,12 +3177,8 @@
       "start_time": "2026-03-29T16:23:02.275246+02:00",
       "end_time": "2026-03-29T16:24:03.145920291+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "YXCm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["YXCm"],
       "throughput": {
         "start_time": "2026-03-29T16:23:04+02:00",
         "end_time": "2026-03-29T16:24:06+02:00",
@@ -3749,12 +3721,8 @@
       "start_time": "2026-03-29T16:23:02.27516+02:00",
       "end_time": "2026-03-29T16:24:03.145920291+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "YXCm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["YXCm"],
       "throughput": {
         "start_time": "2026-03-29T16:23:04+02:00",
         "end_time": "2026-03-29T16:24:06+02:00",

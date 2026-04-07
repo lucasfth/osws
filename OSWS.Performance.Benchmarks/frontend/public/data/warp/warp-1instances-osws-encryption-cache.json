@@ -12,12 +12,8 @@
     "start_time": "2026-03-29T15:40:21.321065+02:00",
     "end_time": "2026-03-29T15:41:21.756659959+02:00",
     "first_errors": null,
-    "hosts": [
-      "http://localhost:8000"
-    ],
-    "clients": [
-      "cH35"
-    ],
+    "hosts": ["http://localhost:8000"],
+    "clients": ["cH35"],
     "throughput": {
       "start_time": "2026-03-29T15:40:23+02:00",
       "end_time": "2026-03-29T15:41:24+02:00",
@@ -631,12 +627,8 @@
       "start_time": "2026-03-29T15:40:21.32161+02:00",
       "end_time": "2026-03-29T15:41:21.3863355+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "cH35"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["cH35"],
       "throughput": {
         "start_time": "2026-03-29T15:40:23+02:00",
         "end_time": "2026-03-29T15:41:24+02:00",
@@ -1095,12 +1087,8 @@
       "start_time": "2026-03-29T15:40:21.321121+02:00",
       "end_time": "2026-03-29T15:41:21.756659959+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "cH35"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["cH35"],
       "throughput": {
         "start_time": "2026-03-29T15:40:23+02:00",
         "end_time": "2026-03-29T15:41:24+02:00",
@@ -1609,12 +1597,8 @@
       "start_time": "2026-03-29T15:40:21.546981+02:00",
       "end_time": "2026-03-29T15:41:21.593945125+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "cH35"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["cH35"],
       "throughput": {
         "start_time": "2026-03-29T15:40:23+02:00",
         "end_time": "2026-03-29T15:41:24+02:00",
@@ -2057,12 +2041,8 @@
       "start_time": "2026-03-29T15:40:21.321065+02:00",
       "end_time": "2026-03-29T15:41:21.405483792+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "cH35"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["cH35"],
       "throughput": {
         "start_time": "2026-03-29T15:40:23+02:00",
         "end_time": "2026-03-29T15:41:24+02:00",
@@ -2523,12 +2503,8 @@
       "start_time": "2026-03-29T15:40:21.321065+02:00",
       "end_time": "2026-03-29T15:41:21.756659959+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "cH35"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["cH35"],
       "throughput": {
         "start_time": "2026-03-29T15:40:23+02:00",
         "end_time": "2026-03-29T15:41:24+02:00",
@@ -3143,12 +3119,8 @@
       "start_time": "2026-03-29T15:40:21.321121+02:00",
       "end_time": "2026-03-29T15:41:21.756659959+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "cH35"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["cH35"],
       "throughput": {
         "start_time": "2026-03-29T15:40:23+02:00",
         "end_time": "2026-03-29T15:41:24+02:00",
@@ -3659,12 +3631,8 @@
       "start_time": "2026-03-29T15:40:21.321065+02:00",
       "end_time": "2026-03-29T15:41:21.756659959+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "cH35"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["cH35"],
       "throughput": {
         "start_time": "2026-03-29T15:40:23+02:00",
         "end_time": "2026-03-29T15:41:24+02:00",

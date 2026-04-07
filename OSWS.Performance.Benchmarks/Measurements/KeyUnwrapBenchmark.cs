@@ -23,6 +23,10 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 /// Method: We measure key unwrap time by using a cold cache and reading encrypted parquet.
 /// This forces the system to unwrap DEKs without benefit of cached keys.
 ///
+/// Dataset: 50 cols × 1,000 rows — sized to trigger ~50 KV calls (~5 s total unwrap)
+/// without burying the per-call signal under thousands of sequential round-trips.
+/// (The original 2,000-col × 10,000-row dataset caused ~218 s of KV calls per iteration.)
+///
 /// Expected outcome: Understanding key unwrap overhead independent of decryption.
 /// </summary>
 [Config(typeof(SharedBenchmarkConfig))]
@@ -64,13 +68,15 @@ public class KeyUnwrapBenchmark
             encryptionSettings: new EncryptionSettings { DekSizeBits = dekSizeBits }
         );
 
-        // Generate a wide dataset (2000 cols × 10000 rows) for key unwrap testing
+        // Generate a narrow dataset (50 cols × 1000 rows) for key unwrap testing.
+        // 50 columns triggers 50 cold KV calls (~5 s), which is enough to measure
+        // per-call unwrap latency without running for minutes per iteration.
         Console.WriteLine(
-            "   Generating wide dataset (2000 cols × 10000 rows) for key unwrap testing..."
+            "   Generating dataset (50 cols × 1000 rows) for key unwrap testing..."
         );
         var unencrypted = await WideDatasetGenerator.GenerateAsync(
-            2000,
-            10000,
+            50,
+            1000,
             cancellationToken: CancellationToken.None
         );
 

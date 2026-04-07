@@ -66,6 +66,7 @@ builder.Services.AddTransient<IS3Get, S3Get>();
 builder.Services.AddTransient<IS3Put, S3Put>();
 builder.Services.AddTransient<IS3List, S3List>();
 builder.Services.AddTransient<IS3Head, S3Head>();
+builder.Services.AddScoped<ParquetUploadService>();
 
 // --- Key Vault Provider ---
 // Configure from appsettings.json "KeyVault" section or environment variables.

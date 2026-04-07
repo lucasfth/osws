@@ -12,12 +12,8 @@
     "start_time": "2026-03-29T15:47:33.758146+02:00",
     "end_time": "2026-03-29T15:48:34.210128042+02:00",
     "first_errors": null,
-    "hosts": [
-      "http://localhost:8000"
-    ],
-    "clients": [
-      "snrr"
-    ],
+    "hosts": ["http://localhost:8000"],
+    "clients": ["snrr"],
     "throughput": {
       "start_time": "2026-03-29T15:47:35+02:00",
       "end_time": "2026-03-29T15:48:37+02:00",
@@ -636,12 +632,8 @@
       "start_time": "2026-03-29T15:47:33.759476+02:00",
       "end_time": "2026-03-29T15:48:33.376747333+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "snrr"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["snrr"],
       "throughput": {
         "start_time": "2026-03-29T15:47:35+02:00",
         "end_time": "2026-03-29T15:48:36+02:00",
@@ -1100,12 +1092,8 @@
       "start_time": "2026-03-29T15:47:33.758146+02:00",
       "end_time": "2026-03-29T15:48:34.210128042+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "snrr"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["snrr"],
       "throughput": {
         "start_time": "2026-03-29T15:47:35+02:00",
         "end_time": "2026-03-29T15:48:37+02:00",
@@ -1646,12 +1634,8 @@
       "start_time": "2026-03-29T15:47:33.758901+02:00",
       "end_time": "2026-03-29T15:48:33.862273042+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "snrr"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["snrr"],
       "throughput": {
         "start_time": "2026-03-29T15:47:35+02:00",
         "end_time": "2026-03-29T15:48:36+02:00",
@@ -2094,12 +2078,8 @@
       "start_time": "2026-03-29T15:47:33.759377+02:00",
       "end_time": "2026-03-29T15:48:33.865382834+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "snrr"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["snrr"],
       "throughput": {
         "start_time": "2026-03-29T15:47:35+02:00",
         "end_time": "2026-03-29T15:48:36+02:00",
@@ -2560,12 +2540,8 @@
       "start_time": "2026-03-29T15:47:33.758146+02:00",
       "end_time": "2026-03-29T15:48:34.210128042+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "snrr"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["snrr"],
       "throughput": {
         "start_time": "2026-03-29T15:47:35+02:00",
         "end_time": "2026-03-29T15:48:37+02:00",
@@ -3185,12 +3161,8 @@
       "start_time": "2026-03-29T15:47:33.758146+02:00",
       "end_time": "2026-03-29T15:48:34.210128042+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "snrr"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["snrr"],
       "throughput": {
         "start_time": "2026-03-29T15:47:35+02:00",
         "end_time": "2026-03-29T15:48:37+02:00",
@@ -3733,12 +3705,8 @@
       "start_time": "2026-03-29T15:47:33.758146+02:00",
       "end_time": "2026-03-29T15:48:34.210128042+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "snrr"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["snrr"],
       "throughput": {
         "start_time": "2026-03-29T15:47:35+02:00",
         "end_time": "2026-03-29T15:48:37+02:00",

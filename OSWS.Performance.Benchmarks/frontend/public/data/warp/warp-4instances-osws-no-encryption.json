@@ -12,12 +12,8 @@
     "start_time": "2026-03-29T16:01:29.677291+02:00",
     "end_time": "2026-03-29T16:02:30.537180375+02:00",
     "first_errors": null,
-    "hosts": [
-      "http://localhost:8000"
-    ],
-    "clients": [
-      "6Uo5"
-    ],
+    "hosts": ["http://localhost:8000"],
+    "clients": ["6Uo5"],
     "throughput": {
       "start_time": "2026-03-29T16:01:31+02:00",
       "end_time": "2026-03-29T16:02:33+02:00",
@@ -636,12 +632,8 @@
       "start_time": "2026-03-29T16:01:29.677291+02:00",
       "end_time": "2026-03-29T16:02:29.6455995+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "6Uo5"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["6Uo5"],
       "throughput": {
         "start_time": "2026-03-29T16:01:31+02:00",
         "end_time": "2026-03-29T16:02:32+02:00",
@@ -1100,12 +1092,8 @@
       "start_time": "2026-03-29T16:01:29.677333+02:00",
       "end_time": "2026-03-29T16:02:30.537180375+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "6Uo5"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["6Uo5"],
       "throughput": {
         "start_time": "2026-03-29T16:01:31+02:00",
         "end_time": "2026-03-29T16:02:33+02:00",
@@ -1646,12 +1634,8 @@
       "start_time": "2026-03-29T16:01:29.677457+02:00",
       "end_time": "2026-03-29T16:02:30.178962833+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "6Uo5"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["6Uo5"],
       "throughput": {
         "start_time": "2026-03-29T16:01:31+02:00",
         "end_time": "2026-03-29T16:02:33+02:00",
@@ -2115,12 +2099,8 @@
       "start_time": "2026-03-29T16:01:29.678+02:00",
       "end_time": "2026-03-29T16:02:29.846667208+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "6Uo5"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["6Uo5"],
       "throughput": {
         "start_time": "2026-03-29T16:01:31+02:00",
         "end_time": "2026-03-29T16:02:32+02:00",
@@ -2581,12 +2561,8 @@
       "start_time": "2026-03-29T16:01:29.677291+02:00",
       "end_time": "2026-03-29T16:02:30.537180375+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "6Uo5"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["6Uo5"],
       "throughput": {
         "start_time": "2026-03-29T16:01:31+02:00",
         "end_time": "2026-03-29T16:02:33+02:00",
@@ -3206,12 +3182,8 @@
       "start_time": "2026-03-29T16:01:29.677333+02:00",
       "end_time": "2026-03-29T16:02:30.537180375+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "6Uo5"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["6Uo5"],
       "throughput": {
         "start_time": "2026-03-29T16:01:31+02:00",
         "end_time": "2026-03-29T16:02:33+02:00",
@@ -3754,12 +3726,8 @@
       "start_time": "2026-03-29T16:01:29.677291+02:00",
       "end_time": "2026-03-29T16:02:30.537180375+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "6Uo5"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["6Uo5"],
       "throughput": {
         "start_time": "2026-03-29T16:01:31+02:00",
         "end_time": "2026-03-29T16:02:33+02:00",

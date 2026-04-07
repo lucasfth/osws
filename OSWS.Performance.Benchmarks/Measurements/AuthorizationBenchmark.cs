@@ -9,6 +9,12 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 /// <summary>
 /// Micro-benchmark: RBAC Authorization Latency
 ///
+/// NOTE: This benchmark is a placeholder. It uses MockRbacAuthorizationService,
+/// not the real hierarchical RBAC system. Results are not representative of
+/// production authorization overhead and should not be used for capacity planning.
+/// Replace MockRbacAuthorizationService with the real implementation once RBAC
+/// is integrated.
+///
 /// Measures how long it takes to authorize a user's access to columns
 /// by varying the number of roles in the RBAC system.
 ///
@@ -21,6 +27,8 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 /// - Measures how authorization latency scales with role count
 /// </summary>
 [Config(typeof(SharedBenchmarkConfig))]
+[BenchmarkCategory("Placeholder")]
+[System.Obsolete("Uses mock RBAC — not representative of production. Replace with real RBAC service before treating results as meaningful.")]
 public class AuthorizationBenchmark
 {
     [Params(4, 64, 256)]

@@ -12,12 +12,8 @@
     "start_time": "2026-03-29T16:08:24.24564+02:00",
     "end_time": "2026-03-29T16:09:24.925717542+02:00",
     "first_errors": null,
-    "hosts": [
-      "http://localhost:8000"
-    ],
-    "clients": [
-      "Z76n"
-    ],
+    "hosts": ["http://localhost:8000"],
+    "clients": ["Z76n"],
     "throughput": {
       "start_time": "2026-03-29T16:08:26+02:00",
       "end_time": "2026-03-29T16:09:27+02:00",
@@ -631,12 +627,8 @@
       "start_time": "2026-03-29T16:08:24.24564+02:00",
       "end_time": "2026-03-29T16:09:23.160439875+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "Z76n"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["Z76n"],
       "throughput": {
         "start_time": "2026-03-29T16:08:26+02:00",
         "end_time": "2026-03-29T16:09:26+02:00",
@@ -1074,12 +1066,8 @@
       "start_time": "2026-03-29T16:08:24.246729+02:00",
       "end_time": "2026-03-29T16:09:24.925717542+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "Z76n"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["Z76n"],
       "throughput": {
         "start_time": "2026-03-29T16:08:26+02:00",
         "end_time": "2026-03-29T16:09:27+02:00",
@@ -1588,12 +1576,8 @@
       "start_time": "2026-03-29T16:08:24.245798+02:00",
       "end_time": "2026-03-29T16:09:24.658250791+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "Z76n"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["Z76n"],
       "throughput": {
         "start_time": "2026-03-29T16:08:26+02:00",
         "end_time": "2026-03-29T16:09:27+02:00",
@@ -2036,12 +2020,8 @@
       "start_time": "2026-03-29T16:08:24.245796+02:00",
       "end_time": "2026-03-29T16:09:24.342815625+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "Z76n"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["Z76n"],
       "throughput": {
         "start_time": "2026-03-29T16:08:26+02:00",
         "end_time": "2026-03-29T16:09:27+02:00",
@@ -2502,12 +2482,8 @@
       "start_time": "2026-03-29T16:08:24.24564+02:00",
       "end_time": "2026-03-29T16:09:24.925717542+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "Z76n"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["Z76n"],
       "throughput": {
         "start_time": "2026-03-29T16:08:26+02:00",
         "end_time": "2026-03-29T16:09:27+02:00",
@@ -3122,12 +3098,8 @@
       "start_time": "2026-03-29T16:08:24.245798+02:00",
       "end_time": "2026-03-29T16:09:24.925717542+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "Z76n"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["Z76n"],
       "throughput": {
         "start_time": "2026-03-29T16:08:26+02:00",
         "end_time": "2026-03-29T16:09:27+02:00",
@@ -3638,12 +3610,8 @@
       "start_time": "2026-03-29T16:08:24.24564+02:00",
       "end_time": "2026-03-29T16:09:24.925717542+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "Z76n"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["Z76n"],
       "throughput": {
         "start_time": "2026-03-29T16:08:26+02:00",
         "end_time": "2026-03-29T16:09:27+02:00",

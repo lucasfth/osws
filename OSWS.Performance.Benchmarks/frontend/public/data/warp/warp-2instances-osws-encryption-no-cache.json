@@ -12,12 +12,8 @@
     "start_time": "2026-03-29T15:50:57.783931+02:00",
     "end_time": "2026-03-29T15:51:59.042052875+02:00",
     "first_errors": null,
-    "hosts": [
-      "http://localhost:8000"
-    ],
-    "clients": [
-      "3Xxm"
-    ],
+    "hosts": ["http://localhost:8000"],
+    "clients": ["3Xxm"],
     "throughput": {
       "start_time": "2026-03-29T15:50:59+02:00",
       "end_time": "2026-03-29T15:52:02+02:00",
@@ -641,12 +637,8 @@
       "start_time": "2026-03-29T15:50:57.78394+02:00",
       "end_time": "2026-03-29T15:51:57.891825208+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "3Xxm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["3Xxm"],
       "throughput": {
         "start_time": "2026-03-29T15:50:59+02:00",
         "end_time": "2026-03-29T15:52:00+02:00",
@@ -1105,12 +1097,8 @@
       "start_time": "2026-03-29T15:50:57.783931+02:00",
       "end_time": "2026-03-29T15:51:59.042052875+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "3Xxm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["3Xxm"],
       "throughput": {
         "start_time": "2026-03-29T15:50:59+02:00",
         "end_time": "2026-03-29T15:52:02+02:00",
@@ -1656,12 +1644,8 @@
       "start_time": "2026-03-29T15:50:57.784037+02:00",
       "end_time": "2026-03-29T15:51:58.068121166+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "3Xxm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["3Xxm"],
       "throughput": {
         "start_time": "2026-03-29T15:50:59+02:00",
         "end_time": "2026-03-29T15:52:01+02:00",
@@ -2125,12 +2109,8 @@
       "start_time": "2026-03-29T15:50:57.784351+02:00",
       "end_time": "2026-03-29T15:51:58.068341583+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "3Xxm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["3Xxm"],
       "throughput": {
         "start_time": "2026-03-29T15:50:59+02:00",
         "end_time": "2026-03-29T15:52:01+02:00",
@@ -2596,12 +2576,8 @@
       "start_time": "2026-03-29T15:50:57.783931+02:00",
       "end_time": "2026-03-29T15:51:59.042052875+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "3Xxm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["3Xxm"],
       "throughput": {
         "start_time": "2026-03-29T15:50:59+02:00",
         "end_time": "2026-03-29T15:52:02+02:00",
@@ -3226,12 +3202,8 @@
       "start_time": "2026-03-29T15:50:57.783931+02:00",
       "end_time": "2026-03-29T15:51:59.042052875+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "3Xxm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["3Xxm"],
       "throughput": {
         "start_time": "2026-03-29T15:50:59+02:00",
         "end_time": "2026-03-29T15:52:02+02:00",
@@ -3779,12 +3751,8 @@
       "start_time": "2026-03-29T15:50:57.783931+02:00",
       "end_time": "2026-03-29T15:51:59.042052875+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "3Xxm"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["3Xxm"],
       "throughput": {
         "start_time": "2026-03-29T15:50:59+02:00",
         "end_time": "2026-03-29T15:52:02+02:00",

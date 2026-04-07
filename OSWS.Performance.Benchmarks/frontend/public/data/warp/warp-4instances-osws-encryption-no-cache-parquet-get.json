@@ -12,12 +12,8 @@
     "start_time": "2026-03-29T16:06:09.073156+02:00",
     "end_time": "2026-03-29T16:07:09.177007958+02:00",
     "first_errors": null,
-    "hosts": [
-      "http://localhost:8000"
-    ],
-    "clients": [
-      "pQkQ"
-    ],
+    "hosts": ["http://localhost:8000"],
+    "clients": ["pQkQ"],
     "throughput": {
       "start_time": "2026-03-29T16:06:11+02:00",
       "end_time": "2026-03-29T16:07:12+02:00",
@@ -554,12 +550,8 @@
       "start_time": "2026-03-29T16:06:09.073156+02:00",
       "end_time": "2026-03-29T16:07:09.177007958+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "pQkQ"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["pQkQ"],
       "throughput": {
         "start_time": "2026-03-29T16:06:11+02:00",
         "end_time": "2026-03-29T16:07:12+02:00",
@@ -1097,12 +1089,8 @@
       "start_time": "2026-03-29T16:06:09.073156+02:00",
       "end_time": "2026-03-29T16:07:09.177007958+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "pQkQ"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["pQkQ"],
       "throughput": {
         "start_time": "2026-03-29T16:06:11+02:00",
         "end_time": "2026-03-29T16:07:12+02:00",
@@ -1640,12 +1628,8 @@
       "start_time": "2026-03-29T16:06:09.073156+02:00",
       "end_time": "2026-03-29T16:07:09.177007958+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "pQkQ"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["pQkQ"],
       "throughput": {
         "start_time": "2026-03-29T16:06:11+02:00",
         "end_time": "2026-03-29T16:07:12+02:00",
@@ -2183,12 +2167,8 @@
       "start_time": "2026-03-29T16:06:09.073156+02:00",
       "end_time": "2026-03-29T16:07:09.177007958+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "pQkQ"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["pQkQ"],
       "throughput": {
         "start_time": "2026-03-29T16:06:11+02:00",
         "end_time": "2026-03-29T16:07:12+02:00",

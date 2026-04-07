@@ -182,6 +182,7 @@ run_warp() {
         --obj.size 1M \
         --bucket "$BUCKET_NAME" \
         --host "$host" \
+        --host-select roundrobin \
         --access-key "$access_key" \
         --secret-key "$secret_key" \
         --benchdata "$result_base" \
@@ -234,6 +235,7 @@ run_warp_parquet_get() {
         --objects "$PARQUET_OBJECT_LIMIT" \
         --bucket "$PARQUET_BUCKET_NAME" \
         --host "$host" \
+        --host-select roundrobin \
         --access-key "$access_key" \
         --secret-key "$secret_key" \
         --prefix "$PARQUET_PREFIX" \
@@ -357,6 +359,14 @@ for num_instances in "${INSTANCE_COUNTS[@]}"; do
     echo "Instance count: $num_instances"
     echo "════════════════════════════════════════════════════════"
 
+    # Build comma-separated host list for all OSWS instances.
+    # Each instance is assigned a port: base, base+2, base+4, ...
+    OSWS_HOSTS=""
+    for i in $(seq 1 "$num_instances"); do
+        _port=$((OSWS_BASE_PORT + (i-1)*2))
+        OSWS_HOSTS="${OSWS_HOSTS:+$OSWS_HOSTS,}localhost:$_port"
+    done
+
     # Category: Baseline / S3 (direct)
     run_warp "s3-direct" "$num_instances" "$S3_HOST" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
     if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
@@ -366,28 +376,28 @@ for num_instances in "${INSTANCE_COUNTS[@]}"; do
 
     # Category: Baseline / OSWS (encryption disabled)
     start_osws_instances "$num_instances" "true" "false"
-    run_warp "osws-no-encryption" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+    run_warp "osws-no-encryption" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
     if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
         seed_parquet_if_needed "osws-no-encryption" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
-        run_warp_parquet_get "osws-no-encryption" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+        run_warp_parquet_get "osws-no-encryption" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
     fi
     bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
 
     # Category: Baseline / OSWS + encryption (cache disabled)
     start_osws_instances "$num_instances" "false" "false"
-    run_warp "osws-encryption-no-cache" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+    run_warp "osws-encryption-no-cache" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
     if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
         seed_parquet_if_needed "osws-encryption-no-cache" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
-        run_warp_parquet_get "osws-encryption-no-cache" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+        run_warp_parquet_get "osws-encryption-no-cache" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
     fi
     bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
 
     # Category: Baseline / OSWS + encryption (cache enabled)
     start_osws_instances "$num_instances" "false" "true"
-    run_warp "osws-encryption-cache" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+    run_warp "osws-encryption-cache" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
     if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
         seed_parquet_if_needed "osws-encryption-cache" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
-        run_warp_parquet_get "osws-encryption-cache" "$num_instances" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
+        run_warp_parquet_get "osws-encryption-cache" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
     fi
     bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
 

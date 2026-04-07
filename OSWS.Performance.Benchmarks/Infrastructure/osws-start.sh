@@ -70,6 +70,7 @@ fi
 # Set up environment and start OSWS in the background
 export ASPNETCORE_URLS="http://0.0.0.0:$PORT"
 export Encryption__DisableEncryption=$DISABLE_ENCRYPTION
+export Encryption__BenchmarkMode=true
 export Cache__EnableFileCache=$FILE_CACHE_ENABLED
 
 cd "$WEBAPP_DIR"

@@ -12,12 +12,8 @@
     "start_time": "2026-03-29T16:04:56.38793+02:00",
     "end_time": "2026-03-29T16:05:57.000989709+02:00",
     "first_errors": null,
-    "hosts": [
-      "http://localhost:8000"
-    ],
-    "clients": [
-      "gFVt"
-    ],
+    "hosts": ["http://localhost:8000"],
+    "clients": ["gFVt"],
     "throughput": {
       "start_time": "2026-03-29T16:04:58+02:00",
       "end_time": "2026-03-29T16:06:00+02:00",
@@ -732,12 +728,8 @@
       "start_time": "2026-03-29T16:04:56.388516+02:00",
       "end_time": "2026-03-29T16:05:55.973608542+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "gFVt"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["gFVt"],
       "throughput": {
         "start_time": "2026-03-29T16:04:58+02:00",
         "end_time": "2026-03-29T16:05:58+02:00",
@@ -1175,12 +1167,8 @@
       "start_time": "2026-03-29T16:04:56.38796+02:00",
       "end_time": "2026-03-29T16:05:57.000989709+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "gFVt"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["gFVt"],
       "throughput": {
         "start_time": "2026-03-29T16:04:58+02:00",
         "end_time": "2026-03-29T16:06:00+02:00",
@@ -1721,12 +1709,8 @@
       "start_time": "2026-03-29T16:04:56.488586+02:00",
       "end_time": "2026-03-29T16:05:56.779954833+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "gFVt"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["gFVt"],
       "throughput": {
         "start_time": "2026-03-29T16:04:58+02:00",
         "end_time": "2026-03-29T16:05:59+02:00",
@@ -2185,12 +2169,8 @@
       "start_time": "2026-03-29T16:04:56.38793+02:00",
       "end_time": "2026-03-29T16:05:56.059810166+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "gFVt"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["gFVt"],
       "throughput": {
         "start_time": "2026-03-29T16:04:58+02:00",
         "end_time": "2026-03-29T16:05:59+02:00",
@@ -2651,12 +2631,8 @@
       "start_time": "2026-03-29T16:04:56.38793+02:00",
       "end_time": "2026-03-29T16:05:57.000989709+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "gFVt"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["gFVt"],
       "throughput": {
         "start_time": "2026-03-29T16:04:58+02:00",
         "end_time": "2026-03-29T16:06:00+02:00",
@@ -3372,12 +3348,8 @@
       "start_time": "2026-03-29T16:04:56.38796+02:00",
       "end_time": "2026-03-29T16:05:57.000989709+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "gFVt"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["gFVt"],
       "throughput": {
         "start_time": "2026-03-29T16:04:58+02:00",
         "end_time": "2026-03-29T16:06:00+02:00",
@@ -3920,12 +3892,8 @@
       "start_time": "2026-03-29T16:04:56.38793+02:00",
       "end_time": "2026-03-29T16:05:57.000989709+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "gFVt"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["gFVt"],
       "throughput": {
         "start_time": "2026-03-29T16:04:58+02:00",
         "end_time": "2026-03-29T16:06:00+02:00",

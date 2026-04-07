@@ -276,7 +276,7 @@ public static class BenchmarkS3PassthroughRoutes
                     );
                     contents.Append($"<ETag>{obj.ETag}</ETag><Size>{obj.Size}</Size>");
                     contents.Append(
-                        $"<StorageClass>{obj.StorageClass?.Value ?? \"STANDARD\"}</StorageClass></Contents>"
+                        $"<StorageClass>{obj.StorageClass?.Value ?? "STANDARD"}</StorageClass></Contents>"
                         );
                     }
 
@@ -285,12 +285,12 @@ public static class BenchmarkS3PassthroughRoutes
                     $"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                     + $"<ListBucketResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">"
                     + $"<Name>{resp.Name}</Name>"
-                    + $"<Prefix>{resp.Prefix ?? \"\"}</Prefix>"
+                    + $"<Prefix>{resp.Prefix ?? ""}</Prefix>"
                         + $"<MaxKeys>{resp.MaxKeys}</MaxKeys>"
                         + $"<IsTruncated>{resp.IsTruncated.ToString().ToLower()}</IsTruncated>"
                         + $"<KeyCount>{resp.KeyCount}</KeyCount>"
-                        + $"{(string.IsNullOrEmpty(resp.ContinuationToken) ? \"\" : $\"<ContinuationToken>{System.Security.SecurityElement.Escape(resp.ContinuationToken)}</ContinuationToken>\")}"
-                        + $"{(string.IsNullOrEmpty(resp.NextContinuationToken) ? \"\" : $\"<NextContinuationToken>{System.Security.SecurityElement.Escape(resp.NextContinuationToken)}</NextContinuationToken>\")}"
+                        + $"{(string.IsNullOrEmpty(resp.ContinuationToken) ? "" : $"<ContinuationToken>{System.Security.SecurityElement.Escape(resp.ContinuationToken)}</ContinuationToken>")}"
+                        + $"{(string.IsNullOrEmpty(resp.NextContinuationToken) ? "" : $"<NextContinuationToken>{System.Security.SecurityElement.Escape(resp.NextContinuationToken)}</NextContinuationToken>")}"
                         + $"{contents}"
                         + $"</ListBucketResult>";
 
@@ -333,7 +333,7 @@ public static class BenchmarkS3PassthroughRoutes
                     var xml =
                         $"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
                         + $"<ListAllMyBucketsResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">"
-                        + $"<Owner><ID>{resp.Owner?.Id ?? \"\"}</ID><DisplayName>{resp.Owner?.DisplayName ?? \"\"}</DisplayName></Owner>"
+                        + $"<Owner><ID>{resp.Owner?.Id ?? ""}</ID><DisplayName>{resp.Owner?.DisplayName ?? ""}</DisplayName></Owner>"
                         + $"<Buckets>{buckets}</Buckets>"
                         + $"</ListAllMyBucketsResult>";
 
@@ -351,8 +351,7 @@ public static class BenchmarkS3PassthroughRoutes
         );
 
         s3Root.MapPost(
-            " /{ bucket}/{ *key}
-                    ",
+            "/{bucket}/{*key}",
             async (
                 [FromServices] IAmazonS3 s3Client,
                 string bucket,

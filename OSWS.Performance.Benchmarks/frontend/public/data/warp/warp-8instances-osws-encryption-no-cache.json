@@ -12,12 +12,8 @@
     "start_time": "2026-03-29T16:19:10.754498+02:00",
     "end_time": "2026-03-29T16:20:11.298243666+02:00",
     "first_errors": null,
-    "hosts": [
-      "http://localhost:8000"
-    ],
-    "clients": [
-      "zHBe"
-    ],
+    "hosts": ["http://localhost:8000"],
+    "clients": ["zHBe"],
     "throughput": {
       "start_time": "2026-03-29T16:19:12+02:00",
       "end_time": "2026-03-29T16:20:14+02:00",
@@ -636,12 +632,8 @@
       "start_time": "2026-03-29T16:19:10.754878+02:00",
       "end_time": "2026-03-29T16:20:10.579195+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "zHBe"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["zHBe"],
       "throughput": {
         "start_time": "2026-03-29T16:19:12+02:00",
         "end_time": "2026-03-29T16:20:13+02:00",
@@ -1100,12 +1092,8 @@
       "start_time": "2026-03-29T16:19:10.754512+02:00",
       "end_time": "2026-03-29T16:20:11.298243666+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "zHBe"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["zHBe"],
       "throughput": {
         "start_time": "2026-03-29T16:19:12+02:00",
         "end_time": "2026-03-29T16:20:14+02:00",
@@ -1646,12 +1634,8 @@
       "start_time": "2026-03-29T16:19:10.867911+02:00",
       "end_time": "2026-03-29T16:20:11.031927291+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "zHBe"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["zHBe"],
       "throughput": {
         "start_time": "2026-03-29T16:19:12+02:00",
         "end_time": "2026-03-29T16:20:14+02:00",
@@ -2115,12 +2099,8 @@
       "start_time": "2026-03-29T16:19:10.754498+02:00",
       "end_time": "2026-03-29T16:20:10.872921541+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "zHBe"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["zHBe"],
       "throughput": {
         "start_time": "2026-03-29T16:19:12+02:00",
         "end_time": "2026-03-29T16:20:13+02:00",
@@ -2581,12 +2561,8 @@
       "start_time": "2026-03-29T16:19:10.754498+02:00",
       "end_time": "2026-03-29T16:20:11.298243666+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "zHBe"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["zHBe"],
       "throughput": {
         "start_time": "2026-03-29T16:19:12+02:00",
         "end_time": "2026-03-29T16:20:14+02:00",
@@ -3206,12 +3182,8 @@
       "start_time": "2026-03-29T16:19:10.754512+02:00",
       "end_time": "2026-03-29T16:20:11.298243666+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "zHBe"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["zHBe"],
       "throughput": {
         "start_time": "2026-03-29T16:19:12+02:00",
         "end_time": "2026-03-29T16:20:14+02:00",
@@ -3754,12 +3726,8 @@
       "start_time": "2026-03-29T16:19:10.754498+02:00",
       "end_time": "2026-03-29T16:20:11.298243666+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "zHBe"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["zHBe"],
       "throughput": {
         "start_time": "2026-03-29T16:19:12+02:00",
         "end_time": "2026-03-29T16:20:14+02:00",

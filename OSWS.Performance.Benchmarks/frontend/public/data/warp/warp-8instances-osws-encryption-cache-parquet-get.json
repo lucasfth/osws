@@ -12,12 +12,8 @@
     "start_time": "2026-03-29T16:24:15.826131+02:00",
     "end_time": "2026-03-29T16:25:15.9035385+02:00",
     "first_errors": null,
-    "hosts": [
-      "http://localhost:8000"
-    ],
-    "clients": [
-      "Dtuc"
-    ],
+    "hosts": ["http://localhost:8000"],
+    "clients": ["Dtuc"],
     "throughput": {
       "start_time": "2026-03-29T16:24:17+02:00",
       "end_time": "2026-03-29T16:25:18+02:00",
@@ -527,12 +523,8 @@
       "start_time": "2026-03-29T16:24:15.826131+02:00",
       "end_time": "2026-03-29T16:25:15.9035385+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "Dtuc"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["Dtuc"],
       "throughput": {
         "start_time": "2026-03-29T16:24:17+02:00",
         "end_time": "2026-03-29T16:25:18+02:00",
@@ -1043,12 +1035,8 @@
       "start_time": "2026-03-29T16:24:15.826131+02:00",
       "end_time": "2026-03-29T16:25:15.9035385+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "Dtuc"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["Dtuc"],
       "throughput": {
         "start_time": "2026-03-29T16:24:17+02:00",
         "end_time": "2026-03-29T16:25:18+02:00",
@@ -1559,12 +1547,8 @@
       "start_time": "2026-03-29T16:24:15.826131+02:00",
       "end_time": "2026-03-29T16:25:15.9035385+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "Dtuc"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["Dtuc"],
       "throughput": {
         "start_time": "2026-03-29T16:24:17+02:00",
         "end_time": "2026-03-29T16:25:18+02:00",
@@ -2075,12 +2059,8 @@
       "start_time": "2026-03-29T16:24:15.826131+02:00",
       "end_time": "2026-03-29T16:25:15.9035385+02:00",
       "first_errors": null,
-      "hosts": [
-        "http://localhost:8000"
-      ],
-      "clients": [
-        "Dtuc"
-      ],
+      "hosts": ["http://localhost:8000"],
+      "clients": ["Dtuc"],
       "throughput": {
         "start_time": "2026-03-29T16:24:17+02:00",
         "end_time": "2026-03-29T16:25:18+02:00",

@@ -98,6 +98,36 @@ Deep investigation of specific system components using **real OSWS operations**,
 - Placeholder pending RBAC implementation
 - Will measure authorization checks with 4, 64, 256 roles when available
 
+## Supported Key Sizes
+
+OSWS supports the following DEK (Data Encryption Key) sizes for AES encryption:
+
+| Key Size (bits) | Key Size (bytes) | AES Variant |
+| --------------- | ---------------- | ----------- |
+| 128             | 16               | AES-128     |
+| 192             | 24               | AES-192     |
+| 256             | 32               | AES-256     |
+
+These correspond to valid AES key sizes. The Key Unwrap benchmark sweeps all three sizes to measure performance impact of key size selection.
+
+## Statistical Reliability Guidelines
+
+To ensure statistically reliable benchmark results, the following iteration and warmup settings are used:
+
+| Benchmark          | Iterations | Warmup Runs | Target Error Margin |
+| ------------------ | ---------- | ----------- | ------------------- |
+| KeyUnwrap          | 15         | 5           | < 5%                |
+| Decryption (5K)    | 10         | 3           | < 3%                |
+| Decryption (10K)   | 10         | 3           | < 3%                |
+| Decryption (100K)  | 15         | 5           | < 5%                |
+| Authorization      | 10         | 3           | < 2%                |
+
+**Notes:**
+- **Iterations**: Number of times the benchmark executes to collect timing samples
+- **Warmup Runs**: Number of initial runs discarded to allow JIT compilation and cache warming
+- **Target Error Margin**: Expected coefficient of variation (CV) for reliable results
+- Authorization benchmark uses a mock implementation; actual RBAC implementation may have different characteristics
+
 ## Configuration
 
 ### .env File Setup (Recommended)

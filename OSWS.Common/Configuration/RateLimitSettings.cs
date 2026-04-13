@@ -9,7 +9,7 @@ public class RateLimitSettings
     /// <summary>
     /// Maximum S3 API requests per minute per client. Default: 600.
     /// </summary>
-    public int S3RequestsPerMinute { get; set; } = 600;
+    public int S3RequestsPerMinute { get; set; } = 6000;
 
     /// <summary>
     /// Maximum App API requests per minute per client. Default: 120.

@@ -1,6 +1,10 @@
 {
   "dev": {
     "S3_BUCKET": "test-storage",
+    "R2_BUCKET": "test-storage",
+    "R2_REGION": "us-east-1",
+    "R2_ENDPOINT": "",
+    "V2_AWS_SDK_CREDENTIALS": "",
     "BASE_URL": "http://localhost:5161"
   }
 }

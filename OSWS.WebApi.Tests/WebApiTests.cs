@@ -17,7 +17,7 @@ public class WebApiTests : IAsyncLifetime
     {
         var config = LoadTestConfig();
         _baseUrl = config["BASE_URL"];
-        _bucket = config["S3_BUCKET"];
+        _bucket = config["R2_BUCKET"];
         _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
     }
 

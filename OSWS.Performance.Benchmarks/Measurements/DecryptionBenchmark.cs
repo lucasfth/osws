@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -25,7 +24,6 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 [Config(typeof(SharedBenchmarkConfig))]
 [IterationCount(15)]
 [WarmupCount(5)]
-[MediumRunJob]
 [RankColumn]
 public class DecryptionBenchmark
 {

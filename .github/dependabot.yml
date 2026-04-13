@@ -10,7 +10,7 @@ updates:
           - "*"
 
   - package-ecosystem: "bun"
-    directories: ["/frontend", "/OSWS.Performance.Benchmarks/frontend"]
+    directories: ["/frontend", "/OSWS.Performance.Benchmarks/frontend", "/scripts"]
     schedule:
       interval: "weekly"
     groups:

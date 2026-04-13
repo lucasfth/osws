@@ -728,36 +728,18 @@ function App() {
         });
 
         const microPromises = [
-          // fetch("../../BenchmarkDotNet.Artifacts/results/OSWS.Performance.Benchmarks.Measurements.AuthorizationBenchmark-report.csv").then((res) => {
-          //   if (!res.ok) {
-          //     throw new Error("Failed to load authorization report");
-          //   }
-          //   return res.text();
-          // }),
           fetch("/data/micro/OSWS.Performance.Benchmarks.Measurements.AuthorizationBenchmark-report.csv").then((res) => {
             if (!res.ok) {
               throw new Error("Failed to load authorization report");
             }
             return res.text();
           }),
-          // fetch("../../BenchmarkDotNet.Artifacts/results/OSWS.Performance.Benchmarks.Measurements.KeyUnwrapBenchmark-report.csv").then((res) => {
-          //   if (!res.ok) {
-          //     throw new Error("Failed to load key unwrap report");
-          //   }
-          //   return res.text();
-          // }),
           fetch("/data/micro/OSWS.Performance.Benchmarks.Measurements.KeyUnwrapBenchmark-report.csv").then((res) => {
             if (!res.ok) {
               throw new Error("Failed to load key unwrap report");
             }
             return res.text();
           }),
-          // fetch("../../BenchmarkDotNet.Artifacts/results/OSWS.Performance.Benchmarks.Measurements.DecryptionBenchmark-report.csv").then((res) => {
-          //   if (!res.ok) {
-          //     throw new Error("Failed to load decryption report");
-          //   }
-          //   return res.text();
-          // }),
           fetch("/data/micro/OSWS.Performance.Benchmarks.Measurements.DecryptionBenchmark-report.csv").then((res) => {
             if (!res.ok) {
               throw new Error("Failed to load decryption report");

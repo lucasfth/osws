@@ -88,7 +88,11 @@ public class ParquetWriter(
             encryptionSettings
         );
 
-        logger?.LogInformation("Encrypting columns with role: {Role}, columnsToEncrypt: {ColumnCount}", role, columnsToEncrypt?.Length.ToString() ?? "all");
+        logger?.LogInformation(
+            "Encrypting columns with role: {Role}, columnsToEncrypt: {ColumnCount}",
+            role,
+            columnsToEncrypt?.Length.ToString() ?? "all"
+        );
 
         using var writerPropertiesBuilder = new WriterPropertiesBuilder();
         writerPropertiesBuilder.Encryption(encryptionProperties);

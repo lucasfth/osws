@@ -12,8 +12,9 @@ public static class AppRoutes
 {
     public static void MapAppRoutes(this IEndpointRouteBuilder app)
     {
-        var api = app.MapGroup(prefix: "/api").RequireAuthorization("OidcPolicy")
-        .RequireRateLimiting("api");
+        var api = app.MapGroup(prefix: "/api")
+            .RequireAuthorization("OidcPolicy")
+            .RequireRateLimiting("api");
 
         // GET /api/me
         // Returns the current user's profile. Creates the user on first login (JIT provisioning).

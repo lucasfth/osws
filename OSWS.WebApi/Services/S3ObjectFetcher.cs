@@ -11,14 +11,13 @@ namespace OSWS.WebApi.Services;
 public sealed class S3ObjectFetcher(
     IAmazonS3 s3Client,
     EncryptedFileCache fileCache,
-    ILogger<S3ObjectFetcher> logger)
+    ILogger<S3ObjectFetcher> logger
+)
 {
     /// <summary>
     /// Result of fetching an S3 object — either from cache or from S3.
     /// </summary>
-    public record FetchResult(
-        Stream? EncryptedStream,
-        GetObjectResponse? S3Response);
+    public record FetchResult(Stream? EncryptedStream, GetObjectResponse? S3Response);
 
     /// <summary>
     /// Fetch a parquet file, checking the disk cache first.
@@ -27,7 +26,8 @@ public sealed class S3ObjectFetcher(
     public async Task<FetchResult> FetchParquetAsync(
         string bucket,
         string key,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var cacheKey = EncryptedFileCache.GenerateCacheKey(bucket, key);
 
@@ -49,9 +49,12 @@ public sealed class S3ObjectFetcher(
                     if (task.IsFaulted)
                         logger.LogWarning(
                             "Cache failure for {CacheKey}: {Error}",
-                            cacheKey, task.Exception?.InnerException?.Message);
+                            cacheKey,
+                            task.Exception?.InnerException?.Message
+                        );
                 },
-                TaskScheduler.Default);
+                TaskScheduler.Default
+            );
 
         return new FetchResult(memStream, resp);
     }
@@ -62,7 +65,8 @@ public sealed class S3ObjectFetcher(
     public async Task<GetObjectResponse> FetchObjectAsync(
         string bucket,
         string key,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         var req = new GetObjectRequest { BucketName = bucket, Key = key };
         return await s3Client.GetObjectAsync(req, cancellationToken).ConfigureAwait(false);

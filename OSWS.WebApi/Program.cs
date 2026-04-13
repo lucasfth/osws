@@ -17,9 +17,7 @@ builder.Services.AddOswsCaching(builder.Configuration);
 builder.Services.AddOswsS3(builder.Configuration);
 builder.Services.AddOswsParquet();
 builder.Services.AddOswsUserServices();
-builder.Services.AddOswsAuthentication(
-    builder.Configuration,
-    builder.Environment.IsDevelopment());
+builder.Services.AddOswsAuthentication(builder.Configuration, builder.Environment.IsDevelopment());
 builder.Services.AddOswsRateLimiting(builder.Configuration);
 builder.Services.AddOpenApi();
 
@@ -37,7 +35,8 @@ if (builder.Environment.IsDevelopment())
                     .AllowAnyHeader()
                     .AllowAnyMethod()
                     .AllowCredentials();
-            });
+            }
+        );
     });
 }
 

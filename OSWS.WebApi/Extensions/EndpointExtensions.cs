@@ -9,7 +9,8 @@ public static class EndpointExtensions
 {
     public static WebApplication MapOswsEndpoints(
         this WebApplication app,
-        EncryptionSettings encryptionSettings)
+        EncryptionSettings encryptionSettings
+    )
     {
         var logger = app.Logger;
 
@@ -31,12 +32,16 @@ public static class EndpointExtensions
         {
             if (app.Environment.IsDevelopment())
             {
-                logger.LogWarning("BenchmarkMode is ACTIVE — unauthenticated S3 routes are exposed.");
+                logger.LogWarning(
+                    "BenchmarkMode is ACTIVE — unauthenticated S3 routes are exposed."
+                );
                 app.MapBenchmarkS3PassthroughRoutes();
             }
             else
             {
-                logger.LogWarning("BenchmarkMode is enabled but ignored outside Development environment.");
+                logger.LogWarning(
+                    "BenchmarkMode is enabled but ignored outside Development environment."
+                );
             }
         }
 

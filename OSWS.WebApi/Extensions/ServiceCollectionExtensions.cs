@@ -67,8 +67,11 @@ public static class ServiceCollectionExtensions
             cacheSettings.DekAdminTtlSeconds > 0
                 ? TimeSpan.FromSeconds(cacheSettings.DekAdminTtlSeconds)
                 : (TimeSpan?)null;
-        services.AddSingleton<IDekCache>(_ =>
-            new DekCache(cacheSettings.DekCacheCapacity, dekTtl, dekAdminTtl));
+        services.AddSingleton<IDekCache>(_ => new DekCache(
+            cacheSettings.DekCacheCapacity,
+            dekTtl,
+            dekAdminTtl
+        ));
 
         return services;
     }
@@ -89,7 +92,8 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IAmazonS3>(sp =>
         {
-            var opts = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<S3Settings>>().Value;
+            var opts =
+                sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<S3Settings>>().Value;
             var creds = new BasicAWSCredentials(opts.AccessKeyId, opts.SecretAccessKey);
             var endpoint = AwsCredentialHelper.NormalizeEndpoint(opts.EndpointHostname);
             var config = new AmazonS3Config
@@ -142,7 +146,12 @@ public static class ServiceCollectionExtensions
             var kvSettings = sp.GetRequiredService<KeyVaultSettings>();
             var encSettings = sp.GetRequiredService<EncryptionSettings>();
             var logger = sp.GetRequiredService<ILogger<ParquetWriter>>();
-            return new ParquetWriter(provider, kvSettings.Provider ?? "Internal", logger, encSettings);
+            return new ParquetWriter(
+                provider,
+                kvSettings.Provider ?? "Internal",
+                logger,
+                encSettings
+            );
         });
         services.AddTransient<IParquetReader>(sp =>
         {

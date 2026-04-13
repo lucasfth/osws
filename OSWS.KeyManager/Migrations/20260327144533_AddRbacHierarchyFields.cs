@@ -15,36 +15,42 @@ namespace OSWS.KeyManager.Migrations
                 columns: table => new
                 {
                     ParentRoleId = table.Column<int>(type: "integer", nullable: false),
-                    ChildRoleId = table.Column<int>(type: "integer", nullable: false)
+                    ChildRoleId = table.Column<int>(type: "integer", nullable: false),
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RoleInheritances", x => new { x.ParentRoleId, x.ChildRoleId });
+                    table.PrimaryKey(
+                        "PK_RoleInheritances",
+                        x => new { x.ParentRoleId, x.ChildRoleId }
+                    );
                     table.ForeignKey(
                         name: "FK_RoleInheritances_Roles_ChildRoleId",
                         column: x => x.ChildRoleId,
                         principalTable: "Roles",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Cascade
+                    );
                     table.ForeignKey(
                         name: "FK_RoleInheritances_Roles_ParentRoleId",
                         column: x => x.ParentRoleId,
                         principalTable: "Roles",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_RoleInheritances_ChildRoleId",
                 table: "RoleInheritances",
-                column: "ChildRoleId");
+                column: "ChildRoleId"
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "RoleInheritances");
+            migrationBuilder.DropTable(name: "RoleInheritances");
         }
     }
 }

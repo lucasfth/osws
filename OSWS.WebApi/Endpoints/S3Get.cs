@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using OSWS.WebApi.Helpers;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +8,7 @@ using OSWS.Models.DTOs;
 using OSWS.Models.Entities;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
+using OSWS.WebApi.Helpers;
 using OSWS.WebApi.Interfaces;
 using OSWS.WebApi.Services;
 
@@ -73,7 +73,11 @@ public class S3Get(
         {
             try
             {
-                var fetchResult = await objectFetcher.FetchParquetAsync(bucket, key, cancellationToken);
+                var fetchResult = await objectFetcher.FetchParquetAsync(
+                    bucket,
+                    key,
+                    cancellationToken
+                );
                 encryptedStream = fetchResult.EncryptedStream;
                 resp = fetchResult.S3Response;
             }
@@ -102,9 +106,13 @@ public class S3Get(
             try
             {
                 var allowedColumnSet = await permissionService.GetAllowedColumnsAsync(
-                    user.Id, cancellationToken);
+                    user.Id,
+                    cancellationToken
+                );
                 var roleIds = await permissionService.GetEffectiveRoleIdsAsync(
-                    user.Id, cancellationToken);
+                    user.Id,
+                    cancellationToken
+                );
 
                 Console.WriteLine(
                     $"[OSWS] Permission check for user {user.Id}: roles=[{string.Join(",", roleIds)}], allowedColumns=[{string.Join(",", allowedColumnSet)}]"

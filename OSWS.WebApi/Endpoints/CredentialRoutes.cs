@@ -11,7 +11,9 @@ public static class CredentialRoutes
 {
     public static void MapCredentialRoutes(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/credentials").RequireAuthorization("OidcPolicy").RequireRateLimiting("credential-create");
+        var group = app.MapGroup("/api/credentials")
+            .RequireAuthorization("OidcPolicy")
+            .RequireRateLimiting("credential-create");
 
         group.MapGet(
             "/",

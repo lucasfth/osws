@@ -28,7 +28,9 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 /// </summary>
 [Config(typeof(SharedBenchmarkConfig))]
 [BenchmarkCategory("Placeholder")]
-[System.Obsolete("Uses mock RBAC — not representative of production. Replace with real RBAC service before treating results as meaningful.")]
+[System.Obsolete(
+    "Uses mock RBAC — not representative of production. Replace with real RBAC service before treating results as meaningful."
+)]
 public class AuthorizationBenchmark
 {
     [Params(4, 64, 256)]

@@ -15,7 +15,8 @@ public static class AuthenticationExtensions
     public static IServiceCollection AddOswsAuthentication(
         this IServiceCollection services,
         IConfiguration configuration,
-        bool isDevelopment)
+        bool isDevelopment
+    )
     {
         // --- OIDC Authentication (App API scope) ---
         // Load provider list from config; each entry becomes its own JWT Bearer scheme.
@@ -25,7 +26,9 @@ public static class AuthenticationExtensions
 
         if (oidcProviders.Count == 0)
         {
-            Console.WriteLine("WARNING: No OidcProviders configured. /api routes will be inaccessible.");
+            Console.WriteLine(
+                "WARNING: No OidcProviders configured. /api routes will be inaccessible."
+            );
         }
 
         var authBuilder = services.AddAuthentication();
@@ -56,7 +59,10 @@ public static class AuthenticationExtensions
         }
 
         // SigV4 scheme — used exclusively by the /s3 route group.
-        authBuilder.AddScheme<SigV4AuthenticationOptions, SigV4AuthenticationHandler>("SigV4", _ => { });
+        authBuilder.AddScheme<SigV4AuthenticationOptions, SigV4AuthenticationHandler>(
+            "SigV4",
+            _ => { }
+        );
 
         // OidcPolicy: accepts a valid JWT from ANY configured provider.
         // SigV4Policy: accepts a valid SigV4-signed request (used by S3 routes).

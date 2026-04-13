@@ -117,7 +117,7 @@ public class EncryptedFileCache : IDisposable
             var fileSize = new FileInfo(filePath).Length;
 
             while (_currentCacheSize + fileSize > _settings.MaxCacheSizeBytes && _entries.Any())
-                await EvictLruAsync();
+                EvictLru();
 
             _entries.TryAdd(
                 cacheKey,
@@ -137,7 +137,7 @@ public class EncryptedFileCache : IDisposable
         }
     }
 
-    private async Task EvictLruAsync()
+    private void EvictLru()
     {
         var lruEntry = _entries.Values.MinBy(e => e.LastAccessTime);
         if (lruEntry == null)
@@ -151,8 +151,6 @@ public class EncryptedFileCache : IDisposable
             Interlocked.Add(ref _currentCacheSize, -lruEntry.FileSize);
         }
         catch (IOException) { }
-
-        await Task.CompletedTask;
     }
 
     public async Task ClearAsync()

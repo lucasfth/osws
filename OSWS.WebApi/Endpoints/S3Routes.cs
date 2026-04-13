@@ -13,7 +13,8 @@ public static class S3Routes
 
     public static IEndpointRouteBuilder MapS3Routes(this IEndpointRouteBuilder app)
     {
-        var s3 = app.MapGroup(prefix: "/s3").RequireAuthorization("SigV4Policy");
+        var s3 = app.MapGroup(prefix: "/s3").RequireAuthorization("SigV4Policy")
+        .RequireRateLimiting("s3");
 
         // S3 GET - path-style routing for S3 compatibility: /{bucket}/{*key} and /{bucket}
         s3.MapGet(

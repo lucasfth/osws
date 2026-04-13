@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using OSWS.WebApi.Helpers;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.EntityFrameworkCore;
@@ -16,10 +17,11 @@ namespace OSWS.WebApi.Endpoints;
 public class S3Get(
     IAmazonS3 s3Client,
     IParquetReader parquetReader,
-    EncryptedFileCache fileCache,
+    S3ObjectFetcher objectFetcher,
     CurrentUser currentUser,
-    RoleHierarchyService roleHierarchy,
-    OswsContext db
+    PermissionService permissionService,
+    ILogger<S3Get> logger,
+    IWebHostEnvironment env
 ) : IS3Get
 {
     public async Task<IResult> GetObject(
@@ -67,47 +69,28 @@ public class S3Get(
         GetObjectResponse? resp = null;
         Stream? encryptedStream = null;
 
-        if (isParquetFile && fileCache.TryGet(cacheKey, out var cachedStream))
+        if (isParquetFile)
         {
-            // Cache hit - use cached encrypted stream
-            encryptedStream = cachedStream;
-        }
-        else
-        {
-            // Cache miss - fetch from S3
             try
             {
-                resp = await s3Client.GetObjectAsync(req, cancellationToken).ConfigureAwait(false);
+                var fetchResult = await objectFetcher.FetchParquetAsync(bucket, key, cancellationToken);
+                encryptedStream = fetchResult.EncryptedStream;
+                resp = fetchResult.S3Response;
             }
             catch (AmazonS3Exception e)
             {
                 return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
             }
-
-            if (isParquetFile)
+        }
+        else
+        {
+            try
             {
-                // Copy encrypted stream to memory for caching and decryption
-                var memStream = new MemoryStream();
-                await resp.ResponseStream.CopyToAsync(memStream, cancellationToken);
-                memStream.Position = 0;
-                encryptedStream = memStream;
-
-                // Cache the encrypted stream asynchronously (don't await to avoid blocking)
-                _ = fileCache
-                    .SetAsync(cacheKey, memStream, cancellationToken)
-                    .ContinueWith(
-                        task =>
-                        {
-                            if (task.IsFaulted)
-                            {
-                                // Log cache failure but don't block the response
-                                Console.WriteLine(
-                                    $"[OSWS] Cache failure for {cacheKey}: {task.Exception?.InnerException?.Message}"
-                                );
-                            }
-                        },
-                        TaskScheduler.Default
-                    );
+                resp = await objectFetcher.FetchObjectAsync(bucket, key, cancellationToken);
+            }
+            catch (AmazonS3Exception e)
+            {
+                return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
             }
         }
 
@@ -118,20 +101,10 @@ public class S3Get(
         {
             try
             {
-                // Resolve which columns the user's roles are permitted to decrypt,
-                // including all transitively inherited roles.
-                var effectiveRoles = await roleHierarchy.GetEffectiveRolesAsync(
-                    user.Id,
-                    cancellationToken
-                );
-                var roleIds = effectiveRoles.Select(r => r.Id).ToList();
-
-                var allowedColumns = await db
-                    .Permissions.Where(p => roleIds.Contains(p.RoleId))
-                    .Select(p => p.Column.Name)
-                    .Distinct()
-                    .ToListAsync(cancellationToken);
-                var allowedColumnSet = new HashSet<string>(allowedColumns);
+                var allowedColumnSet = await permissionService.GetAllowedColumnsAsync(
+                    user.Id, cancellationToken);
+                var roleIds = await permissionService.GetEffectiveRoleIdsAsync(
+                    user.Id, cancellationToken);
 
                 Console.WriteLine(
                     $"[OSWS] Permission check for user {user.Id}: roles=[{string.Join(",", roleIds)}], allowedColumns=[{string.Join(",", allowedColumnSet)}]"

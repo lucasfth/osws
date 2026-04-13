@@ -2,14 +2,8 @@ namespace OSWS.ParquetSolver.Interfaces;
 
 /// <summary>
 /// Abstraction over the Data Encryption Key (DEK) cache.
-/// Implementation: <see cref="Helpers.DekCache"/> (in-memory with TTL).
+/// Implementation: <see cref="Helpers.DekCache"/> (in-memory with role-based TTL).
 /// </summary>
-/// <remarks>
-/// TODO (RBAC): Once RBAC is implemented, TTL must be determined per-entry based on the
-/// caller's role. Higher-privilege roles should use shorter TTLs to limit exposure window;
-/// lower-privilege roles may use longer TTLs to reduce key-vault round-trips.
-/// Search for "TODO (RBAC)" to find all related touch-points.
-/// </remarks>
 public interface IDekCache
 {
     /// <summary>Try to retrieve a cached decrypted DEK. Returns false if missing or expired.</summary>
@@ -17,9 +11,11 @@ public interface IDekCache
 
     /// <summary>
     /// Store a decrypted DEK in the cache.
-    /// TODO (RBAC): Accept a role/principal parameter to derive per-entry TTL.
     /// </summary>
-    void Set(string kekId, byte[] dek);
+    /// <param name="kekId">Cache key identifying this DEK.</param>
+    /// <param name="dek">The decrypted DEK bytes.</param>
+    /// <param name="isAdmin">When true, uses the shorter admin TTL.</param>
+    void Set(string kekId, byte[] dek, bool isAdmin = false);
 
     /// <summary>Evict all cached DEKs.</summary>
     void Clear();

@@ -1,0 +1,85 @@
+name: Lint and Format
+
+on:
+  push:
+    branches: [main, develop, "Feat/**"]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Cache .NET packages and tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.nuget/packages
+            ~/.dotnet/tools
+          key: ${{ runner.os }}-dotnet-csharpier-${{ hashFiles('**/*.sln') }}-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-dotnet-csharpier-
+
+      - name: Install CSharpier
+        run: |
+          dotnet tool install -g csharpier
+          echo "${HOME}/.dotnet/tools" >> $GITHUB_PATH
+
+      - name: Format code with CSharpier
+        id: format
+        env:
+          IS_SAME_REPO_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          set -e
+          csharpier format .
+
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+
+          if git diff --quiet; then
+            echo "formatted=false" >> $GITHUB_OUTPUT
+            exit 0
+          else
+            echo "Formatting changes detected, committing..."
+            git add -A
+            git commit -m "chore: format code with CSharpier [skip ci]"
+            echo "formatted=true" >> $GITHUB_OUTPUT
+
+            if [ "${GITHUB_EVENT_NAME}" = "pull_request" ] && [ "${IS_SAME_REPO_PR}" != "true" ]; then
+              echo "PR is from a fork; skipping push."
+            elif [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+              git push origin HEAD:${GITHUB_HEAD_REF}
+            else
+              git push
+            fi
+          fi
+
+      - name: Comment on PR if formatting was applied
+        if: ${{ github.event_name == 'pull_request' && steps.format.outputs.formatted == 'true' && env.IS_SAME_REPO_PR == 'true' }}
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) return;
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: 'CSharpier formatting has been applied to this PR. Please pull the latest changes before continuing.'
+            });

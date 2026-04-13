@@ -1,0 +1,21 @@
+version: 2
+updates:
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    groups:
+      nuget-all:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "bun"
+    directories: ["/frontend", "/OSWS.Performance.Benchmarks/frontend"]
+    schedule:
+      interval: "weekly"
+    groups:
+      bun-all:
+        patterns:
+          - "*"
+    cooldown:
+      default-days: 14

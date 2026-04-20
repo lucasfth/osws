@@ -15,8 +15,8 @@ namespace OSWS.WebApi.Authentication;
 ///                   SignedHeaders=&lt;headers&gt;, Signature=&lt;hex&gt;
 ///
 /// The handler resolves the caller's identity by looking up the AccessKeyId in the
-/// S3Credentials table. Signature verification is a placeholder and always passes;
-/// it should be implemented before deploying to production.
+/// S3Credentials table, validates the SigV4 HMAC-SHA256 signature, and enforces
+/// clock-skew validation via the x-amz-date header.
 /// </summary>
 public class SigV4AuthenticationHandler(
     IOptionsMonitor<SigV4AuthenticationOptions> options,
@@ -29,7 +29,6 @@ public class SigV4AuthenticationHandler(
 
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        // --- 1. Check for the Authorization header ---
         if (!Request.Headers.TryGetValue("Authorization", out var authHeader))
             return AuthenticateResult.NoResult();
 
@@ -37,32 +36,29 @@ public class SigV4AuthenticationHandler(
         if (!authValue.StartsWith(SigV4Prefix, StringComparison.Ordinal))
             return AuthenticateResult.NoResult();
 
-        // --- 2. Parse the SigV4 Authorization header ---
-        // Format: AWS4-HMAC-SHA256 Credential=<id>/<date>/<region>/<service>/aws4_request,
-        //                          SignedHeaders=<headers>, Signature=<hex>
         if (
             !TryParseSigV4Header(
                 authValue,
                 out var accessKeyId,
                 out var date,
+                out var region,
+                out var service,
                 out var signedHeaders,
                 out var signature
             )
         )
             return AuthenticateResult.Fail("Malformed AWS4-HMAC-SHA256 Authorization header.");
 
-        // --- 3. Validate clock skew using x-amz-date ---
-        // var amzDate = Request.Headers["x-amz-date"].ToString();
-        // if (!TryParseAmzDate(amzDate, out var requestTime))
-        //     return AuthenticateResult.Fail("Missing or invalid x-amz-date header.");
-        //
-        // var skew = Math.Abs((DateTimeOffset.UtcNow - requestTime).TotalSeconds);
-        // if (skew > Options.MaxClockSkewSeconds)
-        //     return AuthenticateResult.Fail(
-        //         $"Request timestamp is outside the allowed clock skew window ({Options.MaxClockSkewSeconds}s)."
-        //     );
+        var amzDate = Request.Headers["x-amz-date"].ToString();
+        if (!TryParseAmzDate(amzDate, out var requestTime))
+            return AuthenticateResult.Fail("Missing or invalid x-amz-date header.");
 
-        // --- 4. Look up the AccessKeyId in the database ---
+        var skew = Math.Abs((DateTimeOffset.UtcNow - requestTime).TotalSeconds);
+        if (skew > Options.MaxClockSkewSeconds)
+            return AuthenticateResult.Fail(
+                $"Request timestamp is outside the allowed clock skew window ({Options.MaxClockSkewSeconds}s)."
+            );
+
         var credential = await db
             .S3Credentials.Include(c => c.User)
             .Include(s3Credential => s3Credential.DefaultRole)
@@ -74,33 +70,33 @@ public class SigV4AuthenticationHandler(
             // benchmark tools like Warp to connect without valid credentials.
             return AuthenticateResult.NoResult();
 
-        // --- 5. Verify the SigV4 signature ---
-        // TODO: Implement real SigV4 signature verification.
-        // Steps:
-        //   a) Re-derive the signing key:
-        //      kDate    = HMAC-SHA256("AWS4" + credential.SecretKey, date)
-        //      kRegion  = HMAC-SHA256(kDate, region)
-        //      kService = HMAC-SHA256(kRegion, service)
-        //      kSigning = HMAC-SHA256(kService, "aws4_request")
-        //   b) Build the canonical request string:
-        //      <HTTPMethod>\n<CanonicalURI>\n<CanonicalQueryString>\n
-        //      <CanonicalHeaders>\n<SignedHeaders>\n<HashedPayload>
-        //      (use x-amz-content-sha256 as the pre-computed payload hash)
-        //   c) Build the string-to-sign:
-        //      "AWS4-HMAC-SHA256\n<amzDate>\n<credentialScope>\n<SHA256(canonicalRequest)>"
-        //   d) Compute expectedSignature = HMAC-SHA256(kSigning, stringToSign).ToHexString()
-        //   e) Use CryptographicOperations.FixedTimeEquals() to compare with `signature`.
-        //
-        // PLACEHOLDER: signature verification always succeeds.
-        var signatureValid = VerifySignaturePlaceholder(
-            credential.SecretKey,
-            signature,
-            signedHeaders
+        var payloadHash = Request.Headers["x-amz-content-sha256"].ToString();
+        if (string.IsNullOrEmpty(payloadHash))
+            return AuthenticateResult.Fail("Missing x-amz-content-sha256 header.");
+
+        var canonicalUri = SigV4Signer.CanonicalizeUri(Request.Path.Value);
+        var canonicalQueryString = SigV4Signer.CanonicalizeQueryString(Request.QueryString.Value);
+        var canonicalHeaders = SigV4Signer.CanonicalizeHeaders(Request.Headers, signedHeaders);
+        var canonicalRequest = SigV4Signer.BuildCanonicalRequest(
+            Request.Method,
+            canonicalUri,
+            canonicalQueryString,
+            canonicalHeaders,
+            signedHeaders,
+            payloadHash
         );
-        if (!signatureValid)
+
+        var credentialScope = $"{date}/{region}/{service}/aws4_request";
+        var stringToSign = SigV4Signer.BuildStringToSign(
+            amzDate,
+            credentialScope,
+            canonicalRequest
+        );
+        var signingKey = SigV4Signer.DeriveSigningKey(credential.SecretKey, date, region, service);
+
+        if (!SigV4Signer.VerifySignature(signingKey, stringToSign, signature))
             return AuthenticateResult.Fail("Signature mismatch.");
 
-        // --- 6. Build the ClaimsPrincipal ---
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, credential.User.Id.ToString()),
@@ -126,10 +122,6 @@ public class SigV4AuthenticationHandler(
         return AuthenticateResult.Success(ticket);
     }
 
-    // -------------------------------------------------------------------------
-    // Parsing helpers
-    // -------------------------------------------------------------------------
-
     /// <summary>
     /// Parses the AWS4-HMAC-SHA256 Authorization header into its components.
     /// </summary>
@@ -137,13 +129,14 @@ public class SigV4AuthenticationHandler(
         string headerValue,
         out string accessKeyId,
         out string date,
+        out string region,
+        out string service,
         out string signedHeaders,
         out string signature
     )
     {
-        accessKeyId = date = signedHeaders = signature = string.Empty;
+        accessKeyId = date = region = service = signedHeaders = signature = string.Empty;
 
-        // Strip the prefix, leaving: Credential=…, SignedHeaders=…, Signature=…
         var payload = headerValue[SigV4Prefix.Length..];
 
         var parts = payload.Split(',', StringSplitOptions.TrimEntries);
@@ -172,8 +165,13 @@ public class SigV4AuthenticationHandler(
         if (credParts.Length < 5)
             return false;
 
+        if (credParts[4] != "aws4_request")
+            return false;
+
         accessKeyId = credParts[0];
         date = credParts[1];
+        region = credParts[2];
+        service = credParts[3];
         signedHeaders = signedHeaderValue;
         signature = signatureValue;
         return true;
@@ -191,24 +189,5 @@ public class SigV4AuthenticationHandler(
             System.Globalization.DateTimeStyles.AssumeUniversal,
             out result
         );
-    }
-
-    // -------------------------------------------------------------------------
-    // Signature verification — PLACEHOLDER
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Placeholder for SigV4 signature verification. Always returns true.
-    /// Replace with real HMAC-SHA256 derivation and constant-time comparison
-    /// before deploying to production. See the TODO comment above for steps.
-    /// </summary>
-    private static bool VerifySignaturePlaceholder(
-        string secretKey,
-        string signature,
-        string signedHeaders
-    )
-    {
-        // TODO: Replace with real SigV4 HMAC-SHA256 verification.
-        return true;
     }
 }

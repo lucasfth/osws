@@ -4,7 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "cp:benchmarks": "bun ./scripts/copy-benchmarks.js",
+    "dev": "bun ./scripts/copy-benchmarks.js && vite",
+    "dev:existing": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"

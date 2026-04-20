@@ -47,58 +47,58 @@ namespace OSWS.Performance.Benchmarks.Helpers
             }
         }
 
-    private async Task AwaitAndRecordAsync(Task task, Stopwatch sw)
-    {
-        Exception? capturedException = null;
-        try
+        private async Task AwaitAndRecordAsync(Task task, Stopwatch sw)
         {
-            await task.ConfigureAwait(false);
-        }
-        catch (Exception ex)
-        {
-            capturedException = ex;
-        }
-        finally
-        {
-            sw.Stop();
-            Record(sw.Elapsed);
-        }
-
-        if (capturedException != null)
-        {
-            var inner = capturedException switch
+            Exception? capturedException = null;
+            try
             {
-                AggregateException ae => ae.InnerException ?? ae,
-                TargetInvocationException tie => tie.InnerException ?? tie,
-                _ => capturedException,
-            };
-
-            if (inner is TargetInvocationException targetInv)
-            {
-                throw targetInv.InnerException ?? targetInv;
+                await task.ConfigureAwait(false);
             }
-            throw inner;
-        }
-    }
+            catch (Exception ex)
+            {
+                capturedException = ex;
+            }
+            finally
+            {
+                sw.Stop();
+                Record(sw.Elapsed);
+            }
 
-    private async Task<TResult> HandleGenericTask<TResult>(Task<TResult> task, Stopwatch sw)
-    {
-        Exception? capturedException = null;
-        try
-        {
-            return await task.ConfigureAwait(false);
+            if (capturedException != null)
+            {
+                var inner = capturedException switch
+                {
+                    AggregateException ae => ae.InnerException ?? ae,
+                    TargetInvocationException tie => tie.InnerException ?? tie,
+                    _ => capturedException,
+                };
+
+                if (inner is TargetInvocationException targetInv)
+                {
+                    throw targetInv.InnerException ?? targetInv;
+                }
+                throw inner;
+            }
         }
-        catch (Exception ex)
+
+        private async Task<TResult> HandleGenericTask<TResult>(Task<TResult> task, Stopwatch sw)
         {
-            capturedException = ex;
-            return default!;
+            Exception? capturedException = null;
+            try
+            {
+                return await task.ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                capturedException = ex;
+                return default!;
+            }
+            finally
+            {
+                sw.Stop();
+                Record(sw.Elapsed);
+            }
         }
-        finally
-        {
-            sw.Stop();
-            Record(sw.Elapsed);
-        }
-    }
 
         private void Record(TimeSpan elapsed)
         {

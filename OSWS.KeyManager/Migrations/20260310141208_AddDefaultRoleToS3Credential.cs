@@ -14,19 +14,22 @@ namespace OSWS.KeyManager.Migrations
                 name: "DefaultRoleId",
                 table: "S3Credentials",
                 type: "integer",
-                nullable: true);
+                nullable: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_S3Credentials_DefaultRoleId",
                 table: "S3Credentials",
-                column: "DefaultRoleId");
+                column: "DefaultRoleId"
+            );
 
             migrationBuilder.AddForeignKey(
                 name: "FK_S3Credentials_Roles_DefaultRoleId",
                 table: "S3Credentials",
                 column: "DefaultRoleId",
                 principalTable: "Roles",
-                principalColumn: "Id");
+                principalColumn: "Id"
+            );
         }
 
         /// <inheritdoc />
@@ -34,15 +37,15 @@ namespace OSWS.KeyManager.Migrations
         {
             migrationBuilder.DropForeignKey(
                 name: "FK_S3Credentials_Roles_DefaultRoleId",
-                table: "S3Credentials");
+                table: "S3Credentials"
+            );
 
             migrationBuilder.DropIndex(
                 name: "IX_S3Credentials_DefaultRoleId",
-                table: "S3Credentials");
+                table: "S3Credentials"
+            );
 
-            migrationBuilder.DropColumn(
-                name: "DefaultRoleId",
-                table: "S3Credentials");
+            migrationBuilder.DropColumn(name: "DefaultRoleId", table: "S3Credentials");
         }
     }
 }

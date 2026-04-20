@@ -21,11 +21,17 @@ public class CacheSettings
     public int DekCacheCapacity { get; set; } = 2500;
 
     /// <summary>
-    /// TTL in seconds for cached DEKs.
-    /// 0 means no expiry until RBAC TTLs are wired in.
-    /// TODO (RBAC): This will be superseded by per-entry TTLs derived from the caller's role.
+    /// TTL in seconds for cached DEKs. Default: 900 (15 minutes).
+    /// Set to 0 to disable expiry.
     /// </summary>
-    public int DekTtlSeconds { get; set; } = 0;
+    public int DekTtlSeconds { get; set; } = 900;
+
+    /// <summary>
+    /// TTL in seconds for cached DEKs when the requesting user is an admin.
+    /// Shorter TTL reduces exposure window for privileged access.
+    /// Default: 300 (5 minutes). Set to 0 to use the standard DekTtlSeconds.
+    /// </summary>
+    public int DekAdminTtlSeconds { get; set; } = 300;
 
     // -----------------------------------------------------------------------
     // Encrypted parquet file cache (always local disk — not Redis)

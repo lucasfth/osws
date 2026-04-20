@@ -144,7 +144,8 @@ public static class BenchmarkS3PassthroughRoutes
                     var req = new GetObjectRequest { BucketName = bucket, Key = key };
                     var resp = await s3Client.GetObjectAsync(req, cancellationToken);
 
-                    httpResponse.ContentType = resp.Headers.ContentType ?? "application/octet-stream";
+                    httpResponse.ContentType =
+                        resp.Headers.ContentType ?? "application/octet-stream";
                     httpResponse.Headers["ETag"] = resp.ETag;
                     httpResponse.Headers["Content-Length"] = resp.ContentLength.ToString();
                     httpResponse.Headers["Last-Modified"] = (resp.LastModified ?? DateTime.UtcNow)
@@ -252,40 +253,39 @@ public static class BenchmarkS3PassthroughRoutes
                 CancellationToken cancellationToken = default
             ) =>
             {
-            try
-            {
-                var req = new ListObjectsV2Request
+                try
                 {
-                    BucketName = bucket,
-                    Prefix = prefix,
-                    Delimiter = delimiter,
-                    ContinuationToken = continuationToken,
-                    StartAfter = startAfter,
-                    MaxKeys = maxKeys ?? 1000,
-                };
-                var resp = await s3Client.ListObjectsV2Async(req, cancellationToken);
+                    var req = new ListObjectsV2Request
+                    {
+                        BucketName = bucket,
+                        Prefix = prefix,
+                        Delimiter = delimiter,
+                        ContinuationToken = continuationToken,
+                        StartAfter = startAfter,
+                        MaxKeys = maxKeys ?? 1000,
+                    };
+                    var resp = await s3Client.ListObjectsV2Async(req, cancellationToken);
 
-                var contents = new System.Text.StringBuilder();
-                foreach (var obj in resp.S3Objects ?? new List<S3Object>())
-                {
-                    contents.Append(
-                        $"<Contents><Key>{System.Security.SecurityElement.Escape(obj.Key)}</Key>"
-                    );
-                    contents.Append(
-                        $"<LastModified>{obj.LastModified:yyyy-MM-ddTHH:mm:ss.fffZ}</LastModified>"
-                    );
-                    contents.Append($"<ETag>{obj.ETag}</ETag><Size>{obj.Size}</Size>");
-                    contents.Append(
-                        $"<StorageClass>{obj.StorageClass?.Value ?? "STANDARD"}</StorageClass></Contents>"
+                    var contents = new System.Text.StringBuilder();
+                    foreach (var obj in resp.S3Objects ?? new List<S3Object>())
+                    {
+                        contents.Append(
+                            $"<Contents><Key>{System.Security.SecurityElement.Escape(obj.Key)}</Key>"
+                        );
+                        contents.Append(
+                            $"<LastModified>{obj.LastModified:yyyy-MM-ddTHH:mm:ss.fffZ}</LastModified>"
+                        );
+                        contents.Append($"<ETag>{obj.ETag}</ETag><Size>{obj.Size}</Size>");
+                        contents.Append(
+                            $"<StorageClass>{obj.StorageClass?.Value ?? "STANDARD"}</StorageClass></Contents>"
                         );
                     }
 
-
-                var xml =
-                    $"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
-                    + $"<ListBucketResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">"
-                    + $"<Name>{resp.Name}</Name>"
-                    + $"<Prefix>{resp.Prefix ?? ""}</Prefix>"
+                    var xml =
+                        $"<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+                        + $"<ListBucketResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\">"
+                        + $"<Name>{resp.Name}</Name>"
+                        + $"<Prefix>{resp.Prefix ?? ""}</Prefix>"
                         + $"<MaxKeys>{resp.MaxKeys}</MaxKeys>"
                         + $"<IsTruncated>{resp.IsTruncated.ToString().ToLower()}</IsTruncated>"
                         + $"<KeyCount>{resp.KeyCount}</KeyCount>"
@@ -385,8 +385,7 @@ public static class BenchmarkS3PassthroughRoutes
                     var doc = System.Xml.Linq.XDocument.Parse(body);
                     var ns = doc.Root?.Name.Namespace ?? System.Xml.Linq.XNamespace.None;
 
-                    var keys = doc
-                        .Descendants(ns + "Object")
+                    var keys = doc.Descendants(ns + "Object")
                         .Select(x => x.Element(ns + "Key")?.Value)
                         .Where(x => !string.IsNullOrWhiteSpace(x))
                         .Cast<string>()

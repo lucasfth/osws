@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -30,10 +29,10 @@ namespace OSWS.Performance.Benchmarks.Measurements;
 ///
 /// Expected outcome: Understanding key unwrap overhead independent of decryption.
 /// </summary>
-    [Config(typeof(SharedBenchmarkConfig))]
-    [IterationCount(30)]
-    [WarmupCount(8)]
-    public class KeyUnwrapBenchmark
+[Config(typeof(SharedBenchmarkConfig))]
+[IterationCount(30)]
+[WarmupCount(8)]
+public class KeyUnwrapBenchmark
 {
     [Params(128, 192, 256)]
     public int DekSizeBits { get; set; }
@@ -50,9 +49,7 @@ namespace OSWS.Performance.Benchmarks.Measurements;
     [GlobalSetup]
     public async Task GlobalSetupAsync()
     {
-        Console.WriteLine(
-            $"    Setting up Key Unwrap benchmark (DekSizeBits={DekSizeBits})..."
-        );
+        Console.WriteLine($"    Setting up Key Unwrap benchmark (DekSizeBits={DekSizeBits})...");
 
         _services = BenchmarkServiceFactory.BuildServiceProvider();
         var config = _services.GetRequiredService<IConfiguration>();
@@ -73,9 +70,7 @@ namespace OSWS.Performance.Benchmarks.Measurements;
         // Generate a narrow dataset (10 cols × 100 rows) for key unwrap testing.
         // 10 columns triggers ~10 cold KV calls (~1s), which is enough to measure
         // per-call unwrap latency without running for minutes per iteration.
-        Console.WriteLine(
-            "   Generating dataset (10 cols × 100 rows) for key unwrap testing..."
-        );
+        Console.WriteLine("   Generating dataset (10 cols × 100 rows) for key unwrap testing...");
         var unencrypted = await WideDatasetGenerator.GenerateAsync(
             10,
             100,

@@ -15,15 +15,14 @@ namespace OSWS.KeyManager.Migrations
                 table: "Users",
                 type: "boolean",
                 nullable: false,
-                defaultValue: false);
+                defaultValue: false
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "IsRbacAdmin",
-                table: "Users");
+            migrationBuilder.DropColumn(name: "IsRbacAdmin", table: "Users");
         }
     }
 }

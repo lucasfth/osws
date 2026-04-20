@@ -15,24 +15,33 @@ namespace OSWS.KeyManager.Migrations
                 name: "Columns",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false)
+                    Id = table
+                        .Column<int>(type: "integer", nullable: false)
+                        .Annotation(
+                            "Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn
+                        ),
+                    Name = table.Column<string>(type: "text", nullable: false),
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Columns", x => x.Id);
-                });
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "Keys",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table
+                        .Column<int>(type: "integer", nullable: false)
+                        .Annotation(
+                            "Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn
+                        ),
                     Name = table.Column<string>(type: "text", nullable: false),
                     KeyVaultId = table.Column<string>(type: "text", nullable: false),
-                    ColumnId = table.Column<int>(type: "integer", nullable: false)
+                    ColumnId = table.Column<int>(type: "integer", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -42,17 +51,23 @@ namespace OSWS.KeyManager.Migrations
                         column: x => x.ColumnId,
                         principalTable: "Columns",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateTable(
                 name: "Permissions",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Id = table
+                        .Column<int>(type: "integer", nullable: false)
+                        .Annotation(
+                            "Npgsql:ValueGenerationStrategy",
+                            NpgsqlValueGenerationStrategy.IdentityByDefaultColumn
+                        ),
                     RoleId = table.Column<int>(type: "integer", nullable: false),
-                    ColumnId = table.Column<int>(type: "integer", nullable: false)
+                    ColumnId = table.Column<int>(type: "integer", nullable: false),
                 },
                 constraints: table =>
                 {
@@ -62,48 +77,52 @@ namespace OSWS.KeyManager.Migrations
                         column: x => x.ColumnId,
                         principalTable: "Columns",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Cascade
+                    );
                     table.ForeignKey(
                         name: "FK_Permissions_Roles_RoleId",
                         column: x => x.RoleId,
                         principalTable: "Roles",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
+                        onDelete: ReferentialAction.Cascade
+                    );
+                }
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Keys_ColumnId",
                 table: "Keys",
-                column: "ColumnId");
+                column: "ColumnId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Keys_KeyVaultId",
                 table: "Keys",
                 column: "KeyVaultId",
-                unique: true);
+                unique: true
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Permissions_ColumnId",
                 table: "Permissions",
-                column: "ColumnId");
+                column: "ColumnId"
+            );
 
             migrationBuilder.CreateIndex(
                 name: "IX_Permissions_RoleId",
                 table: "Permissions",
-                column: "RoleId");
+                column: "RoleId"
+            );
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Keys");
+            migrationBuilder.DropTable(name: "Keys");
 
-            migrationBuilder.DropTable(
-                name: "Permissions");
+            migrationBuilder.DropTable(name: "Permissions");
 
-            migrationBuilder.DropTable(
-                name: "Columns");
+            migrationBuilder.DropTable(name: "Columns");
         }
     }
 }

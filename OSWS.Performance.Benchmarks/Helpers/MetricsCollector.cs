@@ -119,7 +119,15 @@ public class MetricsCollector
     {
         if (_elapsedSamples.Count == 0)
         {
-            return new ElapsedStats { MinMs = 0, MaxMs = 0, MeanMs = 0, MedianMs = 0, P99Ms = 0, StdDevMs = 0 };
+            return new ElapsedStats
+            {
+                MinMs = 0,
+                MaxMs = 0,
+                MeanMs = 0,
+                MedianMs = 0,
+                P99Ms = 0,
+                StdDevMs = 0,
+            };
         }
 
         var sorted = _elapsedSamples.OrderBy(x => x).ToList();

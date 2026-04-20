@@ -23,12 +23,12 @@ public static class S3MetadataHelper
     }
 
     /// <summary>
-    /// Appends the ETag from a PutObjectResponse to the outgoing HttpRequest response headers.
+    /// Appends the ETag from a PutObjectResponse to the outgoing HttpResponse headers.
     /// </summary>
-    public static Task AppendS3ETag(PutObjectResponse from, HttpRequest to)
+    public static Task AppendS3ETag(PutObjectResponse from, HttpResponse to)
     {
         if (!string.IsNullOrEmpty(from.ETag))
-            to.Headers.Append("ETag", from.ETag);
+            to.Headers.ETag = from.ETag;
         return Task.CompletedTask;
     }
 

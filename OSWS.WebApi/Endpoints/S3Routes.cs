@@ -17,9 +17,9 @@ public static class S3Routes
             .RequireAuthorization("SigV4Policy")
             .RequireRateLimiting("s3");
 
-        // S3 GET - path-style routing for S3 compatibility: /{bucket}/{*key} and /{bucket}
+        // S3 GET - path-style routing for S3 compatibility: /{bucket}/{**key} and /{bucket}
         s3.MapGet(
-            "/{bucket}/{key}",
+            "/{bucket}/{**key}",
             async (
                 [FromServices] IS3Get s3Get,
                 [FromServices] CurrentUser currentUser,
@@ -106,9 +106,9 @@ public static class S3Routes
                 )
         );
 
-        // S3 HEAD - path-style routing for S3 compatibility: /{bucket}/{key}
+        // S3 HEAD - path-style routing for S3 compatibility: /{bucket}/{**key}
         s3.MapMethods(
-            "/{bucket}/{key}",
+            "/{bucket}/{**key}",
             new[] { "HEAD" },
             async (
                 [FromServices] IS3Head s3Head,

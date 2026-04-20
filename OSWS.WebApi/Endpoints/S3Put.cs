@@ -175,10 +175,10 @@ public class S3Put(
             }
         }
 
-        await S3MetadataHelper.AppendS3ETag(resp, httpRequest);
+        await S3MetadataHelper.AppendS3ETag(resp, httpRequest.HttpContext.Response);
 
         S3ErrorHelper.AddBufferingDebugHeaders(httpRequest.HttpContext, tempFile);
 
-        return Results.Json(new { etag = resp.ETag, versionId = resp.VersionId });
+        return Results.Ok();
     }
 }

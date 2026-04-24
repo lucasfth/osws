@@ -21,6 +21,7 @@
       Version="10.0.0"
     />
     <PackageReference Include="AWSSDK.S3" Version="4.0.18.1" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -29,10 +30,14 @@
     <ProjectReference Include="..\OSWS.KeyManager\OSWS.KeyManager.csproj" />
     <ProjectReference Include="..\OSWS.Models\OSWS.Models.csproj" />
     <ProjectReference Include="..\OSWS.Library\OSWS.Library.csproj" />
+    <ProjectReference Include="..\OSWS.WebApi\OSWS.WebApi.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.Development.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

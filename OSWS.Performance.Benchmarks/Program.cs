@@ -61,7 +61,8 @@ public static class Program
             var benchmarkName = choice switch
             {
                 "auth" or "PermissionServiceBenchmark" => "Permission Service (flat)",
-                "hierarchy" or "PermissionHierarchyBenchmark" => "Permission Hierarchy (chain depth)",
+                "hierarchy" or "PermissionHierarchyBenchmark" =>
+                    "Permission Hierarchy (chain depth)",
                 "unwrap" or "KeyUnwrapBenchmark" => "Key Unwrap",
                 "decrypt" or "DecryptionBenchmark" => "Decryption",
                 _ => "Unknown",

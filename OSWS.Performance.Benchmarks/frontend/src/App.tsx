@@ -3,8 +3,15 @@ import "./App.css";
 
 type MicroBenchmarkKind =
   | "AuthorizationBenchmark"
+  | "PermissionServiceBenchmark"
   | "KeyUnwrapBenchmark"
   | "DecryptionBenchmark";
+
+type MicroBenchmarkSource = {
+  fileName: string;
+  benchmark: MicroBenchmarkKind;
+  parameterName: string;
+};
 
 type MicrobenchmarkRow = {
   benchmark: MicroBenchmarkKind;
@@ -95,6 +102,33 @@ const WARP_FILES = WARP_INSTANCE_COUNTS.flatMap((instanceCount) =>
     (scenario) => `warp-${instanceCount}instances-${scenario}.json`,
   ),
 );
+
+const MICRO_BENCHMARK_SOURCES: MicroBenchmarkSource[] = [
+  {
+    fileName:
+      "OSWS.Performance.Benchmarks.Measurements.AuthorizationBenchmark-report.csv",
+    benchmark: "AuthorizationBenchmark",
+    parameterName: "RoleCount",
+  },
+  {
+    fileName:
+      "OSWS.Performance.Benchmarks.Measurements.PermissionServiceBenchmark-report.csv",
+    benchmark: "PermissionServiceBenchmark",
+    parameterName: "RoleCount",
+  },
+  {
+    fileName:
+      "OSWS.Performance.Benchmarks.Measurements.KeyUnwrapBenchmark-report.csv",
+    benchmark: "KeyUnwrapBenchmark",
+    parameterName: "DekSizeBytes",
+  },
+  {
+    fileName:
+      "OSWS.Performance.Benchmarks.Measurements.DecryptionBenchmark-report.csv",
+    benchmark: "DecryptionBenchmark",
+    parameterName: "RowCount",
+  },
+];
 
 type ScalingTrend =
   | "Improving"
@@ -374,6 +408,10 @@ function toCsvFromChartData(data: ChartDatum[], yLabel: string): string {
 function toMicroShortLabel(row: MicrobenchmarkRow): string {
   if (row.benchmark === "AuthorizationBenchmark") {
     return `Auth-${row.parameterValue}`;
+  }
+
+  if (row.benchmark === "PermissionServiceBenchmark") {
+    return `PermSvc-${row.parameterValue}`;
   }
 
   if (row.benchmark === "KeyUnwrapBenchmark") {
@@ -709,6 +747,7 @@ function App() {
   const warpS3SvgRef = useRef<SVGSVGElement>(null);
   const warpScalingSvgRef = useRef<SVGSVGElement>(null);
   const microAuthSvgRef = useRef<SVGSVGElement>(null);
+  const microPermissionServiceSvgRef = useRef<SVGSVGElement>(null);
   const microUnwrapSvgRef = useRef<SVGSVGElement>(null);
   const microDecryptSvgRef = useRef<SVGSVGElement>(null);
 
@@ -727,29 +766,22 @@ function App() {
           return toWarpRun(fileName, payload);
         });
 
-        const microPromises = [
-          fetch("/data/micro/OSWS.Performance.Benchmarks.Measurements.AuthorizationBenchmark-report.csv").then((res) => {
-            if (!res.ok) {
-              throw new Error("Failed to load authorization report");
-            }
-            return res.text();
-          }),
-          fetch("/data/micro/OSWS.Performance.Benchmarks.Measurements.KeyUnwrapBenchmark-report.csv").then((res) => {
-            if (!res.ok) {
-              throw new Error("Failed to load key unwrap report");
-            }
-            return res.text();
-          }),
-          fetch("/data/micro/OSWS.Performance.Benchmarks.Measurements.DecryptionBenchmark-report.csv").then((res) => {
-            if (!res.ok) {
-              throw new Error("Failed to load decryption report");
-            }
-            return res.text();
-          }),
-        ];
+        const microPromises = MICRO_BENCHMARK_SOURCES.map(async (source) => {
+          const res = await fetch(`/data/micro/${source.fileName}`);
+          if (!res.ok) {
+            return null;
+          }
 
-        const [loadedWarp, authorizationCsv, unwrapCsv, decryptCsv] =
-          await Promise.all([Promise.all(warpPromises), ...microPromises]);
+          return {
+            source,
+            csvText: await res.text(),
+          };
+        });
+
+        const [loadedWarp, loadedMicroSources] = await Promise.all([
+          Promise.all(warpPromises),
+          Promise.all(microPromises),
+        ]);
 
         const warp = loadedWarp.filter((run): run is WarpRun => run !== null);
 
@@ -763,26 +795,35 @@ function App() {
           return;
         }
 
-        const micro = [
-          ...parseBdnReport(
-            authorizationCsv,
-            "AuthorizationBenchmark",
-            "RoleCount",
-          ),
-          ...parseBdnReport(unwrapCsv, "KeyUnwrapBenchmark", "DekSizeBytes"),
-          ...parseBdnReport(decryptCsv, "DecryptionBenchmark", "RowCount"),
-        ].sort((a, b) => {
-          const kindOrder: Record<MicroBenchmarkKind, number> = {
-            AuthorizationBenchmark: 0,
-            KeyUnwrapBenchmark: 1,
-            DecryptionBenchmark: 2,
-          };
-          const byKind = kindOrder[a.benchmark] - kindOrder[b.benchmark];
-          if (byKind !== 0) {
-            return byKind;
-          }
-          return a.parameterValue - b.parameterValue;
-        });
+        const loadedMicro = loadedMicroSources.filter(
+          (
+            item,
+          ): item is {
+            source: MicroBenchmarkSource;
+            csvText: string;
+          } => item !== null,
+        );
+
+        const benchmarkOrder = new Map(
+          MICRO_BENCHMARK_SOURCES.map((source, index) => [
+            source.benchmark,
+            index,
+          ]),
+        );
+
+        const micro = loadedMicro
+          .flatMap(({ source, csvText }) =>
+            parseBdnReport(csvText, source.benchmark, source.parameterName),
+          )
+          .sort((a, b) => {
+            const byKind =
+              (benchmarkOrder.get(a.benchmark) ?? Number.MAX_SAFE_INTEGER) -
+              (benchmarkOrder.get(b.benchmark) ?? Number.MAX_SAFE_INTEGER);
+            if (byKind !== 0) {
+              return byKind;
+            }
+            return a.parameterValue - b.parameterValue;
+          });
 
         setMicroRows(micro);
         setWarpRuns(warp);
@@ -852,13 +893,16 @@ function App() {
   );
 
   const microChartsByBenchmark = useMemo(() => {
-    const order: MicroBenchmarkKind[] = [
-      "AuthorizationBenchmark",
-      "KeyUnwrapBenchmark",
-      "DecryptionBenchmark",
-    ];
+    const present = [...new Set(microRows.map((row) => row.benchmark))];
+    const order: MicroBenchmarkKind[] = MICRO_BENCHMARK_SOURCES.map(
+      (source) => source.benchmark,
+    );
 
-    return order
+    const sortedBenchmarks = order.filter((benchmark) =>
+      present.includes(benchmark),
+    );
+
+    return sortedBenchmarks
       .map((benchmark) => {
         const rows = microRows.filter((row) => row.benchmark === benchmark);
         const data = rows.map((row) => ({
@@ -1156,13 +1200,16 @@ function App() {
   );
 
   const microRowsByBenchmark = useMemo(() => {
-    const order: MicroBenchmarkKind[] = [
-      "AuthorizationBenchmark",
-      "KeyUnwrapBenchmark",
-      "DecryptionBenchmark",
-    ];
+    const present = [...new Set(microRows.map((row) => row.benchmark))];
+    const order: MicroBenchmarkKind[] = MICRO_BENCHMARK_SOURCES.map(
+      (source) => source.benchmark,
+    );
 
-    return order.map((benchmark) => ({
+    const sortedBenchmarks = order.filter((benchmark) =>
+      present.includes(benchmark),
+    );
+
+    return sortedBenchmarks.map((benchmark) => ({
       benchmark,
       rows: microRows.filter((row) => row.benchmark === benchmark),
     }));
@@ -1199,6 +1246,7 @@ function App() {
     React.RefObject<SVGSVGElement | null>
   > = {
     AuthorizationBenchmark: microAuthSvgRef,
+    PermissionServiceBenchmark: microPermissionServiceSvgRef,
     KeyUnwrapBenchmark: microUnwrapSvgRef,
     DecryptionBenchmark: microDecryptSvgRef,
   };

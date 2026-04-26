@@ -9,6 +9,12 @@
 # 4) OSWS with encryption (cache enabled)
 #
 # Usage: ./run-warp-baseline.sh [instance-count] [concurrency] [duration-seconds] [workload-profile]
+#
+# Concurrency behavior:
+# - If [concurrency] arg is provided, it is treated as a fixed value for all instance counts.
+# - If omitted, concurrency scales with instance count using:
+#     effective_concurrency = WARP_CONCURRENCY_PER_INSTANCE * instance_count
+#   (defaults to 8 * instance_count)
 
 set -e
 
@@ -34,9 +40,33 @@ fi
 
 # Configuration (can be overridden from command line, .env, or appsettings.json)
 INSTANCE_COUNT="${1:-}"
-WARP_CONCURRENCY="${2:-${WARP_CONCURRENCY:-8}}"
+WARP_CONCURRENCY_ARG="${2:-}"
 WARP_DURATION="${3:-${WARP_DURATION_SECONDS:-60}}"
 WORKLOAD_PROFILE="${4:-${WARP_WORKLOAD_PROFILE:-mixed}}"
+
+WARP_CONCURRENCY_MODE="${WARP_CONCURRENCY_MODE:-per-instance}"
+WARP_CONCURRENCY_PER_INSTANCE="${WARP_CONCURRENCY_PER_INSTANCE:-${WARP_CONCURRENCY:-8}}"
+WARP_CONCURRENCY_FIXED="${WARP_CONCURRENCY_FIXED:-${WARP_CONCURRENCY:-8}}"
+
+if [[ -n "$WARP_CONCURRENCY_ARG" ]]; then
+    WARP_CONCURRENCY_MODE="fixed"
+    WARP_CONCURRENCY_FIXED="$WARP_CONCURRENCY_ARG"
+fi
+
+if [[ ! "$WARP_CONCURRENCY_PER_INSTANCE" =~ ^[0-9]+$ || "$WARP_CONCURRENCY_PER_INSTANCE" -le 0 ]]; then
+    echo "ERROR: WARP_CONCURRENCY_PER_INSTANCE must be a positive integer"
+    exit 1
+fi
+
+if [[ ! "$WARP_CONCURRENCY_FIXED" =~ ^[0-9]+$ || "$WARP_CONCURRENCY_FIXED" -le 0 ]]; then
+    echo "ERROR: WARP_CONCURRENCY_FIXED must be a positive integer"
+    exit 1
+fi
+
+if [[ "$WARP_CONCURRENCY_MODE" != "fixed" && "$WARP_CONCURRENCY_MODE" != "per-instance" ]]; then
+    echo "ERROR: WARP_CONCURRENCY_MODE must be 'fixed' or 'per-instance'"
+    exit 1
+fi
 
 # Constants
 OSWS_BASE_PORT="${OSWS_BASE_PORT:-8000}"
@@ -106,7 +136,13 @@ mkdir -p "$RESULTS_DIR"
 echo ""
 echo "Configuration:"
 echo "  Instance counts: ${INSTANCE_COUNTS[*]}"
-echo "  Concurrency: $WARP_CONCURRENCY"
+if [[ "$WARP_CONCURRENCY_MODE" == "fixed" ]]; then
+    echo "  Concurrency mode: fixed"
+    echo "  Concurrency: $WARP_CONCURRENCY_FIXED"
+else
+    echo "  Concurrency mode: per-instance"
+    echo "  Concurrency per instance: $WARP_CONCURRENCY_PER_INSTANCE"
+fi
 echo "  Duration: ${WARP_DURATION}s"
 echo "  Workload profile: $WORKLOAD_PROFILE"
 echo "  Bucket: $BUCKET_NAME"
@@ -174,10 +210,10 @@ run_warp() {
     local result_file="${result_base}.json.zst"
     local result_json="${result_base}.json"
 
-    echo "  Running: $category (instances=$instance_count, host=$host)"
+    echo "  Running: $category (instances=$instance_count, host=$host, concurrent=$CURRENT_WARP_CONCURRENCY)"
     if warp "$WORKLOAD_PROFILE" \
         --duration "${WARP_DURATION}s" \
-        --concurrent "$WARP_CONCURRENCY" \
+        --concurrent "$CURRENT_WARP_CONCURRENCY" \
         --objects 1000 \
         --obj.size 1M \
         --bucket "$BUCKET_NAME" \
@@ -228,10 +264,10 @@ run_warp_parquet_get() {
     local result_file="${result_base}.json.zst"
     local result_json="${result_base}.json"
 
-    echo "  Running: ${category} parquet-get (instances=$instance_count, host=$host, prefix=$PARQUET_PREFIX)"
+    echo "  Running: ${category} parquet-get (instances=$instance_count, host=$host, concurrent=$CURRENT_WARP_CONCURRENCY, prefix=$PARQUET_PREFIX)"
     if warp get \
         --duration "${WARP_DURATION}s" \
-        --concurrent "$WARP_CONCURRENCY" \
+        --concurrent "$CURRENT_WARP_CONCURRENCY" \
         --objects "$PARQUET_OBJECT_LIMIT" \
         --bucket "$PARQUET_BUCKET_NAME" \
         --host "$host" \
@@ -325,8 +361,8 @@ start_osws_instances() {
     echo "  Verifying health"
     for i in $(seq 1 "$instance_count"); do
         local port=$((OSWS_BASE_PORT + (i-1)*2))
-        if curl -fsS "http://localhost:$port/health" >/dev/null 2>&1; then
-            echo "    ✓ http://localhost:$port/health"
+        if curl -fsS "http://127.0.0.1:$port/health" >/dev/null 2>&1; then
+            echo "    ✓ http://127.0.0.1:$port/health"
         else
             echo "    ✗ Instance on port $port failed health check"
             exit 1
@@ -362,9 +398,18 @@ for num_instances in "${INSTANCE_COUNTS[@]}"; do
     # Build comma-separated host list for all OSWS instances.
     # Each instance is assigned a port: base, base+2, base+4, ...
     OSWS_HOSTS=""
+
+    if [[ "$WARP_CONCURRENCY_MODE" == "fixed" ]]; then
+        CURRENT_WARP_CONCURRENCY="$WARP_CONCURRENCY_FIXED"
+    else
+        CURRENT_WARP_CONCURRENCY=$((WARP_CONCURRENCY_PER_INSTANCE * num_instances))
+    fi
+
+    echo "Effective concurrency for ${num_instances} instance(s): $CURRENT_WARP_CONCURRENCY"
+
     for i in $(seq 1 "$num_instances"); do
         _port=$((OSWS_BASE_PORT + (i-1)*2))
-        OSWS_HOSTS="${OSWS_HOSTS:+$OSWS_HOSTS,}localhost:$_port"
+        OSWS_HOSTS="${OSWS_HOSTS:+$OSWS_HOSTS,}127.0.0.1:$_port"
     done
 
     # Category: Baseline / S3 (direct)

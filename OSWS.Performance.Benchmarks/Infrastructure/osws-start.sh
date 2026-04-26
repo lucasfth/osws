@@ -141,7 +141,7 @@ echo $ACTUAL_PID > "/tmp/osws-instance-${INSTANCE_NUM}-${MODE}.pid"
 # Wait for instance to be ready
 echo "Waiting for instance $INSTANCE_NUM to be ready..."
 for i in {1..30}; do
-    if curl -s "http://localhost:$PORT/health" > /dev/null 2>&1; then
+    if curl -s "http://127.0.0.1:$PORT/health" > /dev/null 2>&1; then
         echo "✓ Instance $INSTANCE_NUM is ready on port $PORT"
         exit 0
     fi

@@ -34,6 +34,28 @@ dotnet run -c Release
 dotnet run -c Release -- unwrap     # Key unwrap latency
 dotnet run -c Release -- decrypt    # Decryption latency
 dotnet run -c Release -- auth       # Authorization latency
+dotnet run -c Release -- hierarchy  # Authorization latency (role hierarchy)
+```
+
+Auth benchmark setup (one-time, from repo root):
+
+```bash
+# Create a local database (use your local Postgres user)
+psql -U <your-user> -c "CREATE DATABASE osws_dev;"
+
+# Apply migrations
+dotnet ef database update --project OSWS.KeyManager --startup-project OSWS.WebApi
+```
+
+Set `ConnectionStrings:OswsContext` for this project (appsettings.json or environment).
+Example for OSWS.Performance.Benchmarks/appsettings.json:
+
+```json
+{
+  "ConnectionStrings": {
+    "OswsContext": "Host=localhost;Port=5432;Database=osws_dev;Username=<your-user>;Password=<your-password>"
+  }
+}
 ```
 
 ## Benchmark Categories
@@ -76,7 +98,8 @@ Deep investigation of specific system components using **real OSWS operations**,
 | ----------------- | -------------------------- | -------------------------- | ----------------------------------- |
 | **Key Unwrap**    | DEK unwrap latency         | Cold cache + ParquetReader | Isolates key unwrap from decryption |
 | **Decryption**    | Column decryption latency  | Warm cache + ParquetReader | Isolates decryption from key unwrap |
-| **Authorization** | RBAC authorization latency | Placeholder                | RBAC implementation pending         |
+| **Permission Service** | RBAC authorization latency (flat roles) | PermissionServiceBenchmark | Uses seeded Postgres fixtures |
+| **Permission Hierarchy** | RBAC authorization latency (role inheritance) | PermissionHierarchyBenchmark | Uses seeded Postgres fixtures |
 
 **Key Unwrap Benchmark:**
 
@@ -96,8 +119,15 @@ Deep investigation of specific system components using **real OSWS operations**,
 
 **Authorization Benchmark:**
 
-- Placeholder pending RBAC implementation
-- Will measure authorization checks with 4, 64, 256 roles when available
+- Measures authorization checks with 4, 64, 256 direct roles (flat hierarchy)
+- Requires a local Postgres database with migrations applied
+- Uses per-iteration fixture data seeded into the OSWS schema
+
+**Authorization Hierarchy Benchmark:**
+
+- Measures authorization checks across role inheritance depth (0, 4, 16, 64)
+- Requires a local Postgres database with migrations applied
+- Uses per-iteration fixture data seeded into the OSWS schema
 
 ## Supported Key Sizes
 
@@ -127,7 +157,7 @@ To ensure statistically reliable benchmark results, the following iteration and 
 - **Iterations**: Number of times the benchmark executes to collect timing samples
 - **Warmup Runs**: Number of initial runs discarded to allow JIT compilation and cache warming
 - **Target Error Margin**: Expected coefficient of variation (CV) for reliable results
-- Authorization benchmark uses a mock implementation; actual RBAC implementation may have different characteristics
+- Authorization benchmarks use seeded database fixtures; point to a dedicated local DB
 
 ## Configuration
 
@@ -333,6 +363,7 @@ Each result file contains:
 - **Build fails**: Ensure Release mode: `dotnet build -c Release`
 - **KeyVault errors**: Set `Encryption__DisableEncryption=true` to skip key vault
 - **Slow runs**: Reduce iterations: `BENCH_ITERATIONS=5 dotnet run -c Release`
+- **Auth benchmarks fail on startup**: Ensure `ConnectionStrings:OswsContext` is set and migrations are applied
 
 ## Examples
 
@@ -379,7 +410,8 @@ OSWS.Performance.Benchmarks/
 │   ├── osws-stop.sh               # Stop instances
 │   └── warp-results/              # Benchmark results
 ├── Measurements/
-│   ├── AuthorizationBenchmark.cs  # RBAC latency (placeholder)
+│   ├── AuthorizationBenchmark.cs  # RBAC latency (PermissionServiceBenchmark)
+│   ├── PermissionHierarchyBenchmark.cs  # RBAC hierarchy latency
 │   ├── KeyUnwrapBenchmark.cs      # Key unwrap latency
 │   └── DecryptionBenchmark.cs     # Decryption latency
 ├── Warp/

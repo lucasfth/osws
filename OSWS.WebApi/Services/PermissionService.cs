@@ -26,7 +26,7 @@ public sealed class PermissionService(RoleHierarchyService roleHierarchy, OswsCo
             .Distinct()
             .ToListAsync(cancellationToken);
 
-        return new HashSet<string>(allowedColumns);
+        return [.. allowedColumns];
     }
 
     /// <summary>

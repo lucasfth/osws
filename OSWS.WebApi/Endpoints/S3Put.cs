@@ -181,4 +181,24 @@ public class S3Put(
 
         return Results.Ok();
     }
+
+    public async Task<IResult> CreateBucket(
+        string bucket,
+        HttpContext httpContext,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (string.IsNullOrEmpty(bucket))
+            return Results.BadRequest(ParamValidation.BucketNameIsRequired());
+
+        try
+        {
+            await s3Client.PutBucketAsync(bucket, cancellationToken);
+            return Results.Ok();
+        }
+        catch (AmazonS3Exception e)
+        {
+            return S3ErrorHelper.HandleS3Exception(e, httpContext);
+        }
+    }
 }

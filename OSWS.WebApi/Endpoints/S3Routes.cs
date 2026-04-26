@@ -44,6 +44,18 @@ public static class S3Routes
                 )
         );
 
+        // S3 CREATE BUCKET - path-style routing for S3 compatibility: PUT /{bucket}
+        s3.MapPut(
+            "/{bucket}",
+            async (
+                [FromServices] IS3Put s3Put,
+                string bucket,
+                HttpContext httpContext,
+                CancellationToken cancellationToken = default
+            ) =>
+                await s3Put.CreateBucket(bucket, httpContext, cancellationToken)
+        );
+
         // S3 PUT - path-style routing for S3 compatibility: /{bucket}/{*key}
         s3.MapPut(
             "/{bucket}/{*key}",

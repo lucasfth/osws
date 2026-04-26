@@ -33,7 +33,8 @@ public static class Program
 
         var benchmarkType = choice switch
         {
-            "auth" or "AuthorizationBenchmark" => typeof(AuthorizationBenchmark),
+            "auth" or "PermissionServiceBenchmark" => typeof(PermissionServiceBenchmark),
+            "hierarchy" or "PermissionHierarchyBenchmark" => typeof(PermissionHierarchyBenchmark),
             "unwrap" or "KeyUnwrapBenchmark" => typeof(KeyUnwrapBenchmark),
             "decrypt" or "DecryptionBenchmark" => typeof(DecryptionBenchmark),
             _ => null, // run all benchmarks
@@ -44,12 +45,14 @@ public static class Program
             Console.WriteLine("  Running all micro-benchmarks...");
             Console.WriteLine();
             Console.WriteLine("  Micro-benchmarks:");
-            Console.WriteLine("  • Authorization (4, 64, 256 roles)");
+            Console.WriteLine("  • Permission Service — flat hierarchy (4, 64, 256 direct roles)");
+            Console.WriteLine("  • Permission Hierarchy — chain depth (0, 4, 16, 64)");
             Console.WriteLine("  • Key Unwrap (16, 24, 32 bytes)");
             Console.WriteLine("  • Decryption (5K, 10K, 100K rows with 2,000 columns)");
             Console.WriteLine();
 
-            BenchmarkRunner.Run<AuthorizationBenchmark>();
+            BenchmarkRunner.Run<PermissionServiceBenchmark>();
+            BenchmarkRunner.Run<PermissionHierarchyBenchmark>();
             BenchmarkRunner.Run<KeyUnwrapBenchmark>();
             BenchmarkRunner.Run<DecryptionBenchmark>();
         }
@@ -57,7 +60,8 @@ public static class Program
         {
             var benchmarkName = choice switch
             {
-                "auth" or "AuthorizationBenchmark" => "Authorization",
+                "auth" or "PermissionServiceBenchmark" => "Permission Service (flat)",
+                "hierarchy" or "PermissionHierarchyBenchmark" => "Permission Hierarchy (chain depth)",
                 "unwrap" or "KeyUnwrapBenchmark" => "Key Unwrap",
                 "decrypt" or "DecryptionBenchmark" => "Decryption",
                 _ => "Unknown",

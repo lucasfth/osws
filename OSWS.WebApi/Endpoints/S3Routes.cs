@@ -52,8 +52,7 @@ public static class S3Routes
                 string bucket,
                 HttpContext httpContext,
                 CancellationToken cancellationToken = default
-            ) =>
-                await s3Put.CreateBucket(bucket, httpContext, cancellationToken)
+            ) => await s3Put.CreateBucket(bucket, httpContext, cancellationToken)
         );
 
         // S3 PUT - path-style routing for S3 compatibility: /{bucket}/{*key}

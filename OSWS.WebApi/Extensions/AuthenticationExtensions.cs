@@ -58,7 +58,7 @@ public static class AuthenticationExtensions
             );
         }
 
-        // SigV4 scheme — used exclusively by the /s3 route group.
+        // SigV4 scheme — used exclusively by the S3-compatible route group.
         authBuilder.AddScheme<SigV4AuthenticationOptions, SigV4AuthenticationHandler>(
             "SigV4",
             _ => { }

@@ -1,3 +1,7 @@
+using System;
+using System.Linq;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
 using OSWS.Common.Configuration;
 using OSWS.ParquetSolver.Helpers;
 using OSWS.WebApi.Endpoints;
@@ -32,10 +36,7 @@ public static class EndpointExtensions
         {
             if (app.Environment.IsDevelopment())
             {
-                logger.LogWarning(
-                    "BenchmarkMode is ACTIVE — unauthenticated S3 routes are exposed."
-                );
-                app.MapBenchmarkS3PassthroughRoutes();
+                logger.LogWarning("BenchmarkMode is ACTIVE — S3 benchmark mode enabled.");
             }
             else
             {

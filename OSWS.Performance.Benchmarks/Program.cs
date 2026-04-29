@@ -23,9 +23,7 @@ public static class Program
             && string.Equals(args[0], "seed-s3-credential", StringComparison.OrdinalIgnoreCase)
         )
         {
-            var exitCode = await BenchmarkS3CredentialSeeder.RunSeedAsync(
-                args.Skip(1).ToArray()
-            );
+            var exitCode = await BenchmarkS3CredentialSeeder.RunSeedAsync(args.Skip(1).ToArray());
             Environment.ExitCode = exitCode;
             return;
         }

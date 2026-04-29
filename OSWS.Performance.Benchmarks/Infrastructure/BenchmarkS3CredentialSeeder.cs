@@ -104,12 +104,13 @@ public static class BenchmarkS3CredentialSeeder
 
         if (!string.IsNullOrWhiteSpace(options.UserName))
         {
-            var user = await db.Users.Include(u => u.S3Credentials)
+            var user = await db
+                .Users.Include(u => u.S3Credentials)
                 .FirstOrDefaultAsync(u => u.Name == options.UserName);
             if (user is not null)
             {
-                var assignments = await db.RoleAssignments
-                    .Where(ra => ra.UserId == user.Id)
+                var assignments = await db
+                    .RoleAssignments.Where(ra => ra.UserId == user.Id)
                     .ToListAsync();
                 if (assignments.Count > 0)
                 {
@@ -125,7 +126,8 @@ public static class BenchmarkS3CredentialSeeder
 
         if (!string.IsNullOrWhiteSpace(options.RoleName))
         {
-            var role = await db.Roles.Include(r => r.S3Credentials)
+            var role = await db
+                .Roles.Include(r => r.S3Credentials)
                 .Include(r => r.Users)
                 .FirstOrDefaultAsync(r => r.Name == options.RoleName);
             if (role is not null && role.Users.Count == 0 && role.S3Credentials.Count == 0)

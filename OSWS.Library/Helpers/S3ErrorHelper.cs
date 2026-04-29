@@ -35,7 +35,10 @@ public static class S3ErrorHelper
 
             case System.Net.HttpStatusCode.Conflict:
                 httpContext.Response.StatusCode = 409;
-                return Results.Text(CreateS3ErrorXml("BucketAlreadyExists", msg), "application/xml");
+                return Results.Text(
+                    CreateS3ErrorXml("BucketAlreadyExists", msg),
+                    "application/xml"
+                );
 
             case System.Net.HttpStatusCode.BadRequest:
                 httpContext.Response.StatusCode = 400;

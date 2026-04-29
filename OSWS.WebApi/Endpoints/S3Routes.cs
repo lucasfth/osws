@@ -12,15 +12,14 @@ public static class S3Routes
     private const int DefaultTimeoutOptionsMs = 3000;
 
     // Reserved routes that should not be treated as bucket names
-    private static readonly HashSet<string> ReservedRoutes =
-        new(StringComparer.OrdinalIgnoreCase)
-        {
-            "health",
-            "cache-stats",
-            "api",
-            "swagger",
-            "openapi"
-        };
+    private static readonly HashSet<string> ReservedRoutes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "health",
+        "cache-stats",
+        "api",
+        "swagger",
+        "openapi",
+    };
 
     public static IEndpointRouteBuilder MapS3Routes(this IEndpointRouteBuilder app)
     {

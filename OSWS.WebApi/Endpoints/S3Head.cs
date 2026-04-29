@@ -35,10 +35,9 @@ public class S3Head(
 
         try
         {
-            await s3Client.HeadBucketAsync(
-                new HeadBucketRequest { BucketName = bucket },
-                cancellationToken
-            ).ConfigureAwait(false);
+            await s3Client
+                .HeadBucketAsync(new HeadBucketRequest { BucketName = bucket }, cancellationToken)
+                .ConfigureAwait(false);
 
             return Results.StatusCode(StatusCodes.Status200OK);
         }

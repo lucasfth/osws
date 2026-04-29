@@ -102,7 +102,9 @@ public class S3Get(
 
         // For parquet fetches, prefer the buffered encrypted stream from S3ObjectFetcher
         // (resp.ResponseStream may have been consumed during cache population).
-        var outputStream = isParquetFile ? (encryptedStream ?? resp?.ResponseStream) : resp?.ResponseStream;
+        var outputStream = isParquetFile
+            ? (encryptedStream ?? resp?.ResponseStream)
+            : resp?.ResponseStream;
 
         if (isParquetFile && encryptedStream != null && !encryptionSettings.DisableEncryption)
         {
@@ -123,7 +125,8 @@ public class S3Get(
                         cancellationToken
                     );
 
-                    var allowedColumnsDisplay = allowedColumnSet != null ? string.Join(",", allowedColumnSet) : "* (all)";
+                    var allowedColumnsDisplay =
+                        allowedColumnSet != null ? string.Join(",", allowedColumnSet) : "* (all)";
                     Console.WriteLine(
                         $"[OSWS] Permission check for user {user.Id}: roles=[{string.Join(",", roleIds)}], allowedColumns=[{allowedColumnsDisplay}]"
                     );

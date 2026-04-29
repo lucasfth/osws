@@ -113,7 +113,7 @@ public class S3Put(
         {
             // Encryption disabled: pass-through raw parquet without encryption
             req.InputStream = httpRequest.Body;
-            
+
             // Set content length
             var contentLength = httpRequest.ContentLength;
             if (contentLength.HasValue)
@@ -215,7 +215,12 @@ public class S3Put(
             await s3Client.PutBucketAsync(bucket, cancellationToken);
             return Results.Ok();
         }
-        catch (AmazonS3Exception e) when (e.StatusCode == System.Net.HttpStatusCode.Conflict || (e.ErrorCode == "BucketAlreadyExists" || e.ErrorCode == "BucketAlreadyOwnedByYou"))
+        catch (AmazonS3Exception e)
+            when (e.StatusCode == System.Net.HttpStatusCode.Conflict
+                || (
+                    e.ErrorCode == "BucketAlreadyExists" || e.ErrorCode == "BucketAlreadyOwnedByYou"
+                )
+            )
         {
             // Bucket already exists - this is ok, return success
             return Results.Ok();

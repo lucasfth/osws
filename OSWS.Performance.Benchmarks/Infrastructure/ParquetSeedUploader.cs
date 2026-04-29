@@ -42,10 +42,7 @@ public static class ParquetSeedUploader
         }
 
         // Configure S3 client - for OSWS PUT, point to localhost; for direct S3, use configured endpoint
-        var s3Config = new AmazonS3Config
-        {
-            ForcePathStyle = true,
-        };
+        var s3Config = new AmazonS3Config { ForcePathStyle = true };
 
         string serviceUrl;
         if (useOswsPut)
@@ -80,11 +77,15 @@ public static class ParquetSeedUploader
         );
 
         var existingObjects = existing.S3Objects ?? [];
-        if (existingObjects.Any(o =>
-            (o.Key ?? string.Empty).EndsWith(".parquet", StringComparison.OrdinalIgnoreCase)))
+        if (
+            existingObjects.Any(o =>
+                (o.Key ?? string.Empty).EndsWith(".parquet", StringComparison.OrdinalIgnoreCase)
+            )
+        )
         {
             Console.WriteLine(
-                $"seed-parquet: found existing parquet objects under s3://{bucket}/{normalizedPrefix}");
+                $"seed-parquet: found existing parquet objects under s3://{bucket}/{normalizedPrefix}"
+            );
             return 0;
         }
 
@@ -106,8 +107,10 @@ public static class ParquetSeedUploader
             try
             {
                 var response = await s3.PutObjectAsync(put);
-            var platform = useOswsPut ? "OSWS" : "S3";
-            Console.WriteLine($"seed-parquet: uploaded {key} (etag={response.ETag}) via {platform}");
+                var platform = useOswsPut ? "OSWS" : "S3";
+                Console.WriteLine(
+                    $"seed-parquet: uploaded {key} (etag={response.ETag}) via {platform}"
+                );
             }
             catch (AmazonS3Exception ex)
             {

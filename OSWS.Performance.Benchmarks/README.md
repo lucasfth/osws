@@ -22,6 +22,13 @@ cd Infrastructure
 ls warp-results/
 ```
 
+Notes:
+
+- OSWS benchmark runs now create a temporary S3 credential in the OSWS database
+  before each category, and clean it up afterward.
+- Ensure `ConnectionStrings:OswsContext` is configured (appsettings or env) so
+  the credential seeder can access the DB.
+
 ### For Micro-benchmarks (Component Latency)
 
 ```bash
@@ -58,39 +65,118 @@ Example for OSWS.Performance.Benchmarks/appsettings.json:
 }
 ```
 
-## Benchmark Categories
+## Warp Benchmark Categories - REQUIREMENTS
 
-### 1. Warp Baseline Benchmarks (S3-Compatible)
+Each benchmark category has **specific, well-defined behavior** that must be maintained:
 
-Compare OSWS against S3 systems using MinIO's [Warp](https://github.com/minio/warp).
+### Category: `s3-direct`
 
-**What it measures:**
+| Aspect | Behavior |
+|--------|----------|
+| **Purpose** | Raw S3 backend performance baseline |
+| **Objects Stored** | Plain/empty (no OSWS encryption) |
+| **GET Response** | Raw S3 bytes, no OSWS processing |
+| **Encryption** | None |
+| **File Cache** | N/A |
+| **Parquet Processing** | N/A - served as-is |
+| **DB Calls** | None |
 
-- IOPS and throughput performance
-- Scaling from 1 to 8 instances
-- Encryption and cache impact
-- System architecture overhead
+This is your reference baseline - measure pure S3 performance.
 
-**Configurations:**
+### Category: `osws-no-encryption`
 
-- S3 direct (baseline reference)
-- OSWS without encryption
-- OSWS with encryption (file cache disabled)
-- OSWS with encryption + file cache enabled
+| Aspect | Behavior |
+|--------|----------|
+| **Purpose** | OSWS S3 proxy overhead (no encryption) |
+| **Objects Stored** | Plain (same as uploaded) |
+| **GET Response** | Raw bytes - pass-through |
+| **Encryption** | Disabled via `Encryption__DisableEncryption=true` |
+| **File Cache** | Irrelevant (no encryption) |
+| **Parquet Processing** | Served as-is without decryption |
+| **DB Calls** | Authorization required (SigV4 auth), but no encryption keys |
 
-**Scale:**
+For parquet files: OSWS serves raw parquet bytes without decryption. The parquet metadata
+and content remain unchanged (no column-level encryption applied).
 
-- 1, 2, 4, 8 OSWS instances
-- Configurable concurrency (default: 16 clients)
-- Configurable duration (default: 60 seconds)
-- Mixed workload (gets, puts, deletes)
+### Category: `osws-encryption-no-cache`
 
-**Results:**
+| Aspect | Behavior |
+|--------|----------|
+| **Purpose** | OSWS encryption overhead (no caching) |
+| **Objects Stored** | Encrypted with OSWS encryption (per-column DEK) |
+| **GET Response** | Decrypted parquet content |
+| **Encryption** | Enabled via `Encryption__DisableEncryption=false` |
+| **File Cache** | Disabled via `Cache__EnableFileCache=false` |
+| **Parquet Processing** | Full column encryption/decryption |
+| **DB Calls** | Authorization + key lookup/unwrap required |
 
-- Saved to `warp-results/` as compressed benchmark data files (`.json.zst`)
-- Contains throughput, latency (p50, p90, p99), error rates
+For parquet files: OSWS decrypts columns using the configured key vault.
+This measures the encryption/decryption performance without file cache overhead.
 
-### 2. Micro-benchmarks (Real OSWS Operations)
+### Category: `osws-encryption-cache`
+
+| Aspect | Behavior |
+|--------|----------|
+| **Purpose** | OSWS with full caching (best-case) |
+| **Objects Stored** | Encrypted with OSWS encryption (per-column DEK) |
+| **GET Response** | Decrypted parquet content |
+| **Encryption** | Enabled |
+| **File Cache** | Enabled via `Cache__EnableFileCache=true` |
+| **Parquet Processing** | Cache hit = decrypt once, serve many |
+| **DB Calls** | First request: full decrypt, subsequent: from cache |
+
+This measures OSWS performance with file cache working optimally.
+
+---
+
+## Warp Benchmark Semantics
+
+### Object Lifecycle
+
+```
+upload (PUT) → OSWS → S3 Backend
+GET        ← OSWS ← S3 Backend
+```
+
+### With Encryption Enabled (`DisableEncryption=false`)
+
+```
+PUT: client → OSWS (encrypt columns) → S3 (store encrypted)
+GET: S3 (fetch encrypted) → OSWS (decrypt columns) → client
+```
+
+### With Encryption Disabled (`DisableEncryption=true`)
+
+```
+PUT: client → OSWS (pass-through) → S3 (store as-is)
+GET: S3 (fetch) → OSWS (pass-through) → client
+```
+
+### Parquet Behavior by Category
+
+| Category | Parquet File Behavior |
+|----------|---------------------|
+| `s3-direct` | Raw parquet (no OSWS involvement) |
+| `osws-no-encryption` | Raw parquet served as-is |
+| `osws-encryption-no-cache` | Decrypt and serve |
+| `osws-encryption-cache` | Decrypt and cache |
+
+---
+
+## Benchmark Scale
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| Instance counts | 1, 2, 4, 8 | Number of OSWS instances |
+| Concurrency | 16 × instances | Concurrent Warp clients |
+| Duration | 60 seconds | Benchmark length |
+| Workload | mixed | 50% GET, 20% PUT, 20% LIST, 10% DELETE |
+| Object size | 1MB | Each object size |
+| Object count | 1000 | Unique objects |
+
+---
+
+## Micro-benchmarks (Real OSWS Operations)
 
 Deep investigation of specific system components using **real OSWS operations**, not simulations.
 
@@ -181,6 +267,8 @@ WARP_CONCURRENCY=16
 WARP_DURATION_SECONDS=60
 Encryption__DisableEncryption=false
 WARP_INSECURE_TLS=false
+WARP_OSWS_USER_NAME=warp-benchmark
+WARP_OSWS_ROLE_NAME=warp-benchmark-role
 ```
 
 Notes:
@@ -189,6 +277,10 @@ Notes:
 - If the endpoint starts with `https://`, the benchmark script automatically enables Warp TLS mode.
 - Set `WARP_INSECURE_TLS=true` only for self-signed certificates in local/test setups.
 - For `OSWS` baseline categories, the script uses Warp `--disable-sha256-payload` to avoid aws-chunked payload framing mismatches when proxying uploads through OSWS.
+- OSWS benchmark mode still requires SigV4; the script seeds a temporary OSWS
+  credential and uses it for Warp requests.
+- The script ensures the benchmark bucket exists before running Warp against
+  OSWS endpoints.
 
 The `.env` file is **git-ignored** and will never be committed. Benefits:
 
@@ -357,13 +449,25 @@ Each result file contains:
   - Test connectivity: `aws s3 ls` or `curl -I <endpoint>`
 - **No results files**: Check `./warp-results/` directory and verify write permissions
 - **Instances healthy but Warp fails**: Review S3 configuration and backend accessibility
+- **"unexpected download size" errors**: Verify the category behavior matches expectations
 
-### Micro-benchmarks
+### Category-Specific Issues
 
-- **Build fails**: Ensure Release mode: `dotnet build -c Release`
-- **KeyVault errors**: Set `Encryption__DisableEncryption=true` to skip key vault
-- **Slow runs**: Reduce iterations: `BENCH_ITERATIONS=5 dotnet run -c Release`
-- **Auth benchmarks fail on startup**: Ensure `ConnectionStrings:OswsContext` is set and migrations are applied
+| Error | Likely Cause |
+|-------|-------------|
+| "sorry, too many clients already" | PostgreSQL `max_connections` too low (need ≥200) |
+| 500 on parquet GET in encryption modes | Parquet decryption failing - check key vault |
+| Content size mismatch | Category behavior not matching - check `DisableEncryption` setting |
+
+### Parquet Tests Requirements
+
+For parquet-get benchmarks to work correctly:
+
+1. **Files must exist in S3**: Ensure parquet test files are seeded
+2. **Category must match file encryption state**:
+   - `osws-no-encryption` → files should be plain parquet
+   - `osws-encryption-*` → files should be OSWS-encrypted parquet
+3. **Do NOT run parquet-get with plain files in encryption mode** (will fail)
 
 ## Examples
 

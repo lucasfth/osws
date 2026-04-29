@@ -54,8 +54,23 @@ if [[ -f "$ENV_FILE" ]]; then
         # Skip comments and empty lines
         [[ "$line" =~ ^[[:space:]]*# ]] && continue
         [[ -z "${line// }" ]] && continue
-        # Export the variable
-        eval "export $line"
+        if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+
+            # Trim surrounding whitespace.
+            key="${key##+([[:space:]])}"
+            key="${key%%+([[:space:]])}"
+            value="${value##+([[:space:]])}"
+            value="${value%%+([[:space:]])}"
+
+            # Strip matching single or double quotes.
+            if [[ ("$value" == \"*\" && "$value" == *\") || ("$value" == \'*\' && "$value" == *\') ]]; then
+                value="${value:1:${#value}-2}"
+            fi
+
+            export "$key=$value"
+        fi
     done < "$ENV_FILE"
     set +a
 fi
@@ -72,6 +87,21 @@ export ASPNETCORE_URLS="http://0.0.0.0:$PORT"
 export Encryption__DisableEncryption=$DISABLE_ENCRYPTION
 export Encryption__BenchmarkMode=true
 export Cache__EnableFileCache=$FILE_CACHE_ENABLED
+
+# Use an isolated cache directory per instance startup to avoid stale cached parquet
+# artifacts from previous benchmark runs causing object-size mismatches in Warp GET.
+CACHE_ROOT="${OSWS_CACHE_ROOT:-${TMPDIR:-/tmp}}"
+CACHE_ROOT="${CACHE_ROOT%/}"
+INSTANCE_CACHE_DIR="$CACHE_ROOT/osws-cache/instance-${INSTANCE_NUM}-${MODE}-${PORT}"
+rm -rf "$INSTANCE_CACHE_DIR"
+mkdir -p "$INSTANCE_CACHE_DIR"
+export Cache__CacheDirectory="$INSTANCE_CACHE_DIR"
+
+# Avoid benchmark artifacts from API throttling (Warp can exceed default per-minute limits).
+export RateLimiting__S3RequestsPerMinute=0
+export RateLimiting__ApiRequestsPerMinute=0
+export RateLimiting__AdminRequestsPerMinute=0
+export RateLimiting__CredentialCreationsPerHour=0
 
 cd "$WEBAPP_DIR"
 

@@ -13,4 +13,11 @@ public interface IS3Head
         int timeoutOptionsMs = 3000,
         CancellationToken cancellationToken = default
     );
+
+    Task<IResult> HeadBucket(
+        string bucket,
+        HttpRequest httpRequest,
+        HttpResponse httpResponse,
+        CancellationToken cancellationToken = default
+    );
 }

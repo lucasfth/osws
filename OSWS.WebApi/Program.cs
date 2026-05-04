@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 using OSWS.Common.Configuration;
 using OSWS.KeyManager.Persistence;
 using OSWS.WebApi.Extensions;
@@ -42,6 +43,12 @@ if (builder.Environment.IsDevelopment())
         );
     });
 }
+
+// Disable file size limit since we need to upload large files
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    options.Limits.MaxRequestBodySize = null;
+});
 
 var app = builder.Build();
 

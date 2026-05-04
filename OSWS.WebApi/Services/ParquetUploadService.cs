@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using OSWS.KeyManager.Persistence;
 using OSWS.Models.Entities;
 using OSWS.ParquetSolver.Helpers;
@@ -9,7 +11,8 @@ namespace OSWS.WebApi.Services;
 public class ParquetUploadService(
     IParquetWriter parquetWriter,
     EncryptedFileCache fileCache,
-    OswsContext db
+    OswsContext db,
+    ILogger<ParquetUploadService> logger
 )
 {
     public async Task<Stream> ProcessAsync(
@@ -21,13 +24,25 @@ public class ParquetUploadService(
     )
     {
         // Copy to MemoryStream to make it seekable for Parquet library
+        logger.LogDebug("[ParquetUploadService] Copying request body to seekable stream");
+        var copySw = Stopwatch.StartNew();
         var seekableStream = new MemoryStream();
         await requestBody.CopyToAsync(seekableStream, cancellationToken);
         seekableStream.Position = 0;
+        logger.LogDebug(
+            "[ParquetUploadService] Request body copied: {SizeBytes} bytes ({ElapsedMs}ms)",
+            seekableStream.Length, copySw.ElapsedMilliseconds
+        );
 
+        logger.LogDebug("[ParquetUploadService] Starting WriteParquetAsync for role={Role}", role.Name);
+        var encSw = Stopwatch.StartNew();
         var (uploadStream, encryptionResult) = await parquetWriter.WriteParquetAsync(
             seekableStream,
             role.Name
+        );
+        logger.LogDebug(
+            "[ParquetUploadService] WriteParquetAsync done: {EncryptedColumns} columns encrypted ({ElapsedMs}ms)",
+            encryptionResult.Columns.Count, encSw.ElapsedMilliseconds
         );
 
         // Persist column, key, and permission records
@@ -64,7 +79,13 @@ public class ParquetUploadService(
             }
         }
 
+        logger.LogDebug("[ParquetUploadService] Persisting encryption metadata to DB");
+        var dbSw = Stopwatch.StartNew();
         await db.SaveChangesAsync(cancellationToken);
+        logger.LogDebug(
+            "[ParquetUploadService] DB save done ({ElapsedMs}ms)",
+            dbSw.ElapsedMilliseconds
+        );
 
         // Cache the encrypted stream asynchronously (don't await to avoid blocking the upload)
         uploadStream.Position = 0;
@@ -82,8 +103,9 @@ public class ParquetUploadService(
                 {
                     if (task.IsFaulted)
                     {
-                        Console.WriteLine(
-                            $"[OSWS] Cache failure for {cacheKey}: {task.Exception?.InnerException?.Message}"
+                        logger.LogWarning(
+                            "[ParquetUploadService] Cache failure for {CacheKey}: {Error}",
+                            cacheKey, task.Exception?.InnerException?.Message
                         );
                     }
                     cacheStream.Dispose();

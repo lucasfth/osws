@@ -45,7 +45,7 @@ ENV_FILE = BENCHMARK_DIR / ".env"
 RESULTS_DIR = BENCHMARK_DIR / "benchmark-results"
 DATASET_DIR = BENCHMARK_DIR / "benchmark-datasets"
 
-FILE_SIZES = ["small", "medium", "large"]
+FILE_SIZES = ["tiny", "small", "medium"] # large and xlarge currently disabled
 
 # Row counts and column count match C# ParquetGenerator / DecryptionBenchmark
 CONFIGS = {
@@ -106,7 +106,9 @@ def check_osws_health(endpoint: str) -> bool:
     import urllib.error
 
     try:
-        with urllib.request.urlopen(f"{endpoint.rstrip('/')}/health", timeout=5) as resp:
+        with urllib.request.urlopen(
+            f"{endpoint.rstrip('/')}/health", timeout=5
+        ) as resp:
             return resp.status == 200
     except Exception:
         return False
@@ -305,7 +307,9 @@ def main():
     )
     parser.add_argument("--bucket", help="S3 bucket name (overrides .env)")
     parser.add_argument(
-        "--repetitions", type=int, help="Number of repetitions per measurement (overrides .env)"
+        "--repetitions",
+        type=int,
+        help="Number of repetitions per measurement (overrides .env)",
     )
     parser.add_argument(
         "--skip-put", action="store_true", help="Skip PUT benchmark, only run GET"
@@ -368,7 +372,9 @@ def main():
     print(f"  Endpoint    : {endpoint}")
     print(f"  Bucket      : {bucket}")
     print(f"  Repetitions : {repetitions}")
-    print(f"  File sizes  : {', '.join(s for s in FILE_SIZES if s not in args.skip_sizes)}")
+    print(
+        f"  File sizes  : {', '.join(s for s in FILE_SIZES if s not in args.skip_sizes)}"
+    )
     print()
 
     writer = ResultsWriter(config)
@@ -383,8 +389,10 @@ def main():
             if not args.skip_put:
                 print(f"    Loading {size_label} dataset... ", end="", flush=True)
                 data = load_put_data(size_label)
-                print(f"{len(data)/1024/1024:.1f} MB")
-                run_put_benchmark(s3, bucket, config, size_label, data, repetitions, writer)
+                print(f"{len(data) / 1024 / 1024:.1f} MB")
+                run_put_benchmark(
+                    s3, bucket, config, size_label, data, repetitions, writer
+                )
 
             run_get_benchmark(
                 s3, bucket, config, size_label, repetitions, writer, is_s3_direct

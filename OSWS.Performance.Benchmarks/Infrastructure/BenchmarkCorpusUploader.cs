@@ -12,23 +12,28 @@ namespace OSWS.Performance.Benchmarks.Infrastructure;
 ///   bench/s3-direct/{size}.parquet        — plaintext, uploaded directly to R2
 ///   bench/osws/warm/{size}.parquet        — uploaded through OSWS (encrypted in R2)
 ///   bench/osws/cold/{size}/{001..N}.parquet — cold copies through OSWS (distinct DEKs)
+///
+/// Configuration is read from environment variables (set via .env):
+///   OSWS_ENDPOINT, BENCH_OSWS_ACCESS_KEY, BENCH_OSWS_SECRET_KEY
+///   S3Settings__EndpointHostname, S3Settings__AccessKeyId, S3Settings__SecretAccessKey
+///   BENCH_BUCKET (default: osws-benchmark), BENCH_REPETITIONS (default: 10)
 /// </summary>
 public static class BenchmarkCorpusUploader
 {
-    public static async Task<int> RunAsync(string[] args)
+    public static async Task<int> RunAsync()
     {
-        var oswsEndpoint = GetArg(args, "--osws-endpoint") ?? GetEnv("OSWS_ENDPOINT");
-        var oswsAccessKey = GetArg(args, "--osws-access-key") ?? GetEnv("BENCH_OSWS_ACCESS_KEY");
-        var oswsSecretKey = GetArg(args, "--osws-secret-key") ?? GetEnv("BENCH_OSWS_SECRET_KEY");
+        var oswsEndpoint = Environment.GetEnvironmentVariable("OSWS_ENDPOINT");
+        var oswsAccessKey = Environment.GetEnvironmentVariable("BENCH_OSWS_ACCESS_KEY");
+        var oswsSecretKey = Environment.GetEnvironmentVariable("BENCH_OSWS_SECRET_KEY");
 
-        var s3Endpoint = GetArg(args, "--s3-endpoint") ?? GetEnv("S3Settings__EndpointHostname");
-        var s3AccessKey = GetArg(args, "--s3-access-key") ?? GetEnv("S3Settings__AccessKeyId");
-        var s3SecretKey = GetArg(args, "--s3-secret-key") ?? GetEnv("S3Settings__SecretAccessKey");
+        var s3Endpoint = Environment.GetEnvironmentVariable("S3Settings__EndpointHostname");
+        var s3AccessKey = Environment.GetEnvironmentVariable("S3Settings__AccessKeyId");
+        var s3SecretKey = Environment.GetEnvironmentVariable("S3Settings__SecretAccessKey");
 
-        var bucket = GetArg(args, "--bucket") ?? GetEnv("BENCH_BUCKET") ?? "osws-benchmark";
-        var coldCopiesStr = GetArg(args, "--cold-copies") ?? GetEnv("BENCH_REPETITIONS") ?? "10";
-        var skipExisting = HasFlag(args, "--skip-existing");
-        var datasetDir = GetArg(args, "--dataset-dir") ?? "benchmark-datasets";
+        var bucket = Environment.GetEnvironmentVariable("BENCH_BUCKET") ?? "osws-benchmark";
+        var coldCopiesStr = Environment.GetEnvironmentVariable("BENCH_REPETITIONS") ?? "10";
+        var datasetDir = "benchmark-datasets";
+
         if (
             string.IsNullOrWhiteSpace(oswsEndpoint)
             || string.IsNullOrWhiteSpace(oswsAccessKey)
@@ -38,9 +43,6 @@ public static class BenchmarkCorpusUploader
             Console.Error.WriteLine("generate-corpus: OSWS endpoint and credentials are required.");
             Console.Error.WriteLine(
                 "  Set OSWS_ENDPOINT, BENCH_OSWS_ACCESS_KEY, BENCH_OSWS_SECRET_KEY in .env"
-            );
-            Console.Error.WriteLine(
-                "  or pass --osws-endpoint, --osws-access-key, --osws-secret-key"
             );
             return 1;
         }
@@ -62,12 +64,14 @@ public static class BenchmarkCorpusUploader
 
         if (!int.TryParse(coldCopiesStr, out var coldCopies) || coldCopies < 1)
         {
-            Console.Error.WriteLine("generate-corpus: --cold-copies must be a positive integer");
+            Console.Error.WriteLine(
+                "generate-corpus: BENCH_REPETITIONS must be a positive integer"
+            );
             return 1;
         }
 
-        using var osws = BuildS3Client(oswsEndpoint, oswsAccessKey, oswsSecretKey);
-        using var s3Direct = BuildS3Client(s3Endpoint, s3AccessKey, s3SecretKey);
+        using var osws = BuildClient(oswsEndpoint, oswsAccessKey, oswsSecretKey);
+        using var s3Direct = BuildClient(s3Endpoint, s3AccessKey, s3SecretKey);
 
         Console.WriteLine("Starting upload of benchmark datasets");
         Console.WriteLine("Configuration:");
@@ -97,31 +101,17 @@ public static class BenchmarkCorpusUploader
 
             // 1. Upload directly to S3 (plaintext — for s3-direct config)
             var directKey = $"bench/s3-direct/{sizeLabel}.parquet";
-            await UploadFileAsync(
-                s3Direct,
-                bucket,
-                directKey,
-                localFile,
-                "s3-direct",
-                skipExisting
-            );
+            await UploadFileAsync(s3Direct, bucket, directKey, localFile, "s3-direct");
 
             // 2. Upload warm copy through OSWS
             var warmKey = $"bench/osws/warm/{sizeLabel}.parquet";
-            await UploadFileAsync(osws, bucket, warmKey, localFile, "osws-warm", skipExisting);
+            await UploadFileAsync(osws, bucket, warmKey, localFile, "osws-warm");
 
             // 3. Upload cold copies through OSWS (each gets a distinct DEK)
             for (var i = 1; i <= coldCopies; i++)
             {
                 var coldKey = $"bench/osws/cold/{sizeLabel}/{i:D3}.parquet";
-                await UploadFileAsync(
-                    osws,
-                    bucket,
-                    coldKey,
-                    localFile,
-                    $"osws-cold-{i:D3}",
-                    skipExisting
-                );
+                await UploadFileAsync(osws, bucket, coldKey, localFile, $"osws-cold-{i:D3}");
             }
 
             Console.WriteLine();
@@ -140,24 +130,9 @@ public static class BenchmarkCorpusUploader
         string bucket,
         string key,
         string localPath,
-        string label,
-        bool skipExisting
+        string label
     )
     {
-        if (skipExisting)
-        {
-            try
-            {
-                await s3.GetObjectMetadataAsync(bucket, key);
-                Console.WriteLine($"  ↷  {label}: already exists, skipping ({key})");
-                return;
-            }
-            catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                // Not found — proceed with upload
-            }
-        }
-
         Console.Write($"  ↑  {label}: uploading {key}... ");
         await using var fs = File.OpenRead(localPath);
         await s3.PutObjectAsync(
@@ -173,21 +148,16 @@ public static class BenchmarkCorpusUploader
         Console.WriteLine("done");
     }
 
-    private static AmazonS3Client BuildS3Client(string endpoint, string accessKey, string secretKey)
+    // Long timeout so large files don't get dropped mid-transfer.
+    private static AmazonS3Client BuildClient(string endpoint, string accessKey, string secretKey)
     {
-        var config = new AmazonS3Config { ForcePathStyle = true, ServiceURL = endpoint };
+        var config = new AmazonS3Config
+        {
+            ForcePathStyle = true,
+            ServiceURL = endpoint,
+            Timeout = TimeSpan.FromHours(1),
+            MaxErrorRetry = 0,
+        };
         return new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey), config);
     }
-
-    private static string? GetArg(string[] args, string key)
-    {
-        for (var i = 0; i < args.Length - 1; i++)
-            if (string.Equals(args[i], key, StringComparison.OrdinalIgnoreCase))
-                return args[i + 1];
-        return null;
-    }
-
-    private static bool HasFlag(string[] args, string flag) =>
-        args.Any(a => string.Equals(a, flag, StringComparison.OrdinalIgnoreCase));
-
-    private static string? GetEnv(string key) => Environment.GetEnvironmentVariable(key); }
+}

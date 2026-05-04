@@ -16,10 +16,11 @@ public static class ParquetGenerator
         int
     >
     {
+        ["tiny"] = 1_000,
         ["small"] = 10_000,
         ["medium"] = 250_000,
-        ["large"] = 500_000,
-        ["xlarge"] = 2_000_000,
+        //["large"] = 500_000,
+        //["xlarge"] = 2_000_000,
     };
 
     /// <summary>Column count used for the PUT/GET latency benchmark corpus.</summary>

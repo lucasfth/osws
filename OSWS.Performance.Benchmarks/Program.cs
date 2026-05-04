@@ -1,4 +1,5 @@
 using BenchmarkDotNet.Running;
+using dotenv.net;
 using OSWS.Performance.Benchmarks.DatasetGenerators;
 using OSWS.Performance.Benchmarks.Infrastructure;
 using OSWS.Performance.Benchmarks.Measurements;
@@ -9,69 +10,64 @@ public static class Program
 {
     public static async Task Main(string[] args)
     {
-        if (
-            args.Length > 0
-            && string.Equals(args[0], "generate-datasets", StringComparison.OrdinalIgnoreCase)
-        )
-        {
-            var dir = args.Skip(1).FirstOrDefault() ?? "benchmark-datasets";
-            Console.WriteLine("╔════════════════════════════════════════════════════════╗");
-            Console.WriteLine("║   OSWS Benchmark Dataset Generator                    ║");
-            Console.WriteLine("╚════════════════════════════════════════════════════════╝");
-            Console.WriteLine();
-            Console.WriteLine($"  Output dir : {Path.GetFullPath(dir)}");
-            Console.WriteLine(
-                $"  Sizes      : {string.Join(", ", ParquetGenerator.CorpusSizes.Keys)}"
-            );
-            Console.WriteLine($"  Columns    : {ParquetGenerator.CorpusColumns}");
-            Console.WriteLine();
-            await ParquetGenerator.GenerateCorpusToDiskAsync(dir);
-            Console.WriteLine();
-            Console.WriteLine("✓ Datasets ready. Run next:");
-            Console.WriteLine("  dotnet run -- generate-corpus");
-            return;
-        }
+        DotEnv.Fluent().WithoutExceptions().Load();
 
-        if (
-            args.Length > 0
-            && string.Equals(args[0], "generate-corpus", StringComparison.OrdinalIgnoreCase)
-        )
+        switch (args.Length)
         {
-            var exitCode = await BenchmarkCorpusUploader.RunAsync(args.Skip(1).ToArray());
-            Environment.ExitCode = exitCode;
-            return;
-        }
-
-        if (
-            args.Length > 0
-            && string.Equals(args[0], "seed-s3-credential", StringComparison.OrdinalIgnoreCase)
-        )
-        {
-            var exitCode = await BenchmarkS3CredentialSeeder.RunSeedAsync(args.Skip(1).ToArray());
-            Environment.ExitCode = exitCode;
-            return;
-        }
-
-        if (
-            args.Length > 0
-            && string.Equals(args[0], "cleanup-s3-credential", StringComparison.OrdinalIgnoreCase)
-        )
-        {
-            var exitCode = await BenchmarkS3CredentialSeeder.RunCleanupAsync(
-                args.Skip(1).ToArray()
-            );
-            Environment.ExitCode = exitCode;
-            return;
-        }
-
-        if (
-            args.Length > 0
-            && string.Equals(args[0], "ensure-bucket", StringComparison.OrdinalIgnoreCase)
-        )
-        {
-            var exitCode = await S3BucketEnsurer.RunAsync(args.Skip(1).ToArray());
-            Environment.ExitCode = exitCode;
-            return;
+            case > 0
+                when string.Equals(
+                    args[0],
+                    "generate-datasets",
+                    StringComparison.OrdinalIgnoreCase
+                ):
+            {
+                var dir = args.Skip(1).FirstOrDefault() ?? "benchmark-datasets";
+                Console.WriteLine($"Output dir: {Path.GetFullPath(dir)}");
+                await ParquetGenerator.GenerateCorpusToDiskAsync(dir);
+                Console.WriteLine("Datasets ready. Run next:");
+                Console.WriteLine("  dotnet run -- generate-corpus");
+                return;
+            }
+            case > 0
+                when string.Equals(args[0], "generate-corpus", StringComparison.OrdinalIgnoreCase):
+            {
+                var exitCode = await BenchmarkCorpusUploader.RunAsync();
+                Environment.ExitCode = exitCode;
+                return;
+            }
+            case > 0
+                when string.Equals(
+                    args[0],
+                    "seed-s3-credential",
+                    StringComparison.OrdinalIgnoreCase
+                ):
+            {
+                var exitCode = await BenchmarkS3CredentialSeeder.RunSeedAsync(
+                    args.Skip(1).ToArray()
+                );
+                Environment.ExitCode = exitCode;
+                return;
+            }
+            case > 0
+                when string.Equals(
+                    args[0],
+                    "cleanup-s3-credential",
+                    StringComparison.OrdinalIgnoreCase
+                ):
+            {
+                var exitCode = await BenchmarkS3CredentialSeeder.RunCleanupAsync(
+                    args.Skip(1).ToArray()
+                );
+                Environment.ExitCode = exitCode;
+                return;
+            }
+            case > 0
+                when string.Equals(args[0], "ensure-bucket", StringComparison.OrdinalIgnoreCase):
+            {
+                var exitCode = await S3BucketEnsurer.RunAsync();
+                Environment.ExitCode = exitCode;
+                return;
+            }
         }
 
         Console.WriteLine("╔══════════════════════════════════════════════════════════╗");

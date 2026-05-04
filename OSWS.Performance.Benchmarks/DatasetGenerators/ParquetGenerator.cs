@@ -39,6 +39,36 @@ public static class ParquetGenerator
         return await Task.Run(() => GenerateInternal(columns, rows, output), cancellationToken);
     }
 
+    /// <summary>
+    /// Generates all corpus size files to <paramref name="directory"/>,
+    /// skipping any that already exist.
+    /// </summary>
+    public static async Task GenerateCorpusToDiskAsync(
+        string directory,
+        CancellationToken cancellationToken = default
+    )
+    {
+        Directory.CreateDirectory(directory);
+
+        foreach (var (sizeLabel, rowCount) in CorpusSizes)
+        {
+            var path = Path.Combine(directory, $"{sizeLabel}.parquet");
+
+            if (File.Exists(path))
+            {
+                var existingMb = new FileInfo(path).Length / 1024.0 / 1024.0;
+                Console.WriteLine($"  ↷  {sizeLabel}: already exists ({existingMb:F1} MB), skipping");
+                continue;
+            }
+
+            Console.Write($"  ↓  {sizeLabel}: generating ({rowCount:N0} rows × {CorpusColumns} cols)... ");
+            await using var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
+            await GenerateAsync(CorpusColumns, rowCount, fs, cancellationToken);
+            var sizeMb = new FileInfo(path).Length / 1024.0 / 1024.0;
+            Console.WriteLine($"done ({sizeMb:F1} MB) → {path}");
+        }
+    }
+
     private static Stream GenerateInternal(int columns, int rows, Stream? output)
     {
         var schemaColumns = Enumerable

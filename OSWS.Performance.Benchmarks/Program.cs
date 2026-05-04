@@ -11,6 +11,27 @@ public static class Program
     {
         if (
             args.Length > 0
+            && string.Equals(args[0], "generate-datasets", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            var dir = args.Skip(1).FirstOrDefault() ?? "benchmark-datasets";
+            Console.WriteLine("╔════════════════════════════════════════════════════════╗");
+            Console.WriteLine("║   OSWS Benchmark Dataset Generator                    ║");
+            Console.WriteLine("╚════════════════════════════════════════════════════════╝");
+            Console.WriteLine();
+            Console.WriteLine($"  Output dir : {Path.GetFullPath(dir)}");
+            Console.WriteLine($"  Sizes      : {string.Join(", ", ParquetGenerator.CorpusSizes.Keys)}");
+            Console.WriteLine($"  Columns    : {ParquetGenerator.CorpusColumns}");
+            Console.WriteLine();
+            await ParquetGenerator.GenerateCorpusToDiskAsync(dir);
+            Console.WriteLine();
+            Console.WriteLine("✓ Datasets ready. Run next:");
+            Console.WriteLine("  dotnet run -- generate-corpus");
+            return;
+        }
+
+        if (
+            args.Length > 0
             && string.Equals(args[0], "generate-corpus", StringComparison.OrdinalIgnoreCase)
         )
         {

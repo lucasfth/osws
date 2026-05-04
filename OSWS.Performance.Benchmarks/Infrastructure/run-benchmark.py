@@ -26,7 +26,6 @@ Output:
 
 import argparse
 import csv
-import io
 import os
 import sys
 import time
@@ -34,9 +33,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import boto3
-import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
 from botocore.config import Config
 
 # ---------------------------------------------------------------------------
@@ -47,19 +43,11 @@ SCRIPT_DIR = Path(__file__).parent
 BENCHMARK_DIR = SCRIPT_DIR.parent
 ENV_FILE = BENCHMARK_DIR / ".env"
 RESULTS_DIR = BENCHMARK_DIR / "benchmark-results"
+DATASET_DIR = BENCHMARK_DIR / "benchmark-datasets"
 
 FILE_SIZES = ["small", "medium", "large"]
 
 # Row counts and column count match C# ParquetGenerator / DecryptionBenchmark
-# (2,000 columns × rows doubles = ~80 MB / ~160 MB / ~1,600 MB uncompressed)
-ROW_COUNTS = {
-    "small": 5_000,
-    "medium": 10_000,
-    "large": 100_000,
-}
-COLUMNS = 2_000
-RNG_SEED = 42
-
 CONFIGS = {
     "s3-direct": "s3-direct",
     "osws-encrypt-cache": "osws",
@@ -289,20 +277,17 @@ def run_get_benchmark(
     print()
 
 
-def generate_parquet_bytes(size_label: str) -> bytes:
-    """Generate a parquet file as bytes using the same parameters as BenchmarkCorpusGenerator."""
-    rows = ROW_COUNTS[size_label]
-    rng = np.random.default_rng(RNG_SEED)
-    data = {f"col_{i}": rng.random(rows) for i in range(COLUMNS)}
-    table = pa.table(data)
-    buf = io.BytesIO()
-    pq.write_table(table, buf)
-    return buf.getvalue()
-
-
-# ---------------------------------------------------------------------------
-# Local temp file generation for PUT benchmark
-# ---------------------------------------------------------------------------
+def load_put_data(size_label: str) -> bytes:
+    """Read the pre-generated parquet file produced by 'dotnet run -- generate-corpus'."""
+    path = DATASET_DIR / f"{size_label}.parquet"
+    if not path.exists():
+        print(
+            f"\nERROR: Dataset file not found: {path}\n"
+            "Run first:  dotnet run -- generate-corpus",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return path.read_bytes()
 
 
 # ---------------------------------------------------------------------------
@@ -396,8 +381,8 @@ def main():
             print(f"── {size_label} ─────────────────────────────────────────────────")
 
             if not args.skip_put:
-                print(f"    Generating {size_label} parquet ({ROW_COUNTS[size_label]:,} rows)... ", end="", flush=True)
-                data = generate_parquet_bytes(size_label)
+                print(f"    Loading {size_label} dataset... ", end="", flush=True)
+                data = load_put_data(size_label)
                 print(f"{len(data)/1024/1024:.1f} MB")
                 run_put_benchmark(s3, bucket, config, size_label, data, repetitions, writer)
 

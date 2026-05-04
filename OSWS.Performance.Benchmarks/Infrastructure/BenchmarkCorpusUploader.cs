@@ -34,7 +34,7 @@ public static class BenchmarkCorpusUploader
         var bucket = GetArg(args, "--bucket") ?? GetEnv("BENCH_BUCKET") ?? "osws-benchmark";
         var coldCopiesStr = GetArg(args, "--cold-copies") ?? GetEnv("BENCH_REPETITIONS") ?? "10";
         var skipExisting = HasFlag(args, "--skip-existing");
-
+        var datasetDir = GetArg(args, "--dataset-dir") ?? "benchmark-datasets";
         if (
             string.IsNullOrWhiteSpace(oswsEndpoint)
             || string.IsNullOrWhiteSpace(oswsAccessKey)
@@ -86,6 +86,7 @@ public static class BenchmarkCorpusUploader
         Console.WriteLine($"  OSWS endpoint : {oswsEndpoint}");
         Console.WriteLine($"  S3 endpoint   : {s3Endpoint}");
         Console.WriteLine($"  Bucket        : {bucket}");
+        Console.WriteLine($"  Dataset dir   : {Path.GetFullPath(datasetDir)}");
         Console.WriteLine(
             $"  File sizes    : {string.Join(", ", ParquetGenerator.CorpusSizes.Keys)}"
         );
@@ -101,45 +102,44 @@ public static class BenchmarkCorpusUploader
         {
             Console.WriteLine($"── {sizeLabel} ({rowCount:N0} rows) ──────────────────────────");
 
-            Console.Write($"  Generating parquet ({rowCount:N0} rows × {ParquetGenerator.CorpusColumns} cols)... ");
-            var localFile = await GenerateToTempFileAsync(rowCount);
-            var fileSizeMb = new FileInfo(localFile).Length / 1024.0 / 1024.0;
-            Console.WriteLine($"done ({fileSizeMb:F1} MB)");
-
-            try
+            var localFile = Path.Combine(datasetDir, $"{sizeLabel}.parquet");
+            if (!File.Exists(localFile))
             {
-                // 1. Upload directly to S3 (plaintext — for s3-direct config)
-                var directKey = $"bench/s3-direct/{sizeLabel}.parquet";
+                Console.Error.WriteLine($"generate-corpus: dataset file not found: {localFile}");
+                Console.Error.WriteLine("Run first:  dotnet run -- generate-datasets");
+                return 1;
+            }
+
+            var fileSizeMb = new FileInfo(localFile).Length / 1024.0 / 1024.0;
+            Console.WriteLine($"  Dataset: {localFile} ({fileSizeMb:F1} MB)");
+
+            // 1. Upload directly to S3 (plaintext — for s3-direct config)
+            var directKey = $"bench/s3-direct/{sizeLabel}.parquet";
+            await UploadFileAsync(
+                s3Direct,
+                bucket,
+                directKey,
+                localFile,
+                "s3-direct",
+                skipExisting
+            );
+
+            // 2. Upload warm copy through OSWS
+            var warmKey = $"bench/osws/warm/{sizeLabel}.parquet";
+            await UploadFileAsync(osws, bucket, warmKey, localFile, "osws-warm", skipExisting);
+
+            // 3. Upload cold copies through OSWS (each gets a distinct DEK)
+            for (var i = 1; i <= coldCopies; i++)
+            {
+                var coldKey = $"bench/osws/cold/{sizeLabel}/{i:D3}.parquet";
                 await UploadFileAsync(
-                    s3Direct,
+                    osws,
                     bucket,
-                    directKey,
+                    coldKey,
                     localFile,
-                    "s3-direct",
+                    $"osws-cold-{i:D3}",
                     skipExisting
                 );
-
-                // 2. Upload warm copy through OSWS
-                var warmKey = $"bench/osws/warm/{sizeLabel}.parquet";
-                await UploadFileAsync(osws, bucket, warmKey, localFile, "osws-warm", skipExisting);
-
-                // 3. Upload cold copies through OSWS (each gets a distinct DEK)
-                for (var i = 1; i <= coldCopies; i++)
-                {
-                    var coldKey = $"bench/osws/cold/{sizeLabel}/{i:D3}.parquet";
-                    await UploadFileAsync(
-                        osws,
-                        bucket,
-                        coldKey,
-                        localFile,
-                        $"osws-cold-{i:D3}",
-                        skipExisting
-                    );
-                }
-            }
-            finally
-            {
-                File.Delete(localFile);
             }
 
             Console.WriteLine();
@@ -153,14 +153,6 @@ public static class BenchmarkCorpusUploader
             "  2. Run: python Infrastructure/run-benchmark.py --config <name>"
         );
         return 0;
-    }
-
-    private static async Task<string> GenerateToTempFileAsync(int rows)
-    {
-        var tmp = Path.GetTempFileName() + ".parquet";
-        await using var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write);
-        await ParquetGenerator.GenerateAsync(ParquetGenerator.CorpusColumns, rows, fs);
-        return tmp;
     }
 
     private static async Task UploadFileAsync(

@@ -16,13 +16,14 @@ public static class ParquetGenerator
         int
     >
     {
-        ["small"] = 5_000,
-        ["medium"] = 10_000,
-        ["large"] = 100_000,
+        ["small"] = 10_000,
+        ["medium"] = 250_000,
+        ["large"] = 500_000,
+        ["xlarge"] = 2_000_000,
     };
 
     /// <summary>Column count used for the PUT/GET latency benchmark corpus.</summary>
-    public const int CorpusColumns = 2_000;
+    public const int CorpusColumns = 50;
 
     /// <summary>
     /// Generates a parquet file with <paramref name="columns"/> double columns and
@@ -57,15 +58,19 @@ public static class ParquetGenerator
             if (File.Exists(path))
             {
                 var existingMb = new FileInfo(path).Length / 1024.0 / 1024.0;
-                Console.WriteLine($"  ↷  {sizeLabel}: already exists ({existingMb:F1} MB), skipping");
+                Console.WriteLine(
+                    $" -> {sizeLabel}: already exists ({existingMb:F1} MB), skipping"
+                );
                 continue;
             }
 
-            Console.Write($"  ↓  {sizeLabel}: generating ({rowCount:N0} rows × {CorpusColumns} cols)... ");
+            Console.Write(
+                $"  ↓  {sizeLabel}: generating ({rowCount:N0} rows X {CorpusColumns} cols)... "
+            );
             await using var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
             await GenerateAsync(CorpusColumns, rowCount, fs, cancellationToken);
             var sizeMb = new FileInfo(path).Length / 1024.0 / 1024.0;
-            Console.WriteLine($"done ({sizeMb:F1} MB) → {path}");
+            Console.WriteLine($"done ({sizeMb:F1} MB) -> {path}");
         }
     }
 

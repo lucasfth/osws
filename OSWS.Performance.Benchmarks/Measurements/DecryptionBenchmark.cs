@@ -82,7 +82,7 @@ public class DecryptionBenchmark
             FileAccess.ReadWrite,
             FileShare.None
         );
-        await using var unencrypted = await WideDatasetGenerator.GenerateAsync(
+        await using var unencrypted = await ParquetGenerator.GenerateAsync(
             ColumnCount,
             RowCount,
             output: plainOutput,

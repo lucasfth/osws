@@ -1,6 +1,7 @@
 using BenchmarkDotNet.Running;
 using OSWS.Performance.Benchmarks.Infrastructure;
 using OSWS.Performance.Benchmarks.Measurements;
+using OSWS.Performance.Benchmarks.DatasetGenerators;
 
 namespace OSWS.Performance.Benchmarks;
 
@@ -8,6 +9,16 @@ public static class Program
 {
     public static async Task Main(string[] args)
     {
+        if (
+            args.Length > 0
+            && string.Equals(args[0], "generate-corpus", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            var exitCode = await BenchmarkCorpusUploader.RunAsync(args.Skip(1).ToArray());
+            Environment.ExitCode = exitCode;
+            return;
+        }
+
         if (
             args.Length > 0
             && string.Equals(args[0], "seed-parquet", StringComparison.OrdinalIgnoreCase)

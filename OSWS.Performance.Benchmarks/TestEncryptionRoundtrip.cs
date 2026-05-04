@@ -24,10 +24,10 @@ public class TestEncryptionRoundtrip
 
         // Generate small dataset
         Console.WriteLine("\n1. Generating dataset...");
-        var unencrypted = await SmallDatasetGenerator.GenerateAsync(
+        var unencrypted = await ParquetGenerator.GenerateAsync(
             5,
             1000,
-            CancellationToken.None
+            cancellationToken: CancellationToken.None
         );
 
         // Encrypt

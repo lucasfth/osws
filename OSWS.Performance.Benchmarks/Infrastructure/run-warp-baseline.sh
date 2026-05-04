@@ -1,6 +1,17 @@
 #!/bin/bash
 
-# Run OSWS Warp baseline benchmarks.
+# Run OSWS Warp baseline benchmarks against a remote VM.
+#
+# OSWS runs on a remote VM controlled via a management API.
+# Warp runs locally and benchmarks against the OSWS instances.
+#
+# Scaling model:
+#   1. Scale once to the maximum instance count at the start of each category.
+#   2. For each iteration, Warp targets only a subset of those instances.
+#      The VM keeps all instances running; Warp just uses fewer hosts.
+#   3. Stop once at the end of the category.
+#
+# This avoids tearing down and rebuilding instances between iterations.
 #
 # Executes these baseline categories for each selected instance count:
 # 1) S3/R2 direct
@@ -15,13 +26,17 @@
 # - If omitted, concurrency scales with instance count using:
 #     effective_concurrency = WARP_CONCURRENCY_PER_INSTANCE * instance_count
 #   (defaults to 8 * instance_count)
+#
+# Required .env variables:
+#   VM_MANAGEMENT_URL  - URL of the VM management API (e.g. http://192.168.1.100:9000)
+#   VM_OSWS_HOST       - Hostname/IP of the VM where OSWS runs
+#   S3Settings__*      - S3 backend credentials
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BENCHMARK_DIR="$(dirname "$SCRIPT_DIR")"
 REPO_ROOT="$(dirname "$BENCHMARK_DIR")"
-WEBAPP_DIR="$REPO_ROOT/OSWS.WebApi"
 
 # Load environment from .env file
 ENV_FILE="$BENCHMARK_DIR/.env"
@@ -30,7 +45,21 @@ if [[ -f "$ENV_FILE" ]]; then
     while IFS= read -r line || [[ -n "$line" ]]; do
         [[ "$line" =~ ^[[:space:]]*# ]] && continue
         [[ -z "${line// }" ]] && continue
-        eval "export $line"
+        if [[ "$line" =~ ^([^=]+)=(.*)$ ]]; then
+            key="${BASH_REMATCH[1]}"
+            value="${BASH_REMATCH[2]}"
+
+            key="${key##+([[:space:]])}"
+            key="${key%%+([[:space:]])}"
+            value="${value##+([[:space:]])}"
+            value="${value%%+([[:space:]])}"
+
+            if [[ ("$value" == \"*\" && "$value" == *\") || ("$value" == \'*\' && "$value" == *\') ]]; then
+                value="${value:1:${#value}-2}"
+            fi
+
+            export "$key=$value"
+        fi
     done < "$ENV_FILE"
     set +a
     ENV_LOADED=true
@@ -38,7 +67,7 @@ else
     ENV_LOADED=false
 fi
 
-# Configuration (can be overridden from command line, .env, or appsettings.json)
+# CLI arguments
 INSTANCE_COUNT="${1:-}"
 WARP_CONCURRENCY_ARG="${2:-}"
 WARP_DURATION="${3:-${WARP_DURATION_SECONDS:-60}}"
@@ -68,25 +97,34 @@ if [[ "$WARP_CONCURRENCY_MODE" != "fixed" && "$WARP_CONCURRENCY_MODE" != "per-in
     exit 1
 fi
 
-# Constants
-OSWS_BASE_PORT="${OSWS_BASE_PORT:-8000}"
+# VM configuration (required)
+VM_MANAGEMENT_URL="${VM_MANAGEMENT_URL:?VM_MANAGEMENT_URL is required in .env}"
+VM_MANAGEMENT_URL="${VM_MANAGEMENT_URL%/}"
+VM_OSWS_HOST="${VM_OSWS_HOST:?VM_OSWS_HOST is required in .env}"
+VM_HEALTH_TIMEOUT_SECONDS="${VM_HEALTH_TIMEOUT_SECONDS:-120}"
+
 RESULTS_DIR="$BENCHMARK_DIR/warp-results"
 BUCKET_NAME="${WARP_BUCKET_NAME:-warp-benchmark-test}"
 ENABLE_PARQUET_GET="${WARP_ENABLE_PARQUET_GET:-true}"
 PARQUET_BUCKET_NAME="${WARP_PARQUET_BUCKET_NAME:-$BUCKET_NAME}"
 PARQUET_PREFIX="${WARP_PARQUET_PREFIX:-parquet/}"
 PARQUET_OBJECT_LIMIT="${WARP_PARQUET_OBJECT_LIMIT:-0}"
-PARQUET_SEED_IF_EMPTY="${WARP_PARQUET_SEED_IF_EMPTY:-true}"
-PARQUET_SAMPLE_DIR="${WARP_PARQUET_SAMPLE_DIR:-$REPO_ROOT/samples}"
+WARP_OSWS_USER_NAME="${WARP_OSWS_USER_NAME:-warp-benchmark}"
+WARP_OSWS_ROLE_NAME="${WARP_OSWS_ROLE_NAME:-warp-benchmark-role}"
 
 echo "╔════════════════════════════════════════════════════════╗"
-echo "║   OSWS Warp Baseline Benchmark Suite                   ║"
+echo "║   OSWS Warp Baseline Benchmark Suite (VM Mode)         ║"
 echo "╚════════════════════════════════════════════════════════╝"
 echo ""
 
 if ! command -v warp >/dev/null 2>&1; then
     echo "ERROR: Warp not found in PATH"
     echo "Install: brew install minio/stable/warp"
+    exit 1
+fi
+
+if ! command -v python3 >/dev/null 2>&1; then
+    echo "ERROR: python3 not found in PATH (required to parse VM API responses)"
     exit 1
 fi
 
@@ -117,6 +155,14 @@ else
     INSTANCE_COUNTS=($INSTANCE_COUNT)
 fi
 
+# Find the maximum instance count — we scale to this once per category.
+MAX_INSTANCE_COUNT=0
+for n in "${INSTANCE_COUNTS[@]}"; do
+    if (( n > MAX_INSTANCE_COUNT )); then
+        MAX_INSTANCE_COUNT=$n
+    fi
+done
+
 S3_HOST="$S3_ENDPOINT"
 S3_HOST="${S3_HOST#http://}"
 S3_HOST="${S3_HOST#https://}"
@@ -135,7 +181,10 @@ mkdir -p "$RESULTS_DIR"
 
 echo ""
 echo "Configuration:"
+echo "  VM management API: $VM_MANAGEMENT_URL"
+echo "  VM OSWS host: $VM_OSWS_HOST"
 echo "  Instance counts: ${INSTANCE_COUNTS[*]}"
+echo "  Max instances (scale target): $MAX_INSTANCE_COUNT"
 if [[ "$WARP_CONCURRENCY_MODE" == "fixed" ]]; then
     echo "  Concurrency mode: fixed"
     echo "  Concurrency: $WARP_CONCURRENCY_FIXED"
@@ -149,8 +198,8 @@ echo "  Bucket: $BUCKET_NAME"
 echo "  Parquet GET enabled: $ENABLE_PARQUET_GET"
 echo "  Parquet bucket: $PARQUET_BUCKET_NAME"
 echo "  Parquet prefix: $PARQUET_PREFIX"
-echo "  Parquet seed-if-empty: $PARQUET_SEED_IF_EMPTY"
-echo "  Parquet sample dir: $PARQUET_SAMPLE_DIR"
+echo "  OSWS benchmark user: $WARP_OSWS_USER_NAME"
+echo "  OSWS benchmark role: $WARP_OSWS_ROLE_NAME"
 echo "  S3 endpoint: $S3_ENDPOINT"
 echo "  Results dir: $RESULTS_DIR"
 echo ""
@@ -162,30 +211,117 @@ if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
     echo ""
 fi
 
-echo "Pre-building OSWS.WebApi (Release, isolated project build)..."
-if dotnet build "$WEBAPP_DIR/OSWS.WebApi.csproj" -c Release -p:BuildProjectReferences=false -v minimal >/dev/null; then
-    echo "  ✓ OSWS.WebApi build succeeded"
-else
-    echo "  ✗ OSWS.WebApi build failed"
-    echo "    Fix build errors before running Warp against OSWS"
-    exit 1
-fi
-echo ""
+# VM management functions
 
-echo "Pre-building OSWS.Performance.Benchmarks (Release, isolated project build)..."
-if dotnet build "$BENCHMARK_DIR/OSWS.Performance.Benchmarks.csproj" -c Release -p:BuildProjectReferences=false -v minimal >/dev/null; then
-    echo "  ✓ OSWS.Performance.Benchmarks build succeeded"
-else
-    echo "  ✗ OSWS.Performance.Benchmarks build failed"
-    exit 1
-fi
-echo ""
+# All instance endpoints are stored in this array after /scale.
+# Format: "host:port"
+declare -a ALL_INSTANCE_ENDPOINTS=()
+
+vm_scale() {
+    local instance_count=$1
+    local disable_encryption=$2
+    local enable_file_cache=$3
+
+    local body="{\"instances\":${instance_count},\"disableEncryption\":${disable_encryption},\"enableFileCache\":${enable_file_cache}}"
+
+    echo "  Scaling to $instance_count instance(s) on VM..."
+    local response
+    response=$(curl -sf -X POST "$VM_MANAGEMENT_URL/scale" \
+        -H "Content-Type: application/json" \
+        -d "$body" 2>&1) || {
+        echo "    ✗ Failed to scale OSWS instances on VM"
+        echo "    Response: $response"
+        return 1
+    }
+
+    # Parse instance endpoints from response.
+    # Expected format: {"instances": [{"host":"192.168.1.100","port":8000}, ...]}
+    ALL_INSTANCE_ENDPOINTS=()
+    local num_endpoints
+    num_endpoints=$(echo "$response" | python3 -c "
+import sys, json
+data = json.load(sys.stdin)
+instances = data.get('instances', [])
+for i in instances:
+    print(f\"{i['host']}:{i['port']}\")
+" 2>/dev/null) || {
+        echo "    ✗ Failed to parse instance endpoints from scale response"
+        echo "    Response: $response"
+        return 1
+    }
+
+    while IFS= read -r ep; do
+        [[ -n "$ep" ]] && ALL_INSTANCE_ENDPOINTS+=("$ep")
+    done <<< "$num_endpoints"
+
+    if (( ${#ALL_INSTANCE_ENDPOINTS[@]} != instance_count )); then
+        echo "    ✗ Expected $instance_count endpoints but got ${#ALL_INSTANCE_ENDPOINTS[@]}"
+        echo "    Endpoints: ${ALL_INSTANCE_ENDPOINTS[*]}"
+        return 1
+    fi
+
+    echo "  ✓ Scale request accepted: ${#ALL_INSTANCE_ENDPOINTS[@]} instances available"
+    echo "    Endpoints: ${ALL_INSTANCE_ENDPOINTS[*]}"
+}
+
+vm_health() {
+    local max_wait=$VM_HEALTH_TIMEOUT_SECONDS
+    local waited=0
+
+    echo "  Waiting for VM instances to be ready (timeout: ${max_wait}s)..."
+    while [[ $waited -lt $max_wait ]]; do
+        local response
+        response=$(curl -sf -X GET "$VM_MANAGEMENT_URL/health" 2>&1) || response=""
+
+        if echo "$response" | grep -q '"healthy"[[:space:]]*:[[:space:]]*true'; then
+            echo "  ✓ VM healthy: $response"
+            return 0
+        fi
+
+        sleep 5
+        waited=$((waited + 5))
+        echo "    Waiting... (${waited}s/${max_wait}s)"
+    done
+
+    echo "    ✗ VM did not become healthy within ${max_wait}s"
+    return 1
+}
+
+vm_stop() {
+    echo "  Stopping OSWS instances on VM..."
+    curl -sf -X POST "$VM_MANAGEMENT_URL/stop" >/dev/null 2>&1 || true
+    echo "  ✓ Stop request sent"
+}
+
+# Build a comma-separated host list from a subset of instances.
+# Takes the first N entries from ALL_INSTANCE_ENDPOINTS.
+build_osws_hosts() {
+    local count=$1
+    local hosts=""
+    local limit=$count
+    if (( limit > ${#ALL_INSTANCE_ENDPOINTS[@]} )); then
+        limit=${#ALL_INSTANCE_ENDPOINTS[@]}
+    fi
+    for (( i=0; i<limit; i++ )); do
+        if [[ -n "$hosts" ]]; then
+            hosts="$hosts,${ALL_INSTANCE_ENDPOINTS[$i]}"
+        else
+            hosts="${ALL_INSTANCE_ENDPOINTS[$i]}"
+        fi
+    done
+    echo "$hosts"
+}
+
+# Cleanup on exit
 
 cleanup() {
-    bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
+    vm_stop >/dev/null 2>&1 || true
+    cleanup_osws_credential >/dev/null 2>&1 || true
 }
 
 trap cleanup EXIT
+
+# Warp execution
 
 run_warp() {
     local category=$1
@@ -199,13 +335,9 @@ run_warp() {
     if [[ "$category" == "s3-direct" ]]; then
         tls_args=("${S3_WARP_TLS_ARGS[@]}")
     else
-        # OSWS benchmark routes currently forward request bodies and do not decode
-        # aws-chunked signed payload framing. Disable client-side sha256 payload
-        # signing so uploaded object size remains identical for PUT/GET/STAT checks.
         payload_args=("--disable-sha256-payload")
     fi
 
-    # Warp appends its own .json.zst suffix to --benchdata output.
     local result_base="$RESULTS_DIR/warp-${instance_count}instances-${category}"
     local result_file="${result_base}.json.zst"
     local result_json="${result_base}.json"
@@ -225,11 +357,9 @@ run_warp() {
         "${tls_args[@]}" \
         "${payload_args[@]}" \
         --json; then
-        # Primary expected output.
         if [[ -f "$result_file" ]]; then
             echo "    ✓ Saved: $result_file"
             write_plain_json_if_possible "$result_file" "$result_json"
-        # Backward-compat: if caller passed extension before this fix, Warp may emit double suffix.
         elif [[ -f "${result_file}.json.zst" ]]; then
             echo "    ✓ Saved: ${result_file}.json.zst"
             mv "${result_file}.json.zst" "$result_file"
@@ -259,13 +389,13 @@ run_warp_parquet_get() {
         tls_args=("${S3_WARP_TLS_ARGS[@]}")
     fi
 
-    # Warp appends its own .json.zst suffix to --benchdata output.
     local result_base="$RESULTS_DIR/warp-${instance_count}instances-${category}-parquet-get"
     local result_file="${result_base}.json.zst"
     local result_json="${result_base}.json"
 
     echo "  Running: ${category} parquet-get (instances=$instance_count, host=$host, concurrent=$CURRENT_WARP_CONCURRENCY, prefix=$PARQUET_PREFIX)"
-    if warp get \
+    local warp_output
+    warp_output=$(warp get \
         --duration "${WARP_DURATION}s" \
         --concurrent "$CURRENT_WARP_CONCURRENCY" \
         --objects "$PARQUET_OBJECT_LIMIT" \
@@ -279,95 +409,92 @@ run_warp_parquet_get() {
         --noclear \
         --benchdata "$result_base" \
         "${tls_args[@]}" \
-        --json; then
-        if [[ -f "$result_file" ]]; then
-            echo "    ✓ Saved: $result_file"
-            write_plain_json_if_possible "$result_file" "$result_json"
-        elif [[ -f "${result_file}.json.zst" ]]; then
-            echo "    ✓ Saved: ${result_file}.json.zst"
-            mv "${result_file}.json.zst" "$result_file"
-            echo "    ✓ Renamed to: $result_file"
-            write_plain_json_if_possible "$result_file" "$result_json"
-        else
-            echo "    ✗ Parquet GET completed but no benchdata file was created"
-            echo "      Expected one of: $result_file or ${result_file}.json.zst"
-            exit 1
-        fi
-    else
-        echo "    ✗ Parquet GET failed for $category ($instance_count instances)"
-        echo "      Ensure parquet objects exist under bucket '$PARQUET_BUCKET_NAME' and prefix '$PARQUET_PREFIX'"
-        exit 1
-    fi
-}
+        --json 2>&1) || warp_output="$warp_output"
 
-seed_parquet_if_needed() {
-    local category=$1
-    local host=$2
-    local access_key=$3
-    local secret_key=$4
-
-    if [[ "$PARQUET_SEED_IF_EMPTY" != "true" ]]; then
+    if echo "$warp_output" | grep -qi "no objects found\|no such key\|does not exist"; then
+        echo "  No parquet objects found for $category (skipping parquet-get)"
         return 0
     fi
 
-    if [[ ! -d "$PARQUET_SAMPLE_DIR" ]]; then
-        echo "    ✗ Parquet sample directory not found: $PARQUET_SAMPLE_DIR"
-        echo "      Set WARP_PARQUET_SAMPLE_DIR to a directory containing .parquet files"
+    if echo "$warp_output" | grep -qi "error\|failed"; then
+        echo "$warp_output" | head -20
+        echo "    ✗ Parquet GET error for $category"
+        return 0
+    fi
+
+    if [[ -f "$result_file" ]]; then
+        echo "    ✓ Saved: $result_file"
+        write_plain_json_if_possible "$result_file" "$result_json"
+    elif [[ -f "${result_file}.json.zst" ]]; then
+        echo "    ✓ Saved: ${result_file}.json.zst"
+        mv "${result_file}.json.zst" "$result_file"
+        echo "    ✓ Renamed to: $result_file"
+        write_plain_json_if_possible "$result_file" "$result_json"
+    else
+        echo "    ! No parquet-get results for $category"
+    fi
+}
+
+seed_osws_credential() {
+    local seed_output
+    seed_output=$(dotnet run --project "$BENCHMARK_DIR/OSWS.Performance.Benchmarks.csproj" -c Release --no-build -- \
+        seed-s3-credential \
+        --user-name "$WARP_OSWS_USER_NAME" \
+        --role-name "$WARP_OSWS_ROLE_NAME") || return 1
+
+    WARP_OSWS_ACCESS_KEY=$(echo "$seed_output" | grep '^WARP_OSWS_ACCESS_KEY=' | cut -d= -f2-)
+    WARP_OSWS_SECRET_KEY=$(echo "$seed_output" | grep '^WARP_OSWS_SECRET_KEY=' | cut -d= -f2-)
+
+    if [[ -z "$WARP_OSWS_ACCESS_KEY" || -z "$WARP_OSWS_SECRET_KEY" ]]; then
+        echo "    ✗ Failed to parse OSWS benchmark credentials"
+        echo "$seed_output"
         return 1
     fi
 
-    local endpoint_url
-    if [[ "$category" == "s3-direct" ]]; then
-        endpoint_url="$S3_ENDPOINT"
-    else
-        endpoint_url="http://$host"
-    fi
+    echo "  ✓ Seeded OSWS benchmark credential"
+}
 
-    echo "  Ensuring parquet seed objects exist (category=$category, endpoint=$endpoint_url)..."
+ensure_osws_bucket() {
+    if [[ ${#ALL_INSTANCE_ENDPOINTS[@]} -eq 0 ]]; then
+        echo "    ✗ No instance endpoints available for bucket creation"
+        return 1
+    fi
+    local endpoint_url="http://${ALL_INSTANCE_ENDPOINTS[0]}"
     if dotnet run --project "$BENCHMARK_DIR/OSWS.Performance.Benchmarks.csproj" -c Release --no-build -- \
-        seed-parquet \
+        ensure-bucket \
         --endpoint "$endpoint_url" \
-        --access-key "$access_key" \
-        --secret-key "$secret_key" \
-        --bucket "$PARQUET_BUCKET_NAME" \
-        --prefix "$PARQUET_PREFIX" \
-        --sample-dir "$PARQUET_SAMPLE_DIR"; then
-        echo "    ✓ Parquet seed check complete"
+        --access-key "$WARP_OSWS_ACCESS_KEY" \
+        --secret-key "$WARP_OSWS_SECRET_KEY" \
+        --bucket "$BUCKET_NAME"; then
+        echo "  ✓ Ensured OSWS bucket exists ($BUCKET_NAME)"
     else
-        echo "    ✗ Failed to seed parquet objects for $category"
+        echo "    ✗ Failed to ensure OSWS bucket exists ($BUCKET_NAME)"
         return 1
     fi
 }
 
-start_osws_instances() {
-    local instance_count=$1
-    local disable_encryption=$2
-    local enable_file_cache=$3
-
-    local encryption_enabled=true
-    if [[ "$disable_encryption" == "true" ]]; then
-        encryption_enabled=false
+cleanup_osws_credential() {
+    if [[ -z "$WARP_OSWS_ACCESS_KEY" ]]; then
+        return 0
     fi
 
-    bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
+    dotnet run --project "$BENCHMARK_DIR/OSWS.Performance.Benchmarks.csproj" -c Release --no-build -- \
+        cleanup-s3-credential \
+        --access-key "$WARP_OSWS_ACCESS_KEY" \
+        --user-name "$WARP_OSWS_USER_NAME" \
+        --role-name "$WARP_OSWS_ROLE_NAME" >/dev/null || true
 
-    echo "  Starting OSWS instances (disable-encryption=$disable_encryption, file-cache=$enable_file_cache)"
-    for i in $(seq 1 "$instance_count"); do
-        local port=$((OSWS_BASE_PORT + (i-1)*2))
-        echo "    Instance $i on port $port"
-        bash "$SCRIPT_DIR/osws-start.sh" "$i" "$encryption_enabled" "$port" "$enable_file_cache"
-    done
+    WARP_OSWS_ACCESS_KEY=""
+    WARP_OSWS_SECRET_KEY=""
+}
 
-    echo "  Verifying health"
-    for i in $(seq 1 "$instance_count"); do
-        local port=$((OSWS_BASE_PORT + (i-1)*2))
-        if curl -fsS "http://127.0.0.1:$port/health" >/dev/null 2>&1; then
-            echo "    ✓ http://127.0.0.1:$port/health"
-        else
-            echo "    ✗ Instance on port $port failed health check"
-            exit 1
-        fi
-    done
+start_osws_category() {
+    local disable_encryption=$1
+    local enable_file_cache=$2
+
+    # Scale once to max instances for this category.
+    vm_scale "$MAX_INSTANCE_COUNT" "$disable_encryption" "$enable_file_cache" || exit 1
+    vm_health || exit 1
 }
 
 write_plain_json_if_possible() {
@@ -390,64 +517,79 @@ write_plain_json_if_possible() {
     fi
 }
 
+# Main benchmark loop
+
+# Phase 1: S3 direct — runs for each instance count
+echo "════════════════════════════════════════════════════════"
+echo "Phase 1: S3 Direct (baseline)"
+echo "════════════════════════════════════════════════════════"
+
 for num_instances in "${INSTANCE_COUNTS[@]}"; do
-    echo "════════════════════════════════════════════════════════"
-    echo "Instance count: $num_instances"
-    echo "════════════════════════════════════════════════════════"
-
-    # Build comma-separated host list for all OSWS instances.
-    # Each instance is assigned a port: base, base+2, base+4, ...
-    OSWS_HOSTS=""
-
+    echo ""
+    echo "--- $num_instances instance(s) ---"
     if [[ "$WARP_CONCURRENCY_MODE" == "fixed" ]]; then
         CURRENT_WARP_CONCURRENCY="$WARP_CONCURRENCY_FIXED"
     else
         CURRENT_WARP_CONCURRENCY=$((WARP_CONCURRENCY_PER_INSTANCE * num_instances))
     fi
+    echo "Effective concurrency: $CURRENT_WARP_CONCURRENCY"
 
-    echo "Effective concurrency for ${num_instances} instance(s): $CURRENT_WARP_CONCURRENCY"
-
-    for i in $(seq 1 "$num_instances"); do
-        _port=$((OSWS_BASE_PORT + (i-1)*2))
-        OSWS_HOSTS="${OSWS_HOSTS:+$OSWS_HOSTS,}127.0.0.1:$_port"
-    done
-
-    # Category: Baseline / S3 (direct)
     run_warp "s3-direct" "$num_instances" "$S3_HOST" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
     if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
-        seed_parquet_if_needed "s3-direct" "$S3_HOST" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
         run_warp_parquet_get "s3-direct" "$num_instances" "$S3_HOST" "$S3_ACCESS_KEY" "$S3_SECRET_KEY"
     fi
+done
 
-    # Category: Baseline / OSWS (encryption disabled)
-    start_osws_instances "$num_instances" "true" "false"
-    run_warp "osws-no-encryption" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
-    if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
-        seed_parquet_if_needed "osws-no-encryption" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
-        run_warp_parquet_get "osws-no-encryption" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
-    fi
-    bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
+# Phase 2: OSWS categories
+# For each category: scale once to MAX, run all instance counts, then stop.
+echo ""
+echo "════════════════════════════════════════════════════════"
+echo "Phase 2: OSWS Categories"
+echo "════════════════════════════════════════════════════════"
 
-    # Category: Baseline / OSWS + encryption (cache disabled)
-    start_osws_instances "$num_instances" "false" "false"
-    run_warp "osws-encryption-no-cache" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
-    if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
-        seed_parquet_if_needed "osws-encryption-no-cache" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
-        run_warp_parquet_get "osws-encryption-no-cache" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
-    fi
-    bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
-
-    # Category: Baseline / OSWS + encryption (cache enabled)
-    start_osws_instances "$num_instances" "false" "true"
-    run_warp "osws-encryption-cache" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
-    if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
-        seed_parquet_if_needed "osws-encryption-cache" "localhost:$OSWS_BASE_PORT" "minioadmin" "minioadmin"
-        run_warp_parquet_get "osws-encryption-cache" "$num_instances" "$OSWS_HOSTS" "minioadmin" "minioadmin"
-    fi
-    bash "$SCRIPT_DIR/osws-stop.sh" all >/dev/null 2>&1 || true
+run_osws_category() {
+    local category_name=$1
+    local disable_encryption=$2
+    local enable_file_cache=$3
 
     echo ""
-done
+    echo "────────────────────────────────────────────────────"
+    echo "Category: $category_name"
+    echo "  disableEncryption=$disable_encryption  enableFileCache=$enable_file_cache"
+    echo "────────────────────────────────────────────────────"
+
+    # Scale once to max instances
+    start_osws_category "$disable_encryption" "$enable_file_cache"
+    seed_osws_credential
+    ensure_osws_bucket
+
+    for num_instances in "${INSTANCE_COUNTS[@]}"; do
+        echo ""
+        echo "--- $num_instances instance(s) ---"
+        if [[ "$WARP_CONCURRENCY_MODE" == "fixed" ]]; then
+            CURRENT_WARP_CONCURRENCY="$WARP_CONCURRENCY_FIXED"
+        else
+            CURRENT_WARP_CONCURRENCY=$((WARP_CONCURRENCY_PER_INSTANCE * num_instances))
+        fi
+        echo "Effective concurrency: $CURRENT_WARP_CONCURRENCY"
+
+        local osws_hosts
+        osws_hosts=$(build_osws_hosts "$num_instances")
+        echo "  Targeting: $osws_hosts"
+
+        run_warp "$category_name" "$num_instances" "$osws_hosts" "$WARP_OSWS_ACCESS_KEY" "$WARP_OSWS_SECRET_KEY"
+        if [[ "$ENABLE_PARQUET_GET" == "true" ]]; then
+            run_warp_parquet_get "$category_name" "$num_instances" "$osws_hosts" "$WARP_OSWS_ACCESS_KEY" "$WARP_OSWS_SECRET_KEY"
+        fi
+    done
+
+    cleanup_osws_credential
+    vm_stop >/dev/null 2>&1 || true
+}
+
+run_osws_category "osws-no-encryption" "true" "false"
+run_osws_category "osws-encryption-no-cache" "false" "false"
+run_osws_category "osws-encryption-cache" "false" "true"
 
 echo "════════════════════════════════════════════════════════"
 echo "Benchmark suite complete"
@@ -455,4 +597,3 @@ echo "Results location: $RESULTS_DIR"
 echo "════════════════════════════════════════════════════════"
 ls -lh "$RESULTS_DIR"/*.json.zst 2>/dev/null || echo "No Warp result files generated"
 ls -lh "$RESULTS_DIR"/*.json 2>/dev/null || true
-

@@ -1,5 +1,6 @@
 using Amazon.S3;
 using Amazon.S3.Model;
+using OSWS.Common.Configuration;
 using OSWS.Library;
 using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
@@ -13,7 +14,8 @@ namespace OSWS.WebApi.Endpoints;
 public class S3Put(
     IAmazonS3 s3Client,
     CurrentUser currentUser,
-    ParquetUploadService parquetUploadService
+    ParquetUploadService parquetUploadService,
+    EncryptionSettings encryptionSettings
 ) : IS3Put
 {
     public async Task<IResult> PutObject(
@@ -55,7 +57,7 @@ public class S3Put(
         string? tempFile = null;
         FileStream? tempFs = null;
 
-        if (isParquetFile)
+        if (isParquetFile && !encryptionSettings.DisableEncryption)
         {
             var role = user.Roles.FirstOrDefault();
             if (role is null)
@@ -105,6 +107,22 @@ public class S3Put(
                     ),
                     "application/json"
                 );
+            }
+        }
+        else if (isParquetFile && encryptionSettings.DisableEncryption)
+        {
+            // Encryption disabled: pass-through raw parquet without encryption
+            req.InputStream = httpRequest.Body;
+
+            // Set content length
+            var contentLength = httpRequest.ContentLength;
+            if (contentLength.HasValue)
+            {
+                var contentLengthProp = typeof(PutObjectRequest).GetProperty("ContentLength");
+                if (contentLengthProp != null && contentLengthProp.CanWrite)
+                {
+                    contentLengthProp.SetValue(req, contentLength.Value);
+                }
             }
         }
         else
@@ -175,7 +193,8 @@ public class S3Put(
             }
         }
 
-        await S3MetadataHelper.AppendS3ETag(resp, httpRequest.HttpContext.Response);
+        // await S3MetadataHelper.AppendS3ETag(resp, httpRequest.HttpContext.Response);
+        await S3MetadataHelper.AppendS3ETag(resp, httpRequest);
 
         S3ErrorHelper.AddBufferingDebugHeaders(httpRequest.HttpContext, tempFile);
 
@@ -194,6 +213,16 @@ public class S3Put(
         try
         {
             await s3Client.PutBucketAsync(bucket, cancellationToken);
+            return Results.Ok();
+        }
+        catch (AmazonS3Exception e)
+            when (e.StatusCode == System.Net.HttpStatusCode.Conflict
+                || (
+                    e.ErrorCode == "BucketAlreadyExists" || e.ErrorCode == "BucketAlreadyOwnedByYou"
+                )
+            )
+        {
+            // Bucket already exists - this is ok, return success
             return Results.Ok();
         }
         catch (AmazonS3Exception e)

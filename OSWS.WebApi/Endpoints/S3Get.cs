@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.EntityFrameworkCore;
+using OSWS.Common.Configuration;
 using OSWS.KeyManager.Persistence;
 using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
@@ -21,7 +22,8 @@ public class S3Get(
     CurrentUser currentUser,
     PermissionService permissionService,
     ILogger<S3Get> logger,
-    IWebHostEnvironment env
+    IWebHostEnvironment env,
+    EncryptionSettings encryptionSettings
 ) : IS3Get
 {
     public async Task<IResult> GetObject(
@@ -98,25 +100,37 @@ public class S3Get(
             }
         }
 
-        // Decrypt parquet files
-        var outputStream = resp?.ResponseStream ?? encryptedStream;
+        // For parquet fetches, prefer the buffered encrypted stream from S3ObjectFetcher
+        // (resp.ResponseStream may have been consumed during cache population).
+        var outputStream = isParquetFile
+            ? (encryptedStream ?? resp?.ResponseStream)
+            : resp?.ResponseStream;
 
-        if (isParquetFile && encryptedStream != null)
+        if (isParquetFile && encryptedStream != null && !encryptionSettings.DisableEncryption)
         {
             try
             {
-                var allowedColumnSet = await permissionService.GetAllowedColumnsAsync(
-                    user.Id,
-                    cancellationToken
-                );
-                var roleIds = await permissionService.GetEffectiveRoleIdsAsync(
-                    user.Id,
-                    cancellationToken
-                );
+                ISet<string>? allowedColumnSet = null;
 
-                Console.WriteLine(
-                    $"[OSWS] Permission check for user {user.Id}: roles=[{string.Join(",", roleIds)}], allowedColumns=[{string.Join(",", allowedColumnSet)}]"
-                );
+                // Get permitted columns for the user
+                if (!encryptionSettings.BenchmarkMode)
+                {
+                    allowedColumnSet = await permissionService.GetAllowedColumnsAsync(
+                        user.Id,
+                        cancellationToken
+                    );
+
+                    var roleIds = await permissionService.GetEffectiveRoleIdsAsync(
+                        user.Id,
+                        cancellationToken
+                    );
+
+                    var allowedColumnsDisplay =
+                        allowedColumnSet != null ? string.Join(",", allowedColumnSet) : "* (all)";
+                    Console.WriteLine(
+                        $"[OSWS] Permission check for user {user.Id}: roles=[{string.Join(",", roleIds)}], allowedColumns=[{allowedColumnsDisplay}]"
+                    );
+                }
 
                 outputStream = await parquetReader.ReadParquetAsync(
                     encryptedStream,

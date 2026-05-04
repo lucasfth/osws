@@ -14,6 +14,7 @@ public static class S3ErrorHelper
     public static IResult HandleS3Exception(AmazonS3Exception e, HttpContext httpContext)
     {
         var msg = e.Message ?? "S3 error";
+        var errorCode = e.ErrorCode ?? "InternalError";
 
         switch (e.StatusCode)
         {
@@ -25,18 +26,33 @@ public static class S3ErrorHelper
                 );
 
             case System.Net.HttpStatusCode.Forbidden:
-                return Results.StatusCode(403);
+                httpContext.Response.StatusCode = 403;
+                return Results.Text(CreateS3ErrorXml("AccessDenied", msg), "application/xml");
 
             case System.Net.HttpStatusCode.Unauthorized:
-                return Results.StatusCode(401);
+                httpContext.Response.StatusCode = 401;
+                return Results.Text(CreateS3ErrorXml("AccessDenied", msg), "application/xml");
+
+            case System.Net.HttpStatusCode.Conflict:
+                httpContext.Response.StatusCode = 409;
+                return Results.Text(
+                    CreateS3ErrorXml("BucketAlreadyExists", msg),
+                    "application/xml"
+                );
 
             case System.Net.HttpStatusCode.BadRequest:
-                return Results.StatusCode(400);
+                httpContext.Response.StatusCode = 400;
+                return Results.Text(CreateS3ErrorXml(errorCode, msg), "application/xml");
 
             default:
                 httpContext.Response.StatusCode = 500;
                 return Results.Text(ParamValidation.CreateErrorJson(msg), "application/json");
         }
+    }
+
+    private static string CreateS3ErrorXml(string code, string message)
+    {
+        return $"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Error>\n  <Code>{code}</Code>\n  <Message>{message}</Message>\n  <Resource></Resource>\n  <RequestId></RequestId>\n</Error>";
     }
 
     /// <summary>

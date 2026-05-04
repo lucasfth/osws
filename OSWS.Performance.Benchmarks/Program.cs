@@ -18,6 +18,38 @@ public static class Program
             return;
         }
 
+        if (
+            args.Length > 0
+            && string.Equals(args[0], "seed-s3-credential", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            var exitCode = await BenchmarkS3CredentialSeeder.RunSeedAsync(args.Skip(1).ToArray());
+            Environment.ExitCode = exitCode;
+            return;
+        }
+
+        if (
+            args.Length > 0
+            && string.Equals(args[0], "cleanup-s3-credential", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            var exitCode = await BenchmarkS3CredentialSeeder.RunCleanupAsync(
+                args.Skip(1).ToArray()
+            );
+            Environment.ExitCode = exitCode;
+            return;
+        }
+
+        if (
+            args.Length > 0
+            && string.Equals(args[0], "ensure-bucket", StringComparison.OrdinalIgnoreCase)
+        )
+        {
+            var exitCode = await S3BucketEnsurer.RunAsync(args.Skip(1).ToArray());
+            Environment.ExitCode = exitCode;
+            return;
+        }
+
         Console.WriteLine("╔══════════════════════════════════════════════════════════╗");
         Console.WriteLine("║        OSWS Performance Benchmarks (New Suite)           ║");
         Console.WriteLine("╚══════════════════════════════════════════════════════════╝");

@@ -85,6 +85,7 @@ public static class ServiceCollectionExtensions
 
         services.AddTransient<IS3Get, S3Get>();
         services.AddTransient<IS3Put, S3Put>();
+        services.AddTransient<IS3Delete, S3Delete>();
         services.AddTransient<IS3List, S3List>();
         services.AddTransient<IS3Head, S3Head>();
         services.AddScoped<ParquetUploadService>();

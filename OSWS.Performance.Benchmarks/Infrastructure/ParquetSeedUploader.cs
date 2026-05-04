@@ -15,9 +15,10 @@ public static class ParquetSeedUploader
         var bucket = GetRequiredArg(args, "--bucket");
         var prefix = GetArg(args, "--prefix") ?? "parquet/";
         var sampleDir = GetRequiredArg(args, "--sample-dir");
+        var useOswsPut = GetArg(args, "--use-osws-put") == "true";
 
         var endpointNormalized = AwsCredentialHelper.NormalizeEndpoint(endpoint);
-        if (string.IsNullOrWhiteSpace(endpointNormalized))
+        if (!useOswsPut && string.IsNullOrWhiteSpace(endpointNormalized))
         {
             Console.Error.WriteLine("seed-parquet: invalid endpoint");
             return 1;
@@ -40,11 +41,21 @@ public static class ParquetSeedUploader
             return 1;
         }
 
-        var s3Config = new AmazonS3Config
+        // Configure S3 client - for OSWS PUT, point to localhost; for direct S3, use configured endpoint
+        var s3Config = new AmazonS3Config { ForcePathStyle = true };
+
+        string serviceUrl;
+        if (useOswsPut)
         {
-            ServiceURL = endpointNormalized,
-            ForcePathStyle = true,
-        };
+            // Use OSWS localhost endpoint - OSWS acts as S3 proxy
+            serviceUrl = endpoint; // e.g., http://localhost:8000
+        }
+        else
+        {
+            serviceUrl = endpointNormalized;
+        }
+
+        s3Config.ServiceURL = serviceUrl;
 
         var creds = new BasicAWSCredentials(accessKey, secretKey);
         using var s3 = new AmazonS3Client(creds, s3Config);
@@ -55,7 +66,7 @@ public static class ParquetSeedUploader
             ? prefix
             : prefix + "/";
 
-        // If parquet objects are already present under prefix, keep existing corpus.
+        // Check for existing objects
         var existing = await s3.ListObjectsV2Async(
             new ListObjectsV2Request
             {
@@ -78,6 +89,7 @@ public static class ParquetSeedUploader
             return 0;
         }
 
+        // Upload files
         foreach (var samplePath in sampleFiles)
         {
             var key = normalizedPrefix + Path.GetFileName(samplePath);
@@ -92,8 +104,19 @@ public static class ParquetSeedUploader
                 UseChunkEncoding = false,
             };
 
-            var response = await s3.PutObjectAsync(put);
-            Console.WriteLine($"seed-parquet: uploaded {key} (etag={response.ETag})");
+            try
+            {
+                var response = await s3.PutObjectAsync(put);
+                var platform = useOswsPut ? "OSWS" : "S3";
+                Console.WriteLine(
+                    $"seed-parquet: uploaded {key} (etag={response.ETag}) via {platform}"
+                );
+            }
+            catch (AmazonS3Exception ex)
+            {
+                Console.Error.WriteLine($"seed-parquet: failed to upload {key}: {ex.Message}");
+                return 1;
+            }
         }
 
         return 0;
@@ -101,14 +124,21 @@ public static class ParquetSeedUploader
 
     private static async Task EnsureBucketExistsAsync(IAmazonS3 s3, string bucket)
     {
-        var buckets = await s3.ListBucketsAsync();
-        var bucketList = buckets.Buckets ?? [];
-        if (bucketList.Any(b => string.Equals(b.BucketName, bucket, StringComparison.Ordinal)))
+        try
         {
-            return;
-        }
+            var buckets = await s3.ListBucketsAsync();
+            var bucketList = buckets.Buckets ?? [];
+            if (bucketList.Any(b => string.Equals(b.BucketName, bucket, StringComparison.Ordinal)))
+            {
+                return;
+            }
 
-        await s3.PutBucketAsync(new PutBucketRequest { BucketName = bucket });
+            await s3.PutBucketAsync(new PutBucketRequest { BucketName = bucket });
+        }
+        catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            // Bucket already exists (or is being created), ignore
+        }
     }
 
     private static string GetRequiredArg(string[] args, string key)

@@ -32,6 +32,10 @@ public static class RateLimitExtensions
                     }
                 );
             }
+            else
+            {
+                options.AddPolicy("s3", _ => RateLimitPartition.GetNoLimiter("s3-disabled"));
+            }
 
             if (settings.ApiRequestsPerMinute > 0)
             {
@@ -44,6 +48,10 @@ public static class RateLimitExtensions
                         opt.QueueLimit = 0;
                     }
                 );
+            }
+            else
+            {
+                options.AddPolicy("api", _ => RateLimitPartition.GetNoLimiter("api-disabled"));
             }
 
             if (settings.AdminRequestsPerMinute > 0)
@@ -58,6 +66,10 @@ public static class RateLimitExtensions
                     }
                 );
             }
+            else
+            {
+                options.AddPolicy("admin", _ => RateLimitPartition.GetNoLimiter("admin-disabled"));
+            }
 
             if (settings.CredentialCreationsPerHour > 0)
             {
@@ -69,6 +81,13 @@ public static class RateLimitExtensions
                         opt.Window = TimeSpan.FromHours(1);
                         opt.QueueLimit = 0;
                     }
+                );
+            }
+            else
+            {
+                options.AddPolicy(
+                    "credential-create",
+                    _ => RateLimitPartition.GetNoLimiter("credential-create-disabled")
                 );
             }
         });

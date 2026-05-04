@@ -1,6 +1,7 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.EntityFrameworkCore;
+using OSWS.Common.Configuration;
 using OSWS.KeyManager.Persistence;
 using OSWS.Library;
 using OSWS.Library.Helpers;
@@ -15,9 +16,37 @@ public class S3Head(
     IParquetReader parquetReader,
     CurrentUser currentUser,
     RoleHierarchyService roleHierarchy,
-    OswsContext db
+    OswsContext db,
+    EncryptionSettings encryptionSettings
 ) : IS3Head
 {
+    public async Task<IResult> HeadBucket(
+        string bucket,
+        HttpRequest httpRequest,
+        HttpResponse httpResponse,
+        CancellationToken cancellationToken = default
+    )
+    {
+        if (string.IsNullOrEmpty(bucket))
+        {
+            httpRequest.HttpContext.Response.StatusCode = 400;
+            return Results.Text(ParamValidation.BucketNameIsRequired(), "application/json");
+        }
+
+        try
+        {
+            await s3Client
+                .HeadBucketAsync(new HeadBucketRequest { BucketName = bucket }, cancellationToken)
+                .ConfigureAwait(false);
+
+            return Results.StatusCode(StatusCodes.Status200OK);
+        }
+        catch (AmazonS3Exception e)
+        {
+            return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
+        }
+    }
+
     public async Task<IResult> HeadObject(
         string bucket,
         string key,
@@ -42,7 +71,7 @@ public class S3Head(
 
         var isParquetFile = TypeCheck.IsParquetFile(key, null);
 
-        if (isParquetFile)
+        if (isParquetFile && !encryptionSettings.DisableEncryption)
         {
             var user = await currentUser.ResolveAsync(cancellationToken);
             if (user is null)

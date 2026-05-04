@@ -33,6 +33,14 @@ public static class S3MetadataHelper
     }
 
     /// <summary>
+    /// Appends the ETag from a PutObjectResponse to the outgoing HttpResponse headers.
+    /// </summary>
+    public static Task AppendS3ETag(PutObjectResponse from, HttpRequest request)
+    {
+        return AppendS3ETag(from, request.HttpContext.Response);
+    }
+
+    /// <summary>
     /// Forwards the LastModified header from a GetObjectResponse to an HttpResponse.
     /// </summary>
     public static Task ForwardS3LastModified(GetObjectResponse from, HttpResponse to)

@@ -62,21 +62,38 @@ def group_rows(rows: list[dict]) -> dict:
 
 def fmt(val: float) -> str:
     if val >= 10_000:
-        return f"{val/1000:6.1f}s "
+        return f"{val / 1000:6.1f}s "
     return f"{val:7.0f}ms"
 
 
 def print_table(groups: dict):
     # Define preferred ordering
-    config_order = ["s3-direct", "osws-encrypt-cache", "osws-encrypt-no-cache", "osws-no-encrypt"]
+    config_order = [
+        "s3-direct",
+        "osws-encrypt-cache",
+        "osws-encrypt-no-cache",
+        "osws-no-encrypt",
+    ]
     op_order = ["PUT", "GET"]
     cache_order = ["n/a", "cold", "warm"]
-    size_order = ["small", "medium", "large", "xlarge"]
+    size_order = ["tiny", "small", "medium"]
 
-    all_configs = sorted(set(k[0] for k in groups), key=lambda x: config_order.index(x) if x in config_order else 99)
-    all_ops = sorted(set(k[1] for k in groups), key=lambda x: op_order.index(x) if x in op_order else 99)
-    all_caches = sorted(set(k[2] for k in groups), key=lambda x: cache_order.index(x) if x in cache_order else 99)
-    all_sizes = sorted(set(k[3] for k in groups), key=lambda x: size_order.index(x) if x in size_order else 99)
+    all_configs = sorted(
+        set(k[0] for k in groups),
+        key=lambda x: config_order.index(x) if x in config_order else 99,
+    )
+    all_ops = sorted(
+        set(k[1] for k in groups),
+        key=lambda x: op_order.index(x) if x in op_order else 99,
+    )
+    all_caches = sorted(
+        set(k[2] for k in groups),
+        key=lambda x: cache_order.index(x) if x in cache_order else 99,
+    )
+    all_sizes = sorted(
+        set(k[3] for k in groups),
+        key=lambda x: size_order.index(x) if x in size_order else 99,
+    )
 
     col_w = 10
     header_w = 38
@@ -88,7 +105,7 @@ def print_table(groups: dict):
             if not relevant:
                 continue
 
-            print(f"\n{'═' * (header_w + col_w * len(all_sizes) + 2)}")
+            print(f"\n{'-' * (header_w + col_w * len(all_sizes) + 2)}")
             print(f"  {op}  cache={cache}")
             print(f"{'─' * (header_w + col_w * len(all_sizes) + 2)}")
 
@@ -97,10 +114,13 @@ def print_table(groups: dict):
             for size in all_sizes:
                 header += f"  {size:>{col_w - 2}}"
             print(header)
-            print(f"{'─' * (header_w + col_w * len(all_sizes) + 2)}")
+            print(f"{'-' * (header_w + col_w * len(all_sizes) + 2)}")
 
             for config in all_configs:
-                s_all = {size: stats(groups.get((config, op, cache, size), [])) for size in all_sizes}
+                s_all = {
+                    size: stats(groups.get((config, op, cache, size), []))
+                    for size in all_sizes
+                }
                 if not any(s_all.values()):
                     continue
 
@@ -113,7 +133,7 @@ def print_table(groups: dict):
                         if s and metric in s:
                             row += f"  {fmt(s[metric]):>{col_w - 2}}"
                         else:
-                            row += f"  {'—':>{col_w - 2}}"
+                            row += f"  {'-':>{col_w - 2}}"
                     print(row)
 
                 # n= line

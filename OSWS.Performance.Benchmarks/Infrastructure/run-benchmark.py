@@ -34,6 +34,7 @@ from pathlib import Path
 
 import boto3
 from botocore.config import Config
+from dotenv import load_dotenv
 
 # ---------------------------------------------------------------------------
 # Configuration
@@ -41,11 +42,12 @@ from botocore.config import Config
 
 SCRIPT_DIR = Path(__file__).parent
 BENCHMARK_DIR = SCRIPT_DIR.parent
-ENV_FILE = BENCHMARK_DIR / ".env"
 RESULTS_DIR = BENCHMARK_DIR / "benchmark-results"
 DATASET_DIR = BENCHMARK_DIR / "benchmark-datasets"
 
-FILE_SIZES = ["tiny", "small", "medium"] # large and xlarge currently disabled
+load_dotenv(BENCHMARK_DIR / ".env")
+
+FILE_SIZES = ["tiny", "small", "medium"]  # large and xlarge currently disabled
 
 # Row counts and column count match C# ParquetGenerator / DecryptionBenchmark
 CONFIGS = {
@@ -54,26 +56,6 @@ CONFIGS = {
     "osws-encrypt-no-cache": "osws",
     "osws-no-encrypt": "osws",
 }
-
-
-def load_env(path: Path) -> dict:
-    """Load .env file into a dict, overriding existing env vars."""
-    env = {}
-    if not path.exists():
-        return env
-    with open(path) as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" in line:
-                k, v = line.split("=", 1)
-                env[k.strip()] = v.strip().strip('"').strip("'")
-    return env
-
-
-def get_cfg(env: dict, key: str, default: str | None = None) -> str | None:
-    return env.get(key) or os.environ.get(key) or default
 
 
 # ---------------------------------------------------------------------------
@@ -103,7 +85,6 @@ def make_s3_client(endpoint: str, access_key: str, secret_key: str) -> boto3.cli
 
 def check_osws_health(endpoint: str) -> bool:
     import urllib.request
-    import urllib.error
 
     try:
         with urllib.request.urlopen(
@@ -189,7 +170,7 @@ def run_put_benchmark(
     writer: ResultsWriter,
 ):
     """PUT the same data N times. Each PUT is a fresh upload."""
-    print(f"    PUT ×{repetitions}... ", end="", flush=True)
+    print(f"    PUT x{repetitions}... ", end="", flush=True)
     key_prefix = f"bench/put-bench/{config}/{size_label}"
 
     for i in range(1, repetitions + 1):
@@ -221,7 +202,7 @@ def run_get_benchmark(
     GET benchmark with cold and warm runs.
 
     Cold: GET each of the N pre-uploaded copies once (distinct DEKs for OSWS).
-          For s3-direct there is no meaningful cold/warm distinction — we still
+          For s3-direct there is no meaningful cold/warm distinction. We still
           run N repetitions but label them 'warm' since there's no DEK cache.
 
     Warm: GET the same file N+1 times; discard first (cache fill); record N.
@@ -229,7 +210,7 @@ def run_get_benchmark(
     if is_s3_direct:
         # s3-direct: no cache concept, just N repetitions of the same GET
         key = f"bench/s3-direct/{size_label}.parquet"
-        print(f"    GET s3-direct ×{repetitions}... ", end="", flush=True)
+        print(f"    GET s3-direct x{repetitions}... ", end="", flush=True)
         for i in range(1, repetitions + 1):
             duration_ms = time_get(s3, bucket, key)
             writer.write(
@@ -245,7 +226,7 @@ def run_get_benchmark(
         return
 
     # Cold GETs: each copy has a distinct DEK → genuine cold AKV unwrap per request
-    print(f"    GET cold ×{repetitions}... ", end="", flush=True)
+    print(f"    GET cold x{repetitions}... ", end="", flush=True)
     for i in range(1, repetitions + 1):
         key = f"bench/osws/cold/{size_label}/{i:03d}.parquet"
         duration_ms = time_get(s3, bucket, key)
@@ -262,7 +243,7 @@ def run_get_benchmark(
 
     # Warm GETs: hit the same file N+1 times; discard first
     warm_key = f"bench/osws/warm/{size_label}.parquet"
-    print(f"    GET warm ×{repetitions} (1 throwaway first)... ", end="", flush=True)
+    print(f"    GET warm x{repetitions} (1 throwaway first)... ", end="", flush=True)
     _ = time_get(s3, bucket, warm_key)  # throwaway — warms DEK + file cache
     print("(warmed) ", end="", flush=True)
     for i in range(1, repetitions + 1):
@@ -292,11 +273,6 @@ def load_put_data(size_label: str) -> bytes:
     return path.read_bytes()
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
-
 def main():
     parser = argparse.ArgumentParser(description="OSWS Benchmark Runner")
     parser.add_argument(
@@ -323,25 +299,23 @@ def main():
     )
     args = parser.parse_args()
 
-    env = load_env(ENV_FILE)
-
-    bucket = args.bucket or get_cfg(env, "BENCH_BUCKET") or "osws-benchmark"
-    repetitions = args.repetitions or int(get_cfg(env, "BENCH_REPETITIONS") or "10")
+    bucket = args.bucket or os.getenv("BENCH_BUCKET") or "osws-benchmark"
+    repetitions = args.repetitions or int(os.getenv("BENCH_REPETITIONS") or "10")
     config = args.config
     is_s3_direct = config == "s3-direct"
 
     # Choose endpoint + credentials based on config
     if is_s3_direct:
-        endpoint = get_cfg(env, "S3Settings__EndpointHostname")
-        access_key = get_cfg(env, "S3Settings__AccessKeyId")
-        secret_key = get_cfg(env, "S3Settings__SecretAccessKey")
+        endpoint = os.getenv("S3Settings__EndpointHostname")
+        access_key = os.getenv("S3Settings__AccessKeyId")
+        secret_key = os.getenv("S3Settings__SecretAccessKey")
         if not all([endpoint, access_key, secret_key]):
             print("ERROR: S3Settings__* credentials not found in .env", file=sys.stderr)
             sys.exit(1)
     else:
-        endpoint = get_cfg(env, "OSWS_ENDPOINT") or "http://localhost:5000"
-        access_key = get_cfg(env, "BENCH_OSWS_ACCESS_KEY")
-        secret_key = get_cfg(env, "BENCH_OSWS_SECRET_KEY")
+        endpoint = os.getenv("OSWS_ENDPOINT") or "http://localhost:5000"
+        access_key = os.getenv("BENCH_OSWS_ACCESS_KEY")
+        secret_key = os.getenv("BENCH_OSWS_SECRET_KEY")
         if not all([access_key, secret_key]):
             print(
                 "ERROR: BENCH_OSWS_ACCESS_KEY / BENCH_OSWS_SECRET_KEY not found in .env\n"
@@ -363,11 +337,7 @@ def main():
 
     s3 = make_s3_client(endpoint, access_key, secret_key)
 
-    print()
-    print("╔════════════════════════════════════════════════════════╗")
-    print("║   OSWS Benchmark Runner                                ║")
-    print("╚════════════════════════════════════════════════════════╝")
-    print()
+    print("Starting OSWS PUT/GET Benchmark")
     print(f"  Config      : {config}")
     print(f"  Endpoint    : {endpoint}")
     print(f"  Bucket      : {bucket}")
@@ -384,7 +354,7 @@ def main():
             if size_label in args.skip_sizes:
                 continue
 
-            print(f"── {size_label} ─────────────────────────────────────────────────")
+            print(f"{size_label}:")
 
             if not args.skip_put:
                 print(f"    Loading {size_label} dataset... ", end="", flush=True)
@@ -402,7 +372,7 @@ def main():
     finally:
         writer.close()
 
-    print("✓ Done.")
+    print("Finished benchmarking")
     print(f"  Results: {writer.path}")
     print()
     print("Analyse with:")

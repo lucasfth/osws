@@ -12,7 +12,7 @@ const microDestDir = join(__dirname, "../public/data/micro");
 const warpDestDir = join(__dirname, "../public/data/warp");
 
 const microFiles = [
-  "OSWS.Performance.Benchmarks.Measurements.AuthorizationBenchmark-report.csv",
+  "OSWS.Performance.Benchmarks.Measurements.PermissionHierarchyBenchmark-report.csv",
   "OSWS.Performance.Benchmarks.Measurements.PermissionServiceBenchmark-report.csv",
   "OSWS.Performance.Benchmarks.Measurements.KeyUnwrapBenchmark-report.csv",
   "OSWS.Performance.Benchmarks.Measurements.DecryptionBenchmark-report.csv",

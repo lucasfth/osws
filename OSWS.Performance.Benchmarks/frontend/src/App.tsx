@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "./App.css";
 
 type MicroBenchmarkKind =
-  | "AuthorizationBenchmark"
+  | "PermissionHierarchyBenchmark"
   | "PermissionServiceBenchmark"
   | "KeyUnwrapBenchmark"
   | "DecryptionBenchmark";
@@ -106,9 +106,9 @@ const WARP_FILES = WARP_INSTANCE_COUNTS.flatMap((instanceCount) =>
 const MICRO_BENCHMARK_SOURCES: MicroBenchmarkSource[] = [
   {
     fileName:
-      "OSWS.Performance.Benchmarks.Measurements.AuthorizationBenchmark-report.csv",
-    benchmark: "AuthorizationBenchmark",
-    parameterName: "RoleCount",
+      "OSWS.Performance.Benchmarks.Measurements.PermissionHierarchyBenchmark-report.csv",
+    benchmark: "PermissionHierarchyBenchmark",
+    parameterName: "HierarchyDepth",
   },
   {
     fileName:
@@ -406,8 +406,10 @@ function toCsvFromChartData(data: ChartDatum[], yLabel: string): string {
 }
 
 function toMicroShortLabel(row: MicrobenchmarkRow): string {
-  if (row.benchmark === "AuthorizationBenchmark") {
-    return `Auth-${row.parameterValue}`;
+
+
+  if (row.benchmark === "PermissionHierarchyBenchmark") {
+    return `PermHier-${row.parameterValue}`;
   }
 
   if (row.benchmark === "PermissionServiceBenchmark") {
@@ -746,7 +748,7 @@ function App() {
   const warpOswsNeSvgRef = useRef<SVGSVGElement>(null);
   const warpS3SvgRef = useRef<SVGSVGElement>(null);
   const warpScalingSvgRef = useRef<SVGSVGElement>(null);
-  const microAuthSvgRef = useRef<SVGSVGElement>(null);
+  const microPermissionHierarchySvgRef = useRef<SVGSVGElement>(null);
   const microPermissionServiceSvgRef = useRef<SVGSVGElement>(null);
   const microUnwrapSvgRef = useRef<SVGSVGElement>(null);
   const microDecryptSvgRef = useRef<SVGSVGElement>(null);
@@ -1245,7 +1247,7 @@ function App() {
     MicroBenchmarkKind,
     React.RefObject<SVGSVGElement | null>
   > = {
-    AuthorizationBenchmark: microAuthSvgRef,
+    PermissionHierarchyBenchmark: microPermissionHierarchySvgRef,
     PermissionServiceBenchmark: microPermissionServiceSvgRef,
     KeyUnwrapBenchmark: microUnwrapSvgRef,
     DecryptionBenchmark: microDecryptSvgRef,
@@ -1448,7 +1450,7 @@ function App() {
                 <ComparisonBarChart
                   key={benchmark}
                   title={`Micro: ${title}`}
-                  subtitle={`Certainty: n=${runCount} runs`}
+                  subtitle="Split by benchmark for readability"
                   yLabel="ms"
                   xLabel="Benchmark Case"
                   data={data}

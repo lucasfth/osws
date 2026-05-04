@@ -59,7 +59,9 @@ public sealed class PermissionBenchmarkFixture : IDisposable
         db.Database.ExecuteSqlRaw("DELETE FROM \"Permissions\"");
         db.Database.ExecuteSqlRaw("DELETE FROM \"RoleInheritances\"");
         db.Database.ExecuteSqlRaw("DELETE FROM \"RoleAssignments\"");
+        db.Database.ExecuteSqlRaw("DELETE FROM \"S3Credentials\"");
         db.Database.ExecuteSqlRaw("DELETE FROM \"Roles\"");
+        db.Database.ExecuteSqlRaw("DELETE FROM \"Keys\"");
         db.Database.ExecuteSqlRaw("DELETE FROM \"Columns\"");
         db.Database.ExecuteSqlRaw("DELETE FROM \"Users\"");
     }

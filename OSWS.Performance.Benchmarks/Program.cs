@@ -1,7 +1,7 @@
 using BenchmarkDotNet.Running;
+using OSWS.Performance.Benchmarks.DatasetGenerators;
 using OSWS.Performance.Benchmarks.Infrastructure;
 using OSWS.Performance.Benchmarks.Measurements;
-using OSWS.Performance.Benchmarks.DatasetGenerators;
 
 namespace OSWS.Performance.Benchmarks;
 
@@ -20,7 +20,9 @@ public static class Program
             Console.WriteLine("╚════════════════════════════════════════════════════════╝");
             Console.WriteLine();
             Console.WriteLine($"  Output dir : {Path.GetFullPath(dir)}");
-            Console.WriteLine($"  Sizes      : {string.Join(", ", ParquetGenerator.CorpusSizes.Keys)}");
+            Console.WriteLine(
+                $"  Sizes      : {string.Join(", ", ParquetGenerator.CorpusSizes.Keys)}"
+            );
             Console.WriteLine($"  Columns    : {ParquetGenerator.CorpusColumns}");
             Console.WriteLine();
             await ParquetGenerator.GenerateCorpusToDiskAsync(dir);
@@ -36,16 +38,6 @@ public static class Program
         )
         {
             var exitCode = await BenchmarkCorpusUploader.RunAsync(args.Skip(1).ToArray());
-            Environment.ExitCode = exitCode;
-            return;
-        }
-
-        if (
-            args.Length > 0
-            && string.Equals(args[0], "seed-parquet", StringComparison.OrdinalIgnoreCase)
-        )
-        {
-            var exitCode = await ParquetSeedUploader.RunAsync(args.Skip(1).ToArray());
             Environment.ExitCode = exitCode;
             return;
         }

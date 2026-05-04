@@ -33,6 +33,7 @@ dotnet run -c Release -- generate-corpus
 ```
 
 This uploads:
+
 - `bench/s3-direct/{size}.parquet` — plaintext, directly to R2
 - `bench/osws/warm/{size}.parquet` — through OSWS (encrypted)
 - `bench/osws/cold/{size}/{001..010}.parquet` — 10 cold copies through OSWS (distinct DEKs)
@@ -72,20 +73,20 @@ Prints mean / stddev / p50 / p95 per (config, operation, cache state, file size)
 ### File corpus (100 columns of random doubles)
 
 | Label  | Row count | Approx size |
-|--------|-----------|-------------|
-| small  | 10,000    | ~9 MB       |
-| medium | 250,000   | ~217 MB     |
-| large  | 600,000   | ~488 MB     |
-| xlarge | 1,250,000 | ~1,000 MB   |
+| ------ | --------- | ----------- |
+| small  | 10,000    | ~5 MB       |
+| medium | 250,000   | ~120 MB     |
+| large  | 500,000   | ~240 MB     |
+| xlarge | 2,000,000 | ~950 MB     |
 
 ### Configurations
 
-| Config                  | Encryption | File cache | Description                        |
-|-------------------------|------------|------------|------------------------------------|
-| `s3-direct`             | N/A        | N/A        | Plaintext PUT/GET directly to R2   |
-| `osws-encrypt-cache`    | Enabled    | Enabled    | Full service, warm cache           |
-| `osws-encrypt-no-cache` | Enabled    | Disabled   | Full service, always cold          |
-| `osws-no-encrypt`       | Disabled   | Disabled   | Proxy routing overhead only        |
+| Config                  | Encryption | File cache | Description                      |
+| ----------------------- | ---------- | ---------- | -------------------------------- |
+| `s3-direct`             | N/A        | N/A        | Plaintext PUT/GET directly to R2 |
+| `osws-encrypt-cache`    | Enabled    | Enabled    | Full service, warm cache         |
+| `osws-encrypt-no-cache` | Enabled    | Disabled   | Full service, always cold        |
+| `osws-no-encrypt`       | Disabled   | Disabled   | Forwarding overhead only         |
 
 ### Cold vs warm GET
 
@@ -100,7 +101,7 @@ N=10 per configuration (set `BENCH_REPETITIONS` in `.env` to override).
 
 ## Micro-benchmarks
 
-Run independently from the throughput suite. Require local Postgres with migrations applied.
+Run independently from the R2 PUT/GET suite. Require local Postgres with migrations applied.
 
 ```bash
 dotnet run -c Release -- unwrap      # Key unwrap latency
@@ -140,9 +141,9 @@ BENCH_REPETITIONS=10
 
 ## Troubleshooting
 
-| Error | Fix |
-|-------|-----|
-| `BENCH_OSWS_ACCESS_KEY not found` | Run `seed-s3-credential` and copy output to `.env` |
-| OSWS health check failed | Start OSWS with correct config before running the script |
-| `No objects found` on GET | Run `generate-corpus` first |
+| Error                                      | Fix                                                                     |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
+| `BENCH_OSWS_ACCESS_KEY not found`          | Run `seed-s3-credential` and copy output to `.env`                      |
+| OSWS health check failed                   | Start OSWS with correct config before running the script                |
+| `No objects found` on GET                  | Run `generate-corpus` first                                             |
 | Corpus upload fails on column registration | Ensure OSWS is running with encryption enabled during `generate-corpus` |

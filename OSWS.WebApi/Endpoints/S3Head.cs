@@ -71,69 +71,69 @@ public class S3Head(
 
         var isParquetFile = TypeCheck.IsParquetFile(key, null);
 
-        if (isParquetFile && !encryptionSettings.DisableEncryption)
-        {
-            var user = await currentUser.ResolveAsync(cancellationToken);
-            if (user is null)
-                return Results.Unauthorized();
-
-            using var resp = await s3Client
-                .GetObjectAsync(
-                    new GetObjectRequest { BucketName = bucket, Key = key },
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
-
-            Stream outputStream = resp.ResponseStream;
-            try
-            {
-                var effectiveRoles = await roleHierarchy.GetEffectiveRolesAsync(
-                    user.Id,
-                    cancellationToken
-                );
-                var roleIds = effectiveRoles.Select(r => r.Id).ToList();
-                var allowedColumns = await db
-                    .Permissions.Where(p => roleIds.Contains(p.RoleId))
-                    .Select(p => p.Column.Name)
-                    .Distinct()
-                    .ToListAsync(cancellationToken);
-                var allowedColumnSet = new HashSet<string>(allowedColumns);
-
-                var seekableStream = new MemoryStream();
-                await resp.ResponseStream.CopyToAsync(seekableStream, cancellationToken);
-                seekableStream.Position = 0;
-
-                outputStream = await parquetReader.ReadParquetAsync(
-                    seekableStream,
-                    allowedColumnSet
-                );
-            }
-            catch (AmazonS3Exception e)
-            {
-                return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
-            }
-
-            if (!outputStream.CanSeek)
-            {
-                var buffered = new MemoryStream();
-                await outputStream.CopyToAsync(buffered, cancellationToken).ConfigureAwait(false);
-                buffered.Position = 0;
-                outputStream = buffered;
-            }
-
-            httpResponse.Headers.AcceptRanges = "bytes";
-            httpResponse.ContentLength = outputStream.Length;
-            if (!string.IsNullOrWhiteSpace(resp.Headers?.ContentType))
-                httpResponse.ContentType = resp.Headers.ContentType;
-            if (!string.IsNullOrEmpty(resp.ETag))
-                httpResponse.Headers.ETag = resp.ETag;
-            if (resp.LastModified != null)
-                httpResponse.Headers.LastModified = resp
-                    .LastModified.GetValueOrDefault()
-                    .ToString("R");
-
-            return Results.StatusCode(200);
-        }
+        //if (isParquetFile && !encryptionSettings.DisableEncryption)
+        //{
+        //    var user = await currentUser.ResolveAsync(cancellationToken);
+        //    if (user is null)
+        //        return Results.Unauthorized();
+        //
+        //    using var resp = await s3Client
+        //        .GetObjectAsync(
+        //            new GetObjectRequest { BucketName = bucket, Key = key },
+        //            cancellationToken
+        //        )
+        //        .ConfigureAwait(false);
+        //
+        //    Stream outputStream = resp.ResponseStream;
+        //    try
+        //    {
+        //        var effectiveRoles = await roleHierarchy.GetEffectiveRolesAsync(
+        //            user.Id,
+        //            cancellationToken
+        //        );
+        //        var roleIds = effectiveRoles.Select(r => r.Id).ToList();
+        //        var allowedColumns = await db
+        //            .Permissions.Where(p => roleIds.Contains(p.RoleId))
+        //            .Select(p => p.Column.Name)
+        //            .Distinct()
+        //            .ToListAsync(cancellationToken);
+        //        var allowedColumnSet = new HashSet<string>(allowedColumns);
+        //
+        //        var seekableStream = new MemoryStream();
+        //        await resp.ResponseStream.CopyToAsync(seekableStream, cancellationToken);
+        //        seekableStream.Position = 0;
+        //
+        //        outputStream = await parquetReader.ReadParquetAsync(
+        //            seekableStream,
+        //            allowedColumnSet
+        //        );
+        //    }
+        //    catch (AmazonS3Exception e)
+        //    {
+        //        return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
+        //    }
+        //
+        //    if (!outputStream.CanSeek)
+        //    {
+        //        var buffered = new MemoryStream();
+        //        await outputStream.CopyToAsync(buffered, cancellationToken).ConfigureAwait(false);
+        //        buffered.Position = 0;
+        //        outputStream = buffered;
+        //    }
+        //
+        //    httpResponse.Headers.AcceptRanges = "bytes";
+        //    httpResponse.ContentLength = outputStream.Length;
+        //    if (!string.IsNullOrWhiteSpace(resp.Headers?.ContentType))
+        //        httpResponse.ContentType = resp.Headers.ContentType;
+        //    if (!string.IsNullOrEmpty(resp.ETag))
+        //        httpResponse.Headers.ETag = resp.ETag;
+        //    if (resp.LastModified != null)
+        //        httpResponse.Headers.LastModified = resp
+        //            .LastModified.GetValueOrDefault()
+        //            .ToString("R");
+        //
+        //    return Results.StatusCode(200);
+        //}
 
         var req = new GetObjectMetadataRequest { BucketName = bucket, Key = key };
 
@@ -155,9 +155,9 @@ public class S3Head(
             httpResponse.Headers.LastModified = metadataResp
                 .LastModified.GetValueOrDefault()
                 .ToString("R");
-        httpResponse.Headers.AcceptRanges = "bytes";
-        if (metadataResp.Headers.ContentLength >= 0)
-            httpResponse.ContentLength = metadataResp.Headers.ContentLength;
+        //httpResponse.Headers.AcceptRanges = "bytes";
+        //if (metadataResp.Headers.ContentLength >= 0)
+        //    httpResponse.ContentLength = metadataResp.Headers.ContentLength;
         if (!string.IsNullOrWhiteSpace(metadataResp.Headers.ContentType))
             httpResponse.ContentType = metadataResp.Headers.ContentType;
 

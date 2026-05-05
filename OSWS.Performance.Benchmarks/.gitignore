@@ -3,6 +3,7 @@
 
 # Warp benchmark results
 warp-results/
+benchmark-results/
 
 # Build artifacts
 bin/

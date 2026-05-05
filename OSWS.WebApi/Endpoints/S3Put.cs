@@ -231,7 +231,11 @@ public class S3Put(
             logger.LogError(
                 e,
                 "CreateBucket failed for bucket '{Bucket}': {StatusCode} {ErrorCode} {Message}",
-                bucket, e.StatusCode, e.ErrorCode, e.Message);
+                bucket,
+                e.StatusCode,
+                e.ErrorCode,
+                e.Message
+            );
             return S3ErrorHelper.HandleS3Exception(e, httpContext);
         }
     }

@@ -32,10 +32,7 @@ public class E2EAuthenticationHandler(
                 AuthenticateResult.Fail("X-E2E-User-Id must be a valid integer user ID.")
             );
 
-        var claims = new[]
-        {
-            new Claim(ClaimTypes.NameIdentifier, userId),
-        };
+        var claims = new[] { new Claim(ClaimTypes.NameIdentifier, userId) };
 
         var identity = new ClaimsIdentity(claims, SchemeName);
         var principal = new ClaimsPrincipal(identity);

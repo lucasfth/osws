@@ -15,7 +15,8 @@ public class S3Put(
     IAmazonS3 s3Client,
     CurrentUser currentUser,
     ParquetUploadService parquetUploadService,
-    EncryptionSettings encryptionSettings
+    EncryptionSettings encryptionSettings,
+    ILogger<S3Put> logger
 ) : IS3Put
 {
     public async Task<IResult> PutObject(
@@ -227,6 +228,10 @@ public class S3Put(
         }
         catch (AmazonS3Exception e)
         {
+            logger.LogError(
+                e,
+                "CreateBucket failed for bucket '{Bucket}': {StatusCode} {ErrorCode} {Message}",
+                bucket, e.StatusCode, e.ErrorCode, e.Message);
             return S3ErrorHelper.HandleS3Exception(e, httpContext);
         }
     }

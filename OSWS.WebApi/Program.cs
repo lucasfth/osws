@@ -1,4 +1,6 @@
+using Microsoft.EntityFrameworkCore;
 using OSWS.Common.Configuration;
+using OSWS.KeyManager.Persistence;
 using OSWS.WebApi.Extensions;
 
 var builder = WebApplication.CreateSlimBuilder(args);
@@ -20,6 +22,7 @@ builder.Services.AddOswsUserServices();
 builder.Services.AddOswsAuthentication(builder.Configuration, builder.Environment.IsDevelopment());
 builder.Services.AddOswsRateLimiting(builder.Configuration);
 builder.Services.AddOpenApi();
+builder.Services.AddOpenApiDocument();
 
 // --- CORS ---
 if (builder.Environment.IsDevelopment())
@@ -45,11 +48,21 @@ var app = builder.Build();
 app.UseHttpLogging();
 
 if (app.Environment.IsDevelopment())
+{
     app.UseCors("DevCors");
+    app.UseOpenApi();
+    app.UseSwaggerUi();
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<OswsContext>();
+    await db.Database.MigrateAsync();
+}
 
 var encryptionSettings = app.Services.GetRequiredService<EncryptionSettings>();
 app.MapOswsEndpoints(encryptionSettings);

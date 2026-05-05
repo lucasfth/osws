@@ -97,16 +97,28 @@ public static class ServiceCollectionExtensions
                 sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<S3Settings>>().Value;
             var creds = new BasicAWSCredentials(opts.AccessKeyId, opts.SecretAccessKey);
             var endpoint = AwsCredentialHelper.NormalizeEndpoint(opts.EndpointHostname);
+            var hasCustomEndpoint = !string.IsNullOrEmpty(endpoint);
             var config = new AmazonS3Config
             {
-                ServiceURL = string.IsNullOrEmpty(endpoint ?? string.Empty) ? null : endpoint,
                 ForcePathStyle = true,
             };
-            if (
+            // ServiceURL and RegionEndpoint are mutually exclusive in AWS SDK v4:
+            // setting one clears the other. Use ServiceURL for custom endpoints (e.g. MinIO),
+            // RegionEndpoint only when connecting to real AWS S3.
+            if (hasCustomEndpoint)
+            {
+                config.ServiceURL = endpoint;
+                if (!string.IsNullOrWhiteSpace(opts.Region)
+                    && !opts.Region.Equals("auto", StringComparison.OrdinalIgnoreCase))
+                    config.AuthenticationRegion = opts.Region;
+            }
+            else if (
                 !string.IsNullOrWhiteSpace(opts.Region)
                 && !opts.Region.Equals("auto", StringComparison.OrdinalIgnoreCase)
             )
+            {
                 config.RegionEndpoint = RegionEndpoint.GetBySystemName(opts.Region);
+            }
             return new AmazonS3Client(creds, config);
         });
 

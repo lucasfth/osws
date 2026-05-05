@@ -1,0 +1,23 @@
+**/.git
+**/.github
+**/.gitignore
+**/.idea
+**/.vscode
+
+# Build artifacts
+**/bin/
+**/obj/
+
+# Not needed for the backend image
+frontend/
+samples/
+scripts/
+
+# Test and benchmark projects
+OSWS.WebApi.Tests/
+OSWS.ParquetSolver.Tests/
+OSWS.Performance.Benchmarks/
+
+# IDE/user files
+**/*.user
+**/*.DotSettings.user

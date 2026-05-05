@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using OSWS.Common.Configuration;
@@ -64,19 +65,32 @@ public static class AuthenticationExtensions
             _ => { }
         );
 
+        // E2E dev-only scheme. Trusts X-E2E-User-Id header for testing.
+        var e2eMode = isDevelopment && configuration.GetValue<bool>("App:E2EMode");
+        if (e2eMode)
+        {
+            authBuilder.AddScheme<AuthenticationSchemeOptions, E2EAuthenticationHandler>(
+                E2EAuthenticationHandler.SchemeName,
+                _ => { }
+            );
+        }
+
         // OidcPolicy: accepts a valid JWT from ANY configured provider.
         // SigV4Policy: accepts a valid SigV4-signed request (used by S3 routes).
         services.AddAuthorization(authOpts =>
         {
-            var schemeNames = oidcProviders.Select(p => p.Name).ToArray();
+            var schemeNames = oidcProviders.Select(p => p.Name).ToList();
+            if (e2eMode)
+                schemeNames.Add(E2EAuthenticationHandler.SchemeName);
+            var schemeArray = schemeNames.ToArray();
 
             authOpts.AddPolicy(
                 "OidcPolicy",
                 policy =>
                 {
                     policy.RequireAuthenticatedUser();
-                    if (schemeNames.Length > 0)
-                        policy.AddAuthenticationSchemes(schemeNames);
+                    if (schemeArray.Length > 0)
+                        policy.AddAuthenticationSchemes(schemeArray);
                 }
             );
 
@@ -85,8 +99,8 @@ public static class AuthenticationExtensions
                 policy =>
                 {
                     policy.RequireAuthenticatedUser();
-                    if (schemeNames.Length > 0)
-                        policy.AddAuthenticationSchemes(schemeNames);
+                    if (schemeArray.Length > 0)
+                        policy.AddAuthenticationSchemes(schemeArray);
                     policy.AddRequirements(new RbacAdminRequirement());
                 }
             );

@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: osws_e2e_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  osws-api:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__OswsContext=Host=postgres;Port=5432;Database=osws_e2e_test;Username=postgres;Password=postgres
+      # Key Vault: Internal (in-memory) by default; override for Azure latency tests
+      - KeyVault__Provider=${E2E_KV_PROVIDER:-Internal}
+      - KeyVault__VaultUri=${E2E_KV_VAULT_URI:-}
+      - KeyVault__TenantId=${AZURE_TENANT_ID:-}
+      - KeyVault__ClientId=${AZURE_CLIENT_ID:-}
+      - KeyVault__ClientSecret=${AZURE_CLIENT_SECRET:-}
+      # E2E auth bypass
+      - App__E2EMode=true
+      # Backend S3 (MinIO)
+      - S3Settings__EndpointHostname=http://minio:9000
+      - S3Settings__AccessKeyId=minioadmin
+      - S3Settings__SecretAccessKey=minioadmin
+      - S3Settings__Region=us-east-1
+      # Encryption must be ON for column-level filtering
+      - Encryption__DisableEncryption=false
+      - Encryption__EnableOperationLogging=${E2E_ENABLE_KV_LOGGING:-false}
+      - Encryption__BenchmarkMode=false
+      # Dummy OIDC (never used; OIDC discovery is lazy)
+      - OidcProviders__0__Name=dummy
+      - OidcProviders__0__DisplayName=Dummy
+      - OidcProviders__0__Authority=http://localhost:9999
+      - OidcProviders__0__Audience=unused
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/5000'"]
+      interval: 3s
+      timeout: 5s
+      retries: 20

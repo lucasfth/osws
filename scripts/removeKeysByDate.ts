@@ -3,9 +3,10 @@ import { DefaultAzureCredential } from "@azure/identity";
 import Bun from "bun";
 
 const vaultName = Bun.argv[2];
+const date = Bun.argv[3];
 if (!vaultName) {
   console.error(
-    "Missing vault name argument. Usage: bun removeSecretsByDate.ts <vault-name>",
+    "Missing vault name argument. Usage: bun removeSecretsByDate.ts <vault-name> [YYYY-MM-DD]",
   );
   throw new Error("Missing vault name argument.");
 }
@@ -17,6 +18,8 @@ const client = new KeyClient(url, credential);
 const today = new Date();
 today.setUTCHours(0, 0, 0, 0);
 
+const selectedDate = date ? new Date(date) : today;
+
 const isSameUtcDay = (a: Date, b: Date): boolean => {
   return (
     a.getUTCFullYear() === b.getUTCFullYear() &&
@@ -27,7 +30,7 @@ const isSameUtcDay = (a: Date, b: Date): boolean => {
 
 console.log(`Connecting to: ${url}`);
 console.log(
-  `Checking for keys created on (UTC day): ${today.toISOString().slice(0, 10)}`,
+  `Checking for keys created on (UTC day): ${selectedDate.toISOString().slice(0, 10)}`,
 );
 
 let scanned = 0;
@@ -46,7 +49,7 @@ for await (const keyProperties of client.listPropertiesOfKeys()) {
   scanned++;
   const createdDate = keyProperties.createdOn;
 
-  if (!createdDate || !isSameUtcDay(createdDate, today)) {
+  if (!createdDate || !isSameUtcDay(createdDate, selectedDate)) {
     console.log(
       `🦘 Skipping key: ${keyProperties.name} (created on ${createdDate})`,
     );

@@ -6,3 +6,5 @@ duckdb
 pyspark>=4.0.0
 azure-identity
 azure-keyvault-keys
+numpy
+pandas

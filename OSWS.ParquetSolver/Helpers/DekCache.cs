@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using OSWS.Common.Configuration;
 using OSWS.ParquetSolver.Interfaces;
 
 namespace OSWS.ParquetSolver.Helpers;
@@ -11,16 +12,24 @@ public class DekCache : IDekCache
 {
     private record Entry(byte[] Dek, DateTime ExpiresAt);
 
+    private readonly bool _enabled;
     private readonly ConcurrentDictionary<string, Entry> _cache = new();
     private readonly int _capacity;
     private readonly TimeSpan? _ttl;
     private readonly TimeSpan? _adminTtl;
 
+    /// <param name="enabled">Whether the cache is enabled</param>
     /// <param name="capacity">Maximum number of entries before forced eviction (default 2500).</param>
     /// <param name="ttl">Entry lifetime for standard users. Null means no expiry.</param>
     /// <param name="adminTtl">Entry lifetime for admin users. Null falls back to standard ttl.</param>
-    public DekCache(int capacity = 2500, TimeSpan? ttl = null, TimeSpan? adminTtl = null)
+    public DekCache(
+        bool enabled = true,
+        int capacity = 2500,
+        TimeSpan? ttl = null,
+        TimeSpan? adminTtl = null
+    )
     {
+        _enabled = enabled;
         _capacity = capacity;
         _ttl = ttl;
         _adminTtl = adminTtl;
@@ -29,6 +38,9 @@ public class DekCache : IDekCache
     public bool TryGet(string kekId, out byte[]? dek)
     {
         dek = null;
+        if (!_enabled)
+            return false;
+
         if (!_cache.TryGetValue(kekId, out var entry))
             return false;
 
@@ -44,6 +56,9 @@ public class DekCache : IDekCache
 
     public void Set(string kekId, byte[] dek, bool isAdmin = false)
     {
+        if (!_enabled)
+            return;
+
         ArgumentException.ThrowIfNullOrWhiteSpace(kekId);
         ArgumentNullException.ThrowIfNull(dek);
 

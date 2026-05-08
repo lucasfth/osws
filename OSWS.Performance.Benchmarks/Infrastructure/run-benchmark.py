@@ -8,20 +8,20 @@ Usage:
     python run-benchmark.py --config <name> [--bucket <name>] [--repetitions <n>]
 
 Configs:
-    s3-direct           — PUT/GET directly to R2, no OSWS
-    osws-encrypt-cache  — OSWS with encryption + file cache enabled
-    osws-encrypt-no-cache — OSWS with encryption, file cache disabled
-    osws-no-encrypt     — OSWS with encryption disabled
+    s3-direct:             PUT/GET directly to R2, no OSWS
+    osws-encrypt-cache:    OSWS with encryption + file cache enabled
+    osws-encrypt-no-cache: OSWS with encryption, file cache disabled
+    osws-no-encrypt:       OSWS with encryption disabled
 
 Before running:
     1. Copy .env.example to .env and fill in credentials
     2. Run: dotnet run -- seed-s3-credential --user-name bench-user --role-name bench-role
        Copy the output ACCESS_KEY and SECRET_KEY to .env (BENCH_OSWS_ACCESS_KEY / BENCH_OSWS_SECRET_KEY)
     3. Run: dotnet run -- generate-corpus
-    4. For osws-* configs: start OSWS with correct env vars, then run this script
+    4. For osws-* configs: start OSWS with correct env vars, then run this script - or use run-suite.py to run all configs in sequence.
 
 Output:
-    benchmark-results/results_<config>_<timestamp>.csv
+    <results-dir>/results_<config>_<timestamp>.csv
 """
 
 import argparse
@@ -47,7 +47,7 @@ DATASET_DIR = BENCHMARK_DIR / "benchmark-datasets"
 
 load_dotenv(BENCHMARK_DIR / ".env")
 
-FILE_SIZES = ["tiny", "small", "medium"]  # large and xlarge currently disabled
+FILE_SIZES = ["tiny"] #"small", "medium"]  # large and xlarge currently disabled
 
 # Row counts and column count match C# ParquetGenerator / DecryptionBenchmark
 CONFIGS = {
@@ -56,11 +56,6 @@ CONFIGS = {
     "osws-encrypt-no-cache": "osws",
     "osws-no-encrypt": "osws",
 }
-
-
-# ---------------------------------------------------------------------------
-# S3 client factory
-# ---------------------------------------------------------------------------
 
 
 def make_s3_client(endpoint: str, access_key: str, secret_key: str) -> boto3.client:
@@ -76,11 +71,6 @@ def make_s3_client(endpoint: str, access_key: str, secret_key: str) -> boto3.cli
         aws_secret_access_key=secret_key,
         config=cfg,
     )
-
-
-# ---------------------------------------------------------------------------
-# Health check
-# ---------------------------------------------------------------------------
 
 
 def check_osws_health(endpoint: str) -> bool:
@@ -137,10 +127,14 @@ class ResultsWriter:
         "timestamp_utc",
     ]
 
-    def __init__(self, config: str):
-        RESULTS_DIR.mkdir(exist_ok=True)
-        ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        self.path = RESULTS_DIR / f"results_{config}_{ts}.csv"
+    def __init__(self, config: str, results_dir: Path | None = None):
+        if results_dir is not None:
+            results_dir.mkdir(parents=True, exist_ok=True)
+            self.path = results_dir / f"{config}.csv"
+        else:
+            RESULTS_DIR.mkdir(exist_ok=True)
+            ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+            self.path = RESULTS_DIR / f"results_{config}_{ts}.csv"
         self._f = open(self.path, "w", newline="")
         self._w = csv.DictWriter(self._f, fieldnames=self.FIELDS)
         self._w.writeheader()
@@ -244,7 +238,7 @@ def run_get_benchmark(
     # Warm GETs: hit the same file N+1 times; discard first
     warm_key = f"bench/osws/warm/{size_label}.parquet"
     print(f"    GET warm x{repetitions} (1 throwaway first)... ", end="", flush=True)
-    _ = time_get(s3, bucket, warm_key)  # throwaway — warms DEK + file cache
+    _ = time_get(s3, bucket, warm_key)  # throwaway; warms DEK + file cache
     print("(warmed) ", end="", flush=True)
     for i in range(1, repetitions + 1):
         duration_ms = time_get(s3, bucket, warm_key)
@@ -297,6 +291,12 @@ def main():
         default=[],
         help="Skip specific file sizes",
     )
+    parser.add_argument(
+        "--results-dir",
+        type=Path,
+        default=None,
+        help="Directory for CSV output (default: benchmark-results/results_<config>_<ts>.csv)",
+    )
     args = parser.parse_args()
 
     bucket = args.bucket or os.getenv("BENCH_BUCKET") or "osws-benchmark"
@@ -347,7 +347,7 @@ def main():
     )
     print()
 
-    writer = ResultsWriter(config)
+    writer = ResultsWriter(config, results_dir=args.results_dir)
 
     try:
         for size_label in FILE_SIZES:

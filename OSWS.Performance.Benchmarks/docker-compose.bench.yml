@@ -1,0 +1,63 @@
+# Benchmark suite infrastructure for osws put/get latency
+# OSWS variants are started/stopped individually by run-suite.py.
+# Run docker compose from OSWS.Performance.Benchmarks/ so .env is auto-loaded.
+
+name: osws-bench
+
+x-osws-common: &osws-common
+  image: ghcr.io/lucasfth/osws/osws-api:latest
+  ports:
+    - "5000:5000"
+  # Allows containers to reach host-side postgres via host.docker.internal
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+  healthcheck:
+    test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/5000'"]
+    interval: 3s
+    timeout: 5s
+    retries: 20
+  volumes:
+    - ./bench-cache:/app/cache
+
+x-osws-env: &osws-env
+  ASPNETCORE_ENVIRONMENT: Development
+  ConnectionStrings__OswsContext: "${ConnectionStrings__OswsContext}"
+  S3Settings__EndpointHostname: "${S3Settings__EndpointHostname}"
+  S3Settings__AccessKeyId: "${S3Settings__AccessKeyId}"
+  S3Settings__SecretAccessKey: "${S3Settings__SecretAccessKey}"
+  S3Settings__Region: "${S3Settings__Region:-auto}"
+  KeyVault__Provider: "${KeyVault__Provider:-Azure}"
+  KeyVault__VaultUri: "${KeyVault__VaultUri}"
+  KeyVault__TenantId: "${KeyVault__TenantId}"
+  KeyVault__ClientId: "${KeyVault__ClientId}"
+  KeyVault__ClientSecret: "${KeyVault__ClientSecret}"
+  Encryption__EnableOperationLogging: "false"
+  Encryption__BenchmarkMode: "false"
+  # Dummy OIDC provider (benchmarks use S3 credential auth, not OIDC)
+  OidcProviders__0__Name: dummy
+  OidcProviders__0__DisplayName: Dummy
+  OidcProviders__0__Authority: "http://localhost:9999"
+  OidcProviders__0__Audience: unused
+
+services:
+  osws-encrypt-cache:
+    <<: *osws-common
+    environment:
+      <<: *osws-env
+      Encryption__DisableEncryption: "false"
+      Cache__EnableFileCache: "true"
+      Cache__CacheDirectory: /app/cache
+
+  osws-encrypt-no-cache:
+    <<: *osws-common
+    environment:
+      <<: *osws-env
+      Encryption__DisableEncryption: "false"
+      Cache__EnableFileCache: "false"
+
+  osws-no-encrypt:
+    <<: *osws-common
+    environment:
+      <<: *osws-env
+      Encryption__DisableEncryption: "true"
+      Cache__EnableFileCache: "false"

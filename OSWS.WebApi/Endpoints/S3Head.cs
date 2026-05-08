@@ -79,7 +79,11 @@ public class S3Head(
             GetObjectResponse? resp;
             try
             {
-                (plaintext, resp) = await objectFetcher.FetchParquetAsync(bucket, key, cancellationToken);
+                (plaintext, resp) = await objectFetcher.FetchParquetAsync(
+                    bucket,
+                    key,
+                    cancellationToken
+                );
             }
             catch (AmazonS3Exception e)
             {
@@ -89,22 +93,48 @@ public class S3Head(
             ISet<string>? allowedColumnSet = null;
             if (!encryptionSettings.BenchmarkMode)
             {
-                allowedColumnSet = await permissionService.GetAllowedColumnsAsync(user.Id, cancellationToken);
+                allowedColumnSet = await permissionService.GetAllowedColumnsAsync(
+                    user.Id,
+                    cancellationToken
+                );
             }
 
-            var masked = await parquetReader.MaskPlaintextAsync(new MemoryStream(plaintext), allowedColumnSet);
+            var masked = await parquetReader.MaskPlaintextAsync(
+                new MemoryStream(plaintext),
+                allowedColumnSet
+            );
+
+            // If resp is null (cache hit), fetch metadata separately to populate ETag/Last-Modified.
+            // this is because readers like Spark require these fields
+            GetObjectMetadataResponse? metaForEncrypted = null;
+            if (resp == null)
+            {
+                try
+                {
+                    metaForEncrypted = await s3Client
+                        .GetObjectMetadataAsync(
+                            new GetObjectMetadataRequest { BucketName = bucket, Key = key },
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
+                }
+                catch (AmazonS3Exception e)
+                {
+                    return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
+                }
+            }
 
             httpResponse.Headers.AcceptRanges = "bytes";
             httpResponse.ContentLength = masked.Length;
-            if (resp != null)
-            {
-                if (!string.IsNullOrWhiteSpace(resp.Headers?.ContentType))
-                    httpResponse.ContentType = resp.Headers.ContentType;
-                if (!string.IsNullOrEmpty(resp.ETag))
-                    httpResponse.Headers.ETag = resp.ETag;
-                if (resp.LastModified != null)
-                    httpResponse.Headers.LastModified = resp.LastModified.GetValueOrDefault().ToString("R");
-            }
+            var etag = resp?.ETag ?? metaForEncrypted?.ETag;
+            var lastMod = resp?.LastModified ?? metaForEncrypted?.LastModified;
+            var contentType = resp?.Headers?.ContentType ?? metaForEncrypted?.Headers?.ContentType;
+            if (!string.IsNullOrEmpty(etag))
+                httpResponse.Headers.ETag = etag;
+            if (lastMod != null)
+                httpResponse.Headers.LastModified = lastMod.GetValueOrDefault().ToString("R");
+            if (!string.IsNullOrWhiteSpace(contentType))
+                httpResponse.ContentType = contentType;
 
             return Results.StatusCode(200);
         }

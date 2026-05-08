@@ -77,4 +77,10 @@ public sealed class DecryptedParquetCache(CacheSettings settings)
 
     public (int Count, long SizeBytes, long MaxSizeBytes) GetStats() =>
         (_entries.Count, _currentSize, _settings.MaxCacheSizeBytes);
+
+    public string GetDebugInfo()
+    {
+        var (count, size, max) = GetStats();
+        return $"DecryptedParquetCache: {count} entries, {size / 1024.0 / 1024.0:F1} MB / {max / 1024.0 / 1024.0:F0} MB max";
+    }
 }

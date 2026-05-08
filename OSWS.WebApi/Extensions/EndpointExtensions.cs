@@ -24,7 +24,7 @@ public static class EndpointExtensions
         {
             app.MapGet(
                 "/cache-stats",
-                (EncryptedFileCache fileCache) => Results.Text(fileCache.GetDebugInfo())
+                (DecryptedParquetCache cache) => Results.Text(cache.GetDebugInfo())
             );
 
             app.MapOpenApi();

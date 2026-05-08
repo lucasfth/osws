@@ -8,7 +8,6 @@ using OSWS.KeyManager.Persistence;
 using OSWS.Library.Helpers;
 using OSWS.Models.DTOs;
 using OSWS.Models.Entities;
-using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Helpers;
 using OSWS.WebApi.Interfaces;
@@ -90,26 +89,18 @@ public class S3Get(
         // in-memory after fetching (and potentially decrypting) the full object.
         var cacheKey = EncryptedFileCache.GenerateCacheKey(bucket, key);
         GetObjectResponse? resp = null;
-        Stream? encryptedStream = null;
+        Stream? outputStream = null;
 
-        sw.Restart();
-        if (isParquetFile)
+        if (isParquetFile && !encryptionSettings.DisableEncryption)
         {
+            // Fetch plaintext from cache (or decrypt on miss), then apply column masking.
+            byte[] plaintext;
             try
             {
-                var fetchResult = await objectFetcher.FetchParquetAsync(
+                (plaintext, resp) = await objectFetcher.FetchParquetAsync(
                     bucket,
                     key,
                     cancellationToken
-                );
-                encryptedStream = fetchResult.EncryptedStream;
-                resp = fetchResult.S3Response;
-                var source = resp is null ? "file-cache" : "s3";
-                logger.LogInformation(
-                    "[S3Get] Fetch parquet: source={Source}, size={SizeBytes}B ({ElapsedMs}ms)",
-                    source,
-                    encryptedStream?.Length ?? -1,
-                    sw.ElapsedMilliseconds
                 );
             }
             catch (AmazonS3Exception e)
@@ -124,16 +115,51 @@ public class S3Get(
                 );
                 return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
             }
+
+            try
+            {
+                ISet<string>? allowedColumnSet = null;
+                if (!encryptionSettings.BenchmarkMode)
+                {
+                    allowedColumnSet = await permissionService.GetAllowedColumnsAsync(
+                        user.Id,
+                        cancellationToken
+                    );
+                    logger.LogDebug(
+                        "[S3Get] User {UserId} allowed columns: {Columns}",
+                        user.Id,
+                        string.Join(",", allowedColumnSet)
+                    );
+                }
+
+                outputStream = await parquetReader.MaskPlaintextAsync(
+                    new MemoryStream(plaintext),
+                    allowedColumnSet
+                );
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(
+                    ex,
+                    "[S3Get] Column masking failed for {Bucket}/{Key}",
+                    bucket,
+                    key
+                );
+                httpRequest.HttpContext.Response.StatusCode = 500;
+                return Results.Text(
+                    ParamValidation.CreateErrorJson(
+                        $"Failed to process parquet file: {ex.Message}"
+                    ),
+                    "application/json"
+                );
+            }
         }
         else
         {
             try
             {
                 resp = await objectFetcher.FetchObjectAsync(bucket, key, cancellationToken);
-                logger.LogDebug(
-                    "[S3Get] Fetch object from S3 ({ElapsedMs}ms)",
-                    sw.ElapsedMilliseconds
-                );
+                outputStream = resp.ResponseStream;
             }
             catch (AmazonS3Exception e)
             {
@@ -146,73 +172,6 @@ public class S3Get(
                     e.ErrorCode
                 );
                 return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
-            }
-        }
-
-        // For parquet fetches, prefer the buffered encrypted stream from S3ObjectFetcher
-        // (resp.ResponseStream may have been consumed during cache population).
-        var outputStream = isParquetFile
-            ? (encryptedStream ?? resp?.ResponseStream)
-            : resp?.ResponseStream;
-
-        if (isParquetFile && encryptedStream != null && !encryptionSettings.DisableEncryption)
-        {
-            try
-            {
-                ISet<string>? allowedColumnSet = null;
-
-                if (!encryptionSettings.BenchmarkMode)
-                {
-                    sw.Restart();
-                    allowedColumnSet = await permissionService.GetAllowedColumnsAsync(
-                        user.Id,
-                        cancellationToken
-                    );
-
-                    var roleIds = await permissionService.GetEffectiveRoleIdsAsync(
-                        user.Id,
-                        cancellationToken
-                    );
-
-                    var allowedColumnsDisplay =
-                        allowedColumnSet != null ? string.Join(",", allowedColumnSet) : "* (all)";
-                    logger.LogDebug(
-                        "[S3Get] Permission check: userId={UserId}, roles=[{Roles}], allowedColumns=[{Columns}] ({ElapsedMs}ms)",
-                        user.Id,
-                        string.Join(",", roleIds),
-                        allowedColumnsDisplay,
-                        sw.ElapsedMilliseconds
-                    );
-                }
-
-                sw.Restart();
-                outputStream = await parquetReader.ReadParquetAsync(
-                    encryptedStream,
-                    allowedColumnSet
-                );
-                logger.LogInformation(
-                    "[S3Get] Decrypt+re-encode complete: outputSize={SizeBytes}B ({ElapsedMs}ms)",
-                    (outputStream as MemoryStream)?.Length ?? -1,
-                    sw.ElapsedMilliseconds
-                );
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(
-                    ex,
-                    "[S3Get] Parquet decryption failed for {Bucket}/{Key} after {ElapsedMs}ms: {Message}",
-                    bucket,
-                    key,
-                    totalSw.ElapsedMilliseconds,
-                    ex.Message
-                );
-                httpRequest.HttpContext.Response.StatusCode = 500;
-                return Results.Text(
-                    ParamValidation.CreateErrorJson(
-                        $"Failed to decrypt parquet file: {ex.Message}"
-                    ),
-                    "application/json"
-                );
             }
         }
 

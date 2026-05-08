@@ -10,7 +10,7 @@ namespace OSWS.WebApi.Services;
 
 public class ParquetUploadService(
     IParquetWriter parquetWriter,
-    EncryptedFileCache fileCache,
+    DecryptedParquetCache plaintextCache,
     OswsContext db,
     ILogger<ParquetUploadService> logger
 )
@@ -92,32 +92,11 @@ public class ParquetUploadService(
             dbSw.ElapsedMilliseconds
         );
 
-        // Cache the encrypted stream asynchronously (don't await to avoid blocking the upload)
-        uploadStream.Position = 0;
-        var cacheKey = EncryptedFileCache.GenerateCacheKey(bucket, key);
-        var cacheStream = new MemoryStream();
-        await uploadStream.CopyToAsync(cacheStream, cancellationToken);
-        cacheStream.Position = 0;
-        uploadStream.Position = 0;
-
-        // TODO: replace with ILogger<ParquetUploadService>
-        _ = fileCache
-            .SetAsync(cacheKey, cacheStream, cancellationToken)
-            .ContinueWith(
-                task =>
-                {
-                    if (task.IsFaulted)
-                    {
-                        logger.LogWarning(
-                            "[ParquetUploadService] Cache failure for {CacheKey}: {Error}",
-                            cacheKey,
-                            task.Exception?.InnerException?.Message
-                        );
-                    }
-                    cacheStream.Dispose();
-                },
-                TaskScheduler.Default
-            );
+        // Cache the original plaintext (pre-encryption) so HEAD/GET can serve it without key vault
+        seekableStream.Position = 0;
+        var cacheKey = DecryptedParquetCache.GenerateCacheKey(bucket, key);
+        plaintextCache.Set(cacheKey, seekableStream.ToArray());
+        logger.LogDebug("[ParquetUploadService] Plaintext cached for {CacheKey}", cacheKey);
 
         return uploadStream;
     }

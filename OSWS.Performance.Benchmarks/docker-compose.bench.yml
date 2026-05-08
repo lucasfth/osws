@@ -5,7 +5,9 @@
 name: osws-bench
 
 x-osws-common: &osws-common
-  image: ghcr.io/lucasfth/osws/osws-api:latest
+  build:
+    context: ..
+    dockerfile: Dockerfile
   ports:
     - "5000:5000"
   # Allows containers to reach host-side postgres via host.docker.internal

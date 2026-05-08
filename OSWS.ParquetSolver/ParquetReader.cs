@@ -41,6 +41,12 @@ public class ParquetReader(
     public Task<MemoryStream> ReadParquetAsync(Stream input, ISet<string>? allowedColumns = null) =>
         Task.Run(() => ReadParquetInternal(input, allowedColumns));
 
+    /// <inheritdoc/>
+    public Task<MemoryStream> MaskPlaintextAsync(
+        Stream input,
+        ISet<string>? allowedColumns = null
+    ) => Task.Run(() => MaskPlaintextInternal(input, allowedColumns));
+
     private MemoryStream ReadParquetInternal(Stream input, ISet<string>? allowedColumns = null)
     {
         // If encryption is disabled, just pass through the input stream
@@ -68,6 +74,49 @@ public class ParquetReader(
 
         using var inputRaf = new ManagedRandomAccessFile(input, leaveOpen: true);
         using var reader = new ParquetFileReader(inputRaf, readerProperties);
+
+        var fileMetaData = reader.FileMetaData;
+        var numColumns = fileMetaData.NumColumns;
+        var numRowGroups = fileMetaData.NumRowGroups;
+        var schema = fileMetaData.Schema;
+        var keyValueMetadata = fileMetaData.KeyValueMetadata;
+
+        var outputStream = new MemoryStream();
+        using var outputMos = new ManagedOutputStream(outputStream, leaveOpen: true);
+
+        using var defaultWriterProperties = WriterProperties.GetDefaultWriterProperties();
+        using var writer = new ParquetFileWriter(
+            outputMos,
+            schema.GroupNode,
+            defaultWriterProperties,
+            keyValueMetadata
+        );
+
+        RowGroupCopier.CopyRowGroups(
+            writer,
+            reader,
+            numColumns,
+            numRowGroups,
+            ColumnDecryptionFailureBehavior,
+            OnColumnDecryptionError,
+            allowedColumns
+        );
+
+        writer.Close();
+        reader.Close();
+
+        outputStream.Position = 0;
+        return outputStream;
+    }
+
+    /// <summary>
+    /// Apply column masking to a plaintext (unencrypted) parquet without any key vault interaction.
+    /// Opens the file without decryption properties so ParquetSharp reads it as plain parquet.
+    /// </summary>
+    private MemoryStream MaskPlaintextInternal(Stream input, ISet<string>? allowedColumns)
+    {
+        using var inputRaf = new ManagedRandomAccessFile(input, leaveOpen: true);
+        using var reader = new ParquetFileReader(inputRaf); // no decryption properties
 
         var fileMetaData = reader.FileMetaData;
         var numColumns = fileMetaData.NumColumns;

@@ -71,7 +71,8 @@ def print_table(groups: dict):
     config_order = [
         "s3-direct",
         "osws-encrypt-cache",
-        "osws-encrypt-no-cache",
+        "osws-encrypt-no-file-cache",
+        "osws-encrypt-no-dek-cache",
         "osws-no-encrypt",
     ]
     op_order = ["PUT", "GET"]

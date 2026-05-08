@@ -34,7 +34,8 @@ HEALTH_TIMEOUT = 120  # seconds to wait for OSWS to become healthy
 
 OSWS_CONFIGS = [
     "osws-encrypt-cache",
-    "osws-encrypt-no-cache",
+    "osws-encrypt-no-file-cache",
+    "osws-encrypt-no-dek-cache",
     "osws-no-encrypt",
 ]
 

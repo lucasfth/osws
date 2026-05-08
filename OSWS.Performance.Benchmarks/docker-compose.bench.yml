@@ -50,12 +50,19 @@ services:
       Cache__EnableFileCache: "true"
       Cache__CacheDirectory: /app/cache
 
-  osws-encrypt-no-cache:
+  osws-encrypt-no-file-cache:
     <<: *osws-common
     environment:
       <<: *osws-env
       Encryption__DisableEncryption: "false"
       Cache__EnableFileCache: "false"
+
+  osws-encrypt-no-dek-cache:
+    <<: *osws-common
+    environment:
+      <<: *osws-env
+      Encryption__DisableEncryption: "false"
+      Cache__EnableDekCache: "false"
 
   osws-no-encrypt:
     <<: *osws-common

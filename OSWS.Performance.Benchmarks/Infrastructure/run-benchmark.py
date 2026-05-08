@@ -47,13 +47,14 @@ DATASET_DIR = BENCHMARK_DIR / "benchmark-datasets"
 
 load_dotenv(BENCHMARK_DIR / ".env")
 
-FILE_SIZES = ["tiny"] #"small", "medium"]  # large and xlarge currently disabled
+FILE_SIZES = ["tiny"]  # "small", "medium"]  # large and xlarge currently disabled
 
 # Row counts and column count match C# ParquetGenerator / DecryptionBenchmark
 CONFIGS = {
     "s3-direct": "s3-direct",
     "osws-encrypt-cache": "osws",
-    "osws-encrypt-no-cache": "osws",
+    "osws-encrypt-no-file-cache": "osws",
+    "osws-encrypt-no-dek-cache": "osws",
     "osws-no-encrypt": "osws",
 }
 

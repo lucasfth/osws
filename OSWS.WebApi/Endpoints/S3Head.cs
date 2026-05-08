@@ -1,10 +1,8 @@
 using Amazon.S3;
 using Amazon.S3.Model;
-using Microsoft.EntityFrameworkCore;
 using OSWS.Common.Configuration;
-using OSWS.KeyManager.Persistence;
-using OSWS.Library;
 using OSWS.Library.Helpers;
+using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using OSWS.WebApi.Interfaces;
 using OSWS.WebApi.Services;
@@ -14,9 +12,9 @@ namespace OSWS.WebApi.Endpoints;
 public class S3Head(
     IAmazonS3 s3Client,
     IParquetReader parquetReader,
+    S3ObjectFetcher objectFetcher,
     CurrentUser currentUser,
-    RoleHierarchyService roleHierarchy,
-    OswsContext db,
+    PermissionService permissionService,
     EncryptionSettings encryptionSettings
 ) : IS3Head
 {
@@ -77,60 +75,36 @@ public class S3Head(
             if (user is null)
                 return Results.Unauthorized();
 
-            using var resp = await s3Client
-                .GetObjectAsync(
-                    new GetObjectRequest { BucketName = bucket, Key = key },
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
-
-            Stream outputStream = resp.ResponseStream;
+            byte[] plaintext;
+            GetObjectResponse? resp;
             try
             {
-                var effectiveRoles = await roleHierarchy.GetEffectiveRolesAsync(
-                    user.Id,
-                    cancellationToken
-                );
-                var roleIds = effectiveRoles.Select(r => r.Id).ToList();
-                var allowedColumns = await db
-                    .Permissions.Where(p => roleIds.Contains(p.RoleId))
-                    .Select(p => p.Column.Name)
-                    .Distinct()
-                    .ToListAsync(cancellationToken);
-                var allowedColumnSet = new HashSet<string>(allowedColumns);
-
-                var seekableStream = new MemoryStream();
-                await resp.ResponseStream.CopyToAsync(seekableStream, cancellationToken);
-                seekableStream.Position = 0;
-
-                outputStream = await parquetReader.ReadParquetAsync(
-                    seekableStream,
-                    allowedColumnSet
-                );
+                (plaintext, resp) = await objectFetcher.FetchParquetAsync(bucket, key, cancellationToken);
             }
             catch (AmazonS3Exception e)
             {
                 return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
             }
 
-            if (!outputStream.CanSeek)
+            ISet<string>? allowedColumnSet = null;
+            if (!encryptionSettings.BenchmarkMode)
             {
-                var buffered = new MemoryStream();
-                await outputStream.CopyToAsync(buffered, cancellationToken).ConfigureAwait(false);
-                buffered.Position = 0;
-                outputStream = buffered;
+                allowedColumnSet = await permissionService.GetAllowedColumnsAsync(user.Id, cancellationToken);
             }
 
+            var masked = await parquetReader.MaskPlaintextAsync(new MemoryStream(plaintext), allowedColumnSet);
+
             httpResponse.Headers.AcceptRanges = "bytes";
-            httpResponse.ContentLength = outputStream.Length;
-            if (!string.IsNullOrWhiteSpace(resp.Headers?.ContentType))
-                httpResponse.ContentType = resp.Headers.ContentType;
-            if (!string.IsNullOrEmpty(resp.ETag))
-                httpResponse.Headers.ETag = resp.ETag;
-            if (resp.LastModified != null)
-                httpResponse.Headers.LastModified = resp
-                    .LastModified.GetValueOrDefault()
-                    .ToString("R");
+            httpResponse.ContentLength = masked.Length;
+            if (resp != null)
+            {
+                if (!string.IsNullOrWhiteSpace(resp.Headers?.ContentType))
+                    httpResponse.ContentType = resp.Headers.ContentType;
+                if (!string.IsNullOrEmpty(resp.ETag))
+                    httpResponse.Headers.ETag = resp.ETag;
+                if (resp.LastModified != null)
+                    httpResponse.Headers.LastModified = resp.LastModified.GetValueOrDefault().ToString("R");
+            }
 
             return Results.StatusCode(200);
         }

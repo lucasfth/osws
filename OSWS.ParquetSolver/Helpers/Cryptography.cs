@@ -42,13 +42,15 @@ public static class Cryptography
 
         logger?.LogDebug(
             "[Cryptography] Creating KEK in vault: keyName={KeyName}, role={Role}",
-            fileKeyName, role
+            fileKeyName,
+            role
         );
         var kekSw = Stopwatch.StartNew();
         var fileKeyId = keyVaultProvider.CreateKeyAsync(fileKeyName, role).GetAwaiter().GetResult();
         logger?.LogDebug(
             "[Cryptography] KEK created: keyId={KeyId} ({ElapsedMs}ms)",
-            fileKeyId, kekSw.ElapsedMilliseconds
+            fileKeyId,
+            kekSw.ElapsedMilliseconds
         );
 
         var encryptedColumns = new List<EncryptedColumnInfo>();
@@ -88,7 +90,8 @@ public static class Cryptography
         var encryptedColumnCount = columnsToEncrypt?.Length ?? numColumns;
         logger?.LogDebug(
             "[Cryptography] Starting per-column DEK generation: {TotalColumns} schema columns, encrypting {EncryptedCount}",
-            numColumns, encryptedColumnCount
+            numColumns,
+            encryptedColumnCount
         );
 
         for (var i = 0; i < numColumns; i++)
@@ -110,7 +113,9 @@ public static class Cryptography
 
             logger?.LogDebug(
                 "[Cryptography] Encrypting DEK for column [{ColumnIndex}/{Total}]: {ColumnName}",
-                i + 1, numColumns, colName
+                i + 1,
+                numColumns,
+                colName
             );
             var colEncSw = Stopwatch.StartNew();
             var encryptedColumnDek = keyVaultProvider
@@ -119,7 +124,8 @@ public static class Cryptography
                 .GetResult();
             logger?.LogDebug(
                 "[Cryptography] Column DEK encrypted: {ColumnName} ({ElapsedMs}ms)",
-                colName, colEncSw.ElapsedMilliseconds
+                colName,
+                colEncSw.ElapsedMilliseconds
             );
 
             var columnMetadata = new KeyMetadata
@@ -155,7 +161,8 @@ public static class Cryptography
 
         logger?.LogDebug(
             "[Cryptography] BuildEncryptionProperties complete: {EncryptedCols} columns encrypted, total elapsed {ElapsedMs}ms",
-            encryptedCols.Length, sw.ElapsedMilliseconds
+            encryptedCols.Length,
+            sw.ElapsedMilliseconds
         );
 
         return (

@@ -35,11 +35,19 @@ public static class S3BucketEnsurer
             return 1;
         }
 
-        var s3Config = new AmazonS3Config { ServiceURL = endpointNormalized, ForcePathStyle = true };
+        var s3Config = new AmazonS3Config
+        {
+            ServiceURL = endpointNormalized,
+            ForcePathStyle = true,
+        };
         using var s3 = new AmazonS3Client(new BasicAWSCredentials(accessKey, secretKey), s3Config);
 
         var buckets = await s3.ListBucketsAsync();
-        if ((buckets.Buckets ?? []).Any(b => string.Equals(b.BucketName, bucket, StringComparison.Ordinal)))
+        if (
+            (buckets.Buckets ?? []).Any(b =>
+                string.Equals(b.BucketName, bucket, StringComparison.Ordinal)
+            )
+        )
         {
             Console.WriteLine($"ensure-bucket: exists s3://{bucket}");
             return 0;

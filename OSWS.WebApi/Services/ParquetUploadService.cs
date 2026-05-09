@@ -31,10 +31,14 @@ public class ParquetUploadService(
         seekableStream.Position = 0;
         logger.LogDebug(
             "[ParquetUploadService] Request body copied: {SizeBytes} bytes ({ElapsedMs}ms)",
-            seekableStream.Length, copySw.ElapsedMilliseconds
+            seekableStream.Length,
+            copySw.ElapsedMilliseconds
         );
 
-        logger.LogDebug("[ParquetUploadService] Starting WriteParquetAsync for role={Role}", role.Name);
+        logger.LogDebug(
+            "[ParquetUploadService] Starting WriteParquetAsync for role={Role}",
+            role.Name
+        );
         var encSw = Stopwatch.StartNew();
         var (uploadStream, encryptionResult) = await parquetWriter.WriteParquetAsync(
             seekableStream,
@@ -42,7 +46,8 @@ public class ParquetUploadService(
         );
         logger.LogDebug(
             "[ParquetUploadService] WriteParquetAsync done: {EncryptedColumns} columns encrypted ({ElapsedMs}ms)",
-            encryptionResult.Columns.Count, encSw.ElapsedMilliseconds
+            encryptionResult.Columns.Count,
+            encSw.ElapsedMilliseconds
         );
 
         // Persist column, key, and permission records
@@ -105,7 +110,8 @@ public class ParquetUploadService(
                     {
                         logger.LogWarning(
                             "[ParquetUploadService] Cache failure for {CacheKey}: {Error}",
-                            cacheKey, task.Exception?.InnerException?.Message
+                            cacheKey,
+                            task.Exception?.InnerException?.Message
                         );
                     }
                     cacheStream.Dispose();

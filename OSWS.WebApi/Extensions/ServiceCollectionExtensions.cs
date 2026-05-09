@@ -133,10 +133,8 @@ public static class ServiceCollectionExtensions
         // Configure from appsettings.json "KeyVault" section or environment variables.
         // Set Provider to "Azure" for production (requires VaultUri), or "Internal" for dev/testing though not yet set fully up
         var kvSettings =
-            configuration.GetSection("KeyVault").Get<KeyVaultSettings>() ?? new KeyVaultSettings
-            {
-                Provider = "Internal",
-            };
+            configuration.GetSection("KeyVault").Get<KeyVaultSettings>()
+            ?? new KeyVaultSettings { Provider = "Internal" };
 
         services.AddSingleton(kvSettings);
 

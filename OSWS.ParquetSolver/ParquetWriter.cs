@@ -81,7 +81,9 @@ public class ParquetWriter(
 
         logger?.LogDebug(
             "[ParquetWriter] Schema: {NumColumns} columns, {NumRowGroups} row groups, input size: {InputBytes} bytes",
-            numColumns, numRowGroups, input.CanSeek ? input.Length : -1
+            numColumns,
+            numRowGroups,
+            input.CanSeek ? input.Length : -1
         );
 
         // Build encryption properties via the key vault provider

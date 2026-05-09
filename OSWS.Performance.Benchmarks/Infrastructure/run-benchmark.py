@@ -47,7 +47,7 @@ DATASET_DIR = BENCHMARK_DIR / "benchmark-datasets"
 
 load_dotenv(BENCHMARK_DIR / ".env")
 
-FILE_SIZES = ["tiny"]  # "small", "medium"]  # large and xlarge currently disabled
+FILE_SIZES = ["tiny", "small", "medium", "large", "xlarge"]
 
 # Row counts and column count match C# ParquetGenerator / DecryptionBenchmark
 CONFIGS = {

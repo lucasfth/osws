@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.IO;
 using OSWS.Common.Configuration;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver.Helpers;
@@ -17,6 +18,11 @@ public class ParquetReader(
     Action<TimeSpan>? onCachedKvOperationLatency = null
 ) : IParquetReader
 {
+    /// <summary>
+    /// Shared pool manager — one instance per process is the recommended pattern.
+    /// Avoids LOH allocations and fragmentation by pooling fixed-size blocks.
+    /// </summary>
+    private static readonly RecyclableMemoryStreamManager _streamManager = new();
     /// <summary>
     /// Controls behavior when a column cannot be decrypted.
     /// Defaults to writing dummy values for that column so the remaining columns can still be read.
@@ -49,7 +55,7 @@ public class ParquetReader(
             logger?.LogInformation(
                 "[ParquetReader] Encryption disabled, reading plaintext parquet"
             );
-            var plainTextStream = new MemoryStream();
+            var plainTextStream = _streamManager.GetStream("parquet-passthrough");
             input.CopyTo(plainTextStream);
             plainTextStream.Position = 0;
             return plainTextStream;
@@ -75,9 +81,10 @@ public class ParquetReader(
         var schema = fileMetaData.Schema;
         var keyValueMetadata = fileMetaData.KeyValueMetadata;
 
-        // Pre-size to avoid MemoryStream doubling through the LOH.
+        // Pre-size with the encrypted input length as a capacity hint.
+        // RecyclableMemoryStream uses pooled segments — no LOH allocation, no doubling.
         var outputCapacity = input.CanSeek ? (int)Math.Min(input.Length, int.MaxValue) : 0;
-        var outputStream = new MemoryStream(outputCapacity);
+        var outputStream = _streamManager.GetStream("parquet-decrypt", outputCapacity);
         using var outputMos = new ManagedOutputStream(outputStream, leaveOpen: true);
 
         using var defaultWriterProperties = WriterProperties.GetDefaultWriterProperties();

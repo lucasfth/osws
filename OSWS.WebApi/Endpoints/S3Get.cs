@@ -159,14 +159,30 @@ public class S3Get(
                     );
                 }
 
+                var gcGen2Before = GC.CollectionCount(2);
+                var memBefore = GC.GetTotalMemory(false);
+                logger.LogInformation(
+                    "[S3Get] Starting decrypt: streamType={StreamType}, streamLength={StreamLength}B, canSeek={CanSeek}, gen2={Gen2}, heapMB={HeapMB}",
+                    encryptedStream.GetType().Name,
+                    encryptedStream.CanSeek ? encryptedStream.Length : -1,
+                    encryptedStream.CanSeek,
+                    gcGen2Before,
+                    memBefore / (1024 * 1024)
+                );
+
                 sw.Restart();
                 outputStream = await parquetReader.ReadParquetAsync(
                     encryptedStream,
                     allowedColumnSet
                 );
+
+                var gcGen2After = GC.CollectionCount(2);
+                var memAfter = GC.GetTotalMemory(false);
                 logger.LogInformation(
-                    "[S3Get] Decrypt+re-encode complete: outputSize={SizeBytes}B ({ElapsedMs}ms)",
-                    (outputStream as MemoryStream)?.Length ?? -1, sw.ElapsedMilliseconds
+                    "[S3Get] Decrypt+re-encode complete: outputSize={SizeBytes}B, elapsed={ElapsedMs}ms, gen2Delta={Gen2Delta}, heapDeltaMB={HeapDeltaMB}",
+                    outputStream.Length, sw.ElapsedMilliseconds,
+                    gcGen2After - gcGen2Before,
+                    (memAfter - memBefore) / (1024 * 1024)
                 );
             }
             catch (Exception ex)

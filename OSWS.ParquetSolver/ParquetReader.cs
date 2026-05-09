@@ -6,6 +6,7 @@ using OSWS.ParquetSolver.Helpers;
 using OSWS.ParquetSolver.Interfaces;
 using ParquetSharp;
 using ParquetSharp.IO;
+using System.Diagnostics;
 
 namespace OSWS.ParquetSolver;
 
@@ -62,6 +63,12 @@ public class ParquetReader(
         }
 
         logger?.LogInformation("[ParquetReader] Decrypting parquet file");
+        logger?.LogInformation(
+            "[ParquetReader] Input: type={StreamType}, length={Length}B, canSeek={CanSeek}",
+            input.GetType().Name,
+            input.CanSeek ? input.Length : -1,
+            input.CanSeek
+        );
 
         using var decryptionProperties = Cryptography.BuildDecryptionProperties(
             keyVaultProvider,
@@ -81,7 +88,10 @@ public class ParquetReader(
         var schema = fileMetaData.Schema;
         var keyValueMetadata = fileMetaData.KeyValueMetadata;
 
-        // Pre-size with the encrypted input length as a capacity hint.
+        logger?.LogInformation(
+            "[ParquetReader] Schema: numColumns={NumColumns}, numRowGroups={NumRowGroups}",
+            numColumns, numRowGroups
+        );
         // RecyclableMemoryStream uses pooled segments — no LOH allocation, no doubling.
         var outputCapacity = input.CanSeek ? (int)Math.Min(input.Length, int.MaxValue) : 0;
         var outputStream = _streamManager.GetStream("parquet-decrypt", outputCapacity);
@@ -95,6 +105,8 @@ public class ParquetReader(
             keyValueMetadata
         );
 
+        var sw = Stopwatch.StartNew();
+
         RowGroupCopier.CopyRowGroups(
             writer,
             reader,
@@ -102,13 +114,19 @@ public class ParquetReader(
             numRowGroups,
             ColumnDecryptionFailureBehavior,
             OnColumnDecryptionError,
-            allowedColumns
+            allowedColumns,
+            onRowGroupCopied: logger == null ? null : (rg, ms) =>
+                logger.LogDebug("[ParquetReader] Row group {Rg}/{Total} copied ({ElapsedMs}ms)", rg, numRowGroups, ms)
         );
 
+        logger?.LogInformation("[ParquetReader] CopyRowGroups done ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
+
+        sw.Restart();
         writer.Close();
         reader.Close();
 
         outputStream.Position = 0;
+        logger?.LogInformation("[ParquetReader] Writer flushed ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
         return outputStream;
     }
 }

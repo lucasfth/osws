@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using ParquetSharp;
 
 namespace OSWS.ParquetSolver.Helpers;
@@ -12,6 +13,7 @@ public static class RowGroupCopier
     /// Copies all row groups from parquetFileReader to parquetFileWriter.
     /// Columns not in allowedColumns (when specified) receive dummy values instead of their real data.
     /// </summary>
+    /// <param name="onRowGroupCopied">Optional callback invoked after each row group with (rowGroupIndex, elapsedMs).</param>
     public static void CopyRowGroups(
         ParquetFileWriter parquetFileWriter,
         ParquetFileReader parquetFileReader,
@@ -19,13 +21,16 @@ public static class RowGroupCopier
         int numRowGroups,
         ColumnDecryptionFailureBehavior failureBehavior = ColumnDecryptionFailureBehavior.Throw,
         Action<string, Exception>? onColumnDecryptionError = null,
-        ISet<string>? allowedColumns = null
+        ISet<string>? allowedColumns = null,
+        Action<int, long>? onRowGroupCopied = null
     )
     {
         var schema = parquetFileReader.FileMetaData.Schema;
+        var sw = onRowGroupCopied != null ? Stopwatch.StartNew() : null;
 
         for (var rg = 0; rg < numRowGroups; rg++)
         {
+            sw?.Restart();
             using var rowGroupReader = parquetFileReader.RowGroup(rg);
             var numRows = checked((int)rowGroupReader.MetaData.NumRows);
             using var rowGroupWriter = parquetFileWriter.AppendRowGroup();
@@ -51,6 +56,9 @@ public static class RowGroupCopier
                     onColumnDecryptionError
                 );
             }
+
+            if (sw != null)
+                onRowGroupCopied!(rg, sw.ElapsedMilliseconds);
         }
     }
 

@@ -75,7 +75,9 @@ public class ParquetReader(
         var schema = fileMetaData.Schema;
         var keyValueMetadata = fileMetaData.KeyValueMetadata;
 
-        var outputStream = new MemoryStream();
+        // Pre-size to avoid MemoryStream doubling through the LOH.
+        var outputCapacity = input.CanSeek ? (int)Math.Min(input.Length, int.MaxValue) : 0;
+        var outputStream = new MemoryStream(outputCapacity);
         using var outputMos = new ManagedOutputStream(outputStream, leaveOpen: true);
 
         using var defaultWriterProperties = WriterProperties.GetDefaultWriterProperties();

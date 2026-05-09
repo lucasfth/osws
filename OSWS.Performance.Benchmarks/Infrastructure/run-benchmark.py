@@ -33,6 +33,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import boto3
+import botocore.exceptions
 from botocore.config import Config
 from dotenv import load_dotenv
 
@@ -91,25 +92,45 @@ def check_osws_health(endpoint: str) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def time_put(s3, bucket: str, key: str, data: bytes) -> float:
-    """Upload bytes and return wall-clock duration in milliseconds."""
+def time_put(s3, bucket: str, key: str, data: bytes) -> tuple[float, int]:
+    """Upload bytes and return (wall-clock ms, http_status)."""
     t0 = time.perf_counter()
-    s3.put_object(
-        Bucket=bucket,
-        Key=key,
-        Body=data,
-        ContentType="application/vnd.apache.parquet",
-    )
-    return (time.perf_counter() - t0) * 1000
+    try:
+        resp = s3.put_object(
+            Bucket=bucket,
+            Key=key,
+            Body=data,
+            ContentType="application/vnd.apache.parquet",
+        )
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+        return elapsed_ms, resp["ResponseMetadata"]["HTTPStatusCode"]
+    except botocore.exceptions.ClientError as e:
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+        status = e.response.get("ResponseMetadata", {}).get("HTTPStatusCode", -1)
+        return elapsed_ms, status
+    except Exception:
+        return (time.perf_counter() - t0) * 1000, -1
 
 
-def time_get(s3, bucket: str, key: str) -> float:
-    """Download a file to /dev/null and return wall-clock duration in milliseconds."""
+def time_get(s3, bucket: str, key: str) -> tuple[float, int]:
+    """Download a file fully and return (wall-clock ms, http_status).
+
+    Returns http_status=-1 if the request raised a connection-level exception.
+    Non-2xx responses are returned with their actual status code so callers
+    can distinguish successful measurements from error responses.
+    """
     t0 = time.perf_counter()
-    resp = s3.get_object(Bucket=bucket, Key=key)
-    # Consume the body fully to measure total transfer time
-    resp["Body"].read()
-    return (time.perf_counter() - t0) * 1000
+    try:
+        resp = s3.get_object(Bucket=bucket, Key=key)
+        resp["Body"].read()
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+        return elapsed_ms, resp["ResponseMetadata"]["HTTPStatusCode"]
+    except botocore.exceptions.ClientError as e:
+        elapsed_ms = (time.perf_counter() - t0) * 1000
+        status = e.response.get("ResponseMetadata", {}).get("HTTPStatusCode", -1)
+        return elapsed_ms, status
+    except Exception:
+        return (time.perf_counter() - t0) * 1000, -1
 
 
 # ---------------------------------------------------------------------------
@@ -125,6 +146,7 @@ class ResultsWriter:
         "file_size_label",
         "run_index",
         "duration_ms",
+        "http_status",
         "timestamp_utc",
     ]
 
@@ -170,7 +192,8 @@ def run_put_benchmark(
 
     for i in range(1, repetitions + 1):
         key = f"{key_prefix}/{i:03d}.parquet"
-        duration_ms = time_put(s3, bucket, key, data)
+        duration_ms, http_status = time_put(s3, bucket, key, data)
+        ok = 200 <= http_status < 300
         writer.write(
             config=config,
             operation="PUT",
@@ -178,8 +201,10 @@ def run_put_benchmark(
             file_size_label=size_label,
             run_index=i,
             duration_ms=f"{duration_ms:.2f}",
+            http_status=http_status,
         )
-        print(f"{duration_ms:.0f}ms ", end="", flush=True)
+        marker = "" if ok else f"[{http_status}!] "
+        print(f"{marker}{duration_ms:.0f}ms ", end="", flush=True)
 
     print()
 
@@ -207,7 +232,8 @@ def run_get_benchmark(
         key = f"bench/s3-direct/{size_label}.parquet"
         print(f"    GET s3-direct x{repetitions}... ", end="", flush=True)
         for i in range(1, repetitions + 1):
-            duration_ms = time_get(s3, bucket, key)
+            duration_ms, http_status = time_get(s3, bucket, key)
+            ok = 200 <= http_status < 300
             writer.write(
                 config=config,
                 operation="GET",
@@ -215,8 +241,10 @@ def run_get_benchmark(
                 file_size_label=size_label,
                 run_index=i,
                 duration_ms=f"{duration_ms:.2f}",
+                http_status=http_status,
             )
-            print(f"{duration_ms:.0f}ms ", end="", flush=True)
+            marker = "" if ok else f"[{http_status}!] "
+            print(f"{marker}{duration_ms:.0f}ms ", end="", flush=True)
         print()
         return
 
@@ -224,7 +252,8 @@ def run_get_benchmark(
     print(f"    GET cold x{repetitions}... ", end="", flush=True)
     for i in range(1, repetitions + 1):
         key = f"bench/osws/cold/{size_label}/{i:03d}.parquet"
-        duration_ms = time_get(s3, bucket, key)
+        duration_ms, http_status = time_get(s3, bucket, key)
+        ok = 200 <= http_status < 300
         writer.write(
             config=config,
             operation="GET",
@@ -232,8 +261,10 @@ def run_get_benchmark(
             file_size_label=size_label,
             run_index=i,
             duration_ms=f"{duration_ms:.2f}",
+            http_status=http_status,
         )
-        print(f"{duration_ms:.0f}ms ", end="", flush=True)
+        marker = "" if ok else f"[{http_status}!] "
+        print(f"{marker}{duration_ms:.0f}ms ", end="", flush=True)
     print()
 
     # Warm GETs: hit the same file N+1 times; discard first
@@ -242,7 +273,8 @@ def run_get_benchmark(
     _ = time_get(s3, bucket, warm_key)  # throwaway; warms DEK + file cache
     print("(warmed) ", end="", flush=True)
     for i in range(1, repetitions + 1):
-        duration_ms = time_get(s3, bucket, warm_key)
+        duration_ms, http_status = time_get(s3, bucket, warm_key)
+        ok = 200 <= http_status < 300
         writer.write(
             config=config,
             operation="GET",
@@ -250,8 +282,10 @@ def run_get_benchmark(
             file_size_label=size_label,
             run_index=i,
             duration_ms=f"{duration_ms:.2f}",
+            http_status=http_status,
         )
-        print(f"{duration_ms:.0f}ms ", end="", flush=True)
+        marker = "" if ok else f"[{http_status}!] "
+        print(f"{marker}{duration_ms:.0f}ms ", end="", flush=True)
     print()
 
 

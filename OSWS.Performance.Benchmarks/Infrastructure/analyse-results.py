@@ -77,7 +77,7 @@ def print_table(groups: dict):
     ]
     op_order = ["PUT", "GET"]
     cache_order = ["n/a", "cold", "warm"]
-    size_order = ["tiny", "small", "medium"]
+    size_order = ["tiny", "small", "medium", "large", "xlarge"]
 
     all_configs = sorted(
         set(k[0] for k in groups),
@@ -158,13 +158,13 @@ def main():
     if target.is_file():
         csv_files = [target]
     elif target.is_dir():
-        csv_files = sorted(target.glob("results_*.csv"))
+        csv_files = sorted(target.glob("*.csv"))
     else:
         print(f"ERROR: {target} not found", file=sys.stderr)
         sys.exit(1)
 
     if not csv_files:
-        print(f"No results_*.csv files found in {target}", file=sys.stderr)
+        print(f"No *.csv files found in {target}", file=sys.stderr)
         sys.exit(1)
 
     print(f"Loading {len(csv_files)} file(s):")

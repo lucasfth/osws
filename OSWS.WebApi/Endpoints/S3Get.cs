@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Security.Claims;
 using Amazon.S3;
 using Amazon.S3.Model;
@@ -37,9 +38,17 @@ public class S3Get(
         CancellationToken cancellationToken = default
     )
     {
+        var totalSw = Stopwatch.StartNew();
+        logger.LogInformation("[S3Get] GET {Bucket}/{Key} started", bucket, key);
+
+        var sw = Stopwatch.StartNew();
         var user = await currentUser.ResolveAsync(cancellationToken);
         if (user is null)
+        {
+            logger.LogWarning("[S3Get] Unauthorized: could not resolve user for {Bucket}/{Key}", bucket, key);
             return Results.Unauthorized();
+        }
+        logger.LogDebug("[S3Get] Auth resolved: userId={UserId} ({ElapsedMs}ms)", user.Id, sw.ElapsedMilliseconds);
 
         if (string.IsNullOrEmpty(bucket))
         {
@@ -58,19 +67,20 @@ public class S3Get(
         var rangeSpec = await RangeHelper.ParseRange(httpRequest);
         if (rangeSpec.IsInvalidSpec)
         {
+            logger.LogWarning("[S3Get] Invalid range spec for {Bucket}/{Key}", bucket, key);
             return Results.StatusCode(400);
         }
 
-        // Due to how OSWS handles encryption, we cannot set byte-range on the S3 request, as we may need to fetch the full object to decrypt before slicing.
-        // Instead, we'll handle range slicing in-memory after fetching (and potentially decrypting) the full object.
-        // This allows us to support range requests even for encrypted objects without needing to know the content length or encryption details upfront.
-
-        // Check cache first for encrypted parquet files
-        var cacheKey = EncryptedFileCache.GenerateCacheKey(bucket, key);
         var isParquetFile = TypeCheck.IsParquetFile(key, httpRequest.ContentType);
+        logger.LogDebug("[S3Get] isParquet={IsParquet}, rangeRequested={RangeRequested}", isParquetFile, rangeSpec.IsRangeRequested);
+        // Due to how OSWS handles encryption, we cannot set byte-range on the S3 request, as we
+        // may need to fetch the full object to decrypt before slicing. Range slicing is applied
+        // in-memory after fetching (and potentially decrypting) the full object.
+        var cacheKey = EncryptedFileCache.GenerateCacheKey(bucket, key);
         GetObjectResponse? resp = null;
         Stream? encryptedStream = null;
 
+        sw.Restart();
         if (isParquetFile)
         {
             try
@@ -82,9 +92,19 @@ public class S3Get(
                 );
                 encryptedStream = fetchResult.EncryptedStream;
                 resp = fetchResult.S3Response;
+                var source = resp is null ? "file-cache" : "s3";
+                logger.LogInformation(
+                    "[S3Get] Fetch parquet: source={Source}, size={SizeBytes}B ({ElapsedMs}ms)",
+                    source, encryptedStream?.Length ?? -1, sw.ElapsedMilliseconds
+                );
             }
             catch (AmazonS3Exception e)
             {
+                logger.LogError(
+                    e,
+                    "[S3Get] S3 error fetching parquet {Bucket}/{Key}: {StatusCode} {ErrorCode}",
+                    bucket, key, e.StatusCode, e.ErrorCode
+                );
                 return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
             }
         }
@@ -93,9 +113,15 @@ public class S3Get(
             try
             {
                 resp = await objectFetcher.FetchObjectAsync(bucket, key, cancellationToken);
+                logger.LogDebug("[S3Get] Fetch object from S3 ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
             }
             catch (AmazonS3Exception e)
             {
+                logger.LogError(
+                    e,
+                    "[S3Get] S3 error fetching object {Bucket}/{Key}: {StatusCode} {ErrorCode}",
+                    bucket, key, e.StatusCode, e.ErrorCode
+                );
                 return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
             }
         }
@@ -112,9 +138,9 @@ public class S3Get(
             {
                 ISet<string>? allowedColumnSet = null;
 
-                // Get permitted columns for the user
                 if (!encryptionSettings.BenchmarkMode)
                 {
+                    sw.Restart();
                     allowedColumnSet = await permissionService.GetAllowedColumnsAsync(
                         user.Id,
                         cancellationToken
@@ -127,19 +153,29 @@ public class S3Get(
 
                     var allowedColumnsDisplay =
                         allowedColumnSet != null ? string.Join(",", allowedColumnSet) : "* (all)";
-                    Console.WriteLine(
-                        $"[OSWS] Permission check for user {user.Id}: roles=[{string.Join(",", roleIds)}], allowedColumns=[{allowedColumnsDisplay}]"
+                    logger.LogDebug(
+                        "[S3Get] Permission check: userId={UserId}, roles=[{Roles}], allowedColumns=[{Columns}] ({ElapsedMs}ms)",
+                        user.Id, string.Join(",", roleIds), allowedColumnsDisplay, sw.ElapsedMilliseconds
                     );
                 }
 
+                sw.Restart();
                 outputStream = await parquetReader.ReadParquetAsync(
                     encryptedStream,
                     allowedColumnSet
                 );
+                logger.LogInformation(
+                    "[S3Get] Decrypt+re-encode complete: outputSize={SizeBytes}B ({ElapsedMs}ms)",
+                    (outputStream as MemoryStream)?.Length ?? -1, sw.ElapsedMilliseconds
+                );
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[OSWS] Parquet decryption/permission error: {ex}");
+                logger.LogError(
+                    ex,
+                    "[S3Get] Parquet decryption failed for {Bucket}/{Key} after {ElapsedMs}ms: {Message}",
+                    bucket, key, totalSw.ElapsedMilliseconds, ex.Message
+                );
                 httpRequest.HttpContext.Response.StatusCode = 500;
                 return Results.Text(
                     ParamValidation.CreateErrorJson(
@@ -181,6 +217,7 @@ public class S3Get(
         GetObjectMetadataResponse? metadataResp = null;
         if (resp == null)
         {
+            sw.Restart();
             try
             {
                 metadataResp = await s3Client
@@ -189,9 +226,15 @@ public class S3Get(
                         cancellationToken
                     )
                     .ConfigureAwait(false);
+                logger.LogDebug("[S3Get] Metadata fetch (file-cache hit path): ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
             }
             catch (AmazonS3Exception e)
             {
+                logger.LogError(
+                    e,
+                    "[S3Get] S3 error fetching metadata for {Bucket}/{Key}: {StatusCode} {ErrorCode}",
+                    bucket, key, e.StatusCode, e.ErrorCode
+                );
                 return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
             }
         }
@@ -247,6 +290,10 @@ public class S3Get(
                     )
                     .ConfigureAwait(false);
 
+            logger.LogInformation(
+                "[S3Get] GET {Bucket}/{Key} complete (range): total={TotalMs}ms",
+                bucket, key, totalSw.ElapsedMilliseconds
+            );
             return Results.Empty;
         }
 
@@ -271,6 +318,10 @@ public class S3Get(
         }
         httpResponse.Headers.AcceptRanges = "bytes";
         httpResponse.ContentLength = contentLength;
+        logger.LogInformation(
+            "[S3Get] GET {Bucket}/{Key} complete: contentLength={ContentLength}B, total={TotalMs}ms",
+            bucket, key, contentLength, totalSw.ElapsedMilliseconds
+        );
         if (outputStream != null)
             return Results.File(outputStream, responseContentType, fileDownloadName: key);
         return Results.NoContent();

@@ -13,6 +13,7 @@ public class WarmStartFixture : IDisposable
         new(
             new Common.Configuration.CacheSettings
             {
+                EnableDekCache = true,
                 EnableFileCache = true,
                 MaxCacheSizeBytes = 10L * 1024 * 1024 * 1024, // 10GB
             }
@@ -20,7 +21,7 @@ public class WarmStartFixture : IDisposable
 
     public WarmStartFixture(int dekCacheCapacity = 2500)
     {
-        DekCache = new DekCache(dekCacheCapacity);
+        DekCache = new DekCache(true, dekCacheCapacity);
     }
 
     public void Dispose()

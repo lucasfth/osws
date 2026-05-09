@@ -1,142 +1,158 @@
 # OSWS Performance Benchmarks
 
-Measures OSWS performance using MinIO's Warp (baseline) and BenchmarkDotNet (micro-benchmarks).
+Measures OSWS latency using direct AWS SDK calls (throughput suite) and BenchmarkDotNet (micro-benchmarks).
 
 ## Quick Start
 
 ```bash
 cd OSWS.Performance.Benchmarks
 cp .env.example .env
-# Edit .env with S3 credentials + VM config
-
-./Infrastructure/run-warp-baseline.sh              # Full suite (1, 2, 4, 8 instances)
-./Infrastructure/run-warp-baseline.sh 1 4 10       # Quick: 1 instance, 4 clients, 10s
-
-dotnet run -c Release -- unwrap   # Micro: key unwrap
-dotnet run -c Release -- decrypt  # Micro: decryption
+# Fill in S3 credentials (R2) and OSWS credentials (see below)
 ```
 
-## VM Management API
+### 1. Seed benchmark user and bucket
 
-OSWS runs on a remote VM. Warp runs locally and targets individual OSWS instances.
+An instance of OSWS **with encryption** must be running for steps 1 and 2. Ensure the correct endpoint and database connection string is set.
 
-### Scaling Model
+```bash
+# Create benchmark user + role, prints credentials — copy to .env
+dotnet run -c Release -- seed-s3-credential
 
-**Scale once, subset per iteration:**
-1. `POST /scale` to max instances (e.g., 8) at start of each category
-2. Warp runs against subsets: 1, 2, 4, 8 — no teardown between
-3. `POST /stop` at end of category
-
-### API Contract
-
-**`POST /scale`** — Start instances, return endpoints.
-
-Request:
-```json
-{"instances": 8, "disableEncryption": false, "enableFileCache": true}
+# Ensure benchmark bucket exists (via OSWS). Or create via storage backend dashboard.
+dotnet run -c Release -- ensure-bucket \
+  --endpoint http://localhost:5000 \
+  --access-key <BENCH_OSWS_ACCESS_KEY> \
+  --secret-key <BENCH_OSWS_SECRET_KEY> \
+  --bucket osws-benchmark
 ```
 
-Response (required):
-```json
-{
-  "instances": [
-    {"host": "192.168.1.100", "port": 8000},
-    {"host": "192.168.1.100", "port": 8002}
-  ]
-}
+### 2. Generate and upload corpus
+
+OSWS must be running with **encryption enabled** for corpus upload (so column permissions are registered).
+
+First, generate the datasets:
+
+```bash
+dotnet run -c Release -- generate-datasets
 ```
 
-Each instance gets a unique port (e.g., 8000, 8002, 8004...). The VM must configure:
-- `disableEncryption: true` → `Encryption__DisableEncryption=true`
-- `enableFileCache: false` → `Cache__EnableFileCache=false`
-
-**`GET /health`** — Return when ready.
-
-Response:
-```json
-{"healthy": true, "instances": 8}
+```bash
+dotnet run -c Release -- generate-corpus
 ```
 
-Script polls every 5s until `healthy: true` or timeout (120s default).
+This uploads:
 
-**`POST /stop`** — Stop all instances.
+- `bench/s3-direct/{size}.parquet` — plaintext, directly to R2
+- `bench/osws/warm/{size}.parquet` — through OSWS (encrypted)
+- `bench/osws/cold/{size}/{001..n}.parquet` — N cold copies through OSWS (distinct DEKs), N being Repetitions from .env
 
-Response:
-```json
-{"status": "ok"}
+### 3. Run benchmarks
+
+Each configuration requires OSWS started with the correct env vars. Run automated using:
+
+```bash
+# 1. No OSWS — direct R2 baseline
+python Infrastructure/run-suite.py
 ```
 
-### VM Implementation Notes
+Each run outputs `benchmark-results/run-{timestamp}/<results>`.
 
-- Each instance needs its own port, reachable from the local machine
-- `/health` should verify all instances respond before returning `healthy: true`
-- Use Docker with explicit port mappings or a wrapper script that generates `docker-compose.yml` per scale request
+### 4. Analyse results
 
-## Benchmark Categories
+```bash
+python Infrastructure/analyse-results.py benchmark-results/run-{timestamp}
+```
 
-| Category | Encryption | File Cache | Purpose |
-|----------|-----------|------------|---------|
-| `s3-direct` | None | N/A | Raw S3 baseline |
-| `osws-no-encryption` | Disabled | N/A | OSWS proxy overhead |
-| `osws-encryption-no-cache` | Enabled | Disabled | Encryption overhead |
-| `osws-encryption-cache` | Enabled | Enabled | Best-case with caching |
+Prints mean / stddev / p50 / p95 per (config, operation, cache state, file size).
 
-Each category runs against 1, 2, 4, 8 instances. Warp workload: 50% GET, 20% PUT, 20% LIST, 10% DELETE.
+---
+
+## Benchmark Design
+
+### File corpus (100 columns of random doubles)
+
+| Label  | Row count | Approx size |
+| ------ | --------- | ----------- |
+| tiny   | 1,000     | ~0.5 MB     |
+| small  | 10,000    | ~5 MB       |
+| medium | 250,000   | ~120 MB     |
+| large  | 100,000   | ~480 MB     |
+| xlarge | 2,000,000 | ~950 MB     |
+
+### Configurations
+
+| Config                       | Encryption | File cache | DEK Cache | Description                              |
+| ---------------------------- | ---------- | ---------- | --------- | ---------------------------------------- |
+| `s3-direct`                  | N/A        | N/A        | N/A       | Plaintext PUT/GET directly to S3-backend |
+| `osws-encrypt-cache`         | Enabled    | Enabled    | Enabled   | Full service, with cache                 |
+| `osws-encrypt-no-file-cache` | Enabled    | Disabled   | Enabled   | Full service, always cold                |
+| `osws-encrypt-no-dek-cache`  | Enabled    | Enabled    | Disabled  | Full service, always cold                |
+| `osws-no-encrypt`            | Disabled   | N/A        | N/A       | Forwarding overhead only                 |
+
+### Cold vs warm GET
+
+- **Cold:** each of the N corpus copies has distinct DEKs → each GET requires a fresh KV unwrap
+- **Warm:** same file GETted N+1 times; first is discarded (fills DEK + file cache); N recorded
+
+### Repetitions
+
+N=10 per configuration (set `BENCH_REPETITIONS` in `.env` to override).
+
+---
 
 ## Micro-benchmarks
 
-| Benchmark | Measures | Setup |
-|-----------|----------|-------|
-| Key Unwrap | DEK unwrap latency | Cold cache, 128/192/256-bit keys |
-| Decryption | Column decrypt latency | Warm cache, 5K/10K/100K rows × 2000 cols |
-| Permission Service | RBAC (flat roles) | Local Postgres, 4/64/256 roles |
-| Permission Hierarchy | RBAC (inheritance) | Local Postgres, depth 0/4/16/64 |
+Run independently from the R2 PUT/GET suite. Require local Postgres with migrations applied.
 
-Requires local Postgres with migrations:
 ```bash
-psql -U <user> -c "CREATE DATABASE osws_dev;"
-dotnet ef database update --project OSWS.KeyManager --startup-project OSWS.WebApi
+dotnet run -c Release -- unwrap      # Key unwrap latency
+dotnet run -c Release -- decrypt     # Decryption latency
+dotnet run -c Release -- auth        # RBAC permission lookup
+dotnet run -c Release -- hierarchy   # Role hierarchy traversal
 ```
+
+Results saved to `BenchmarkDotNet.Artifacts/results/`.
+
+---
 
 ## Configuration
 
 ### .env
 
 ```env
-# S3 backend (required)
-S3Settings__AccessKeyId=your-key
-S3Settings__SecretAccessKey=your-secret
-S3Settings__EndpointHostname=https://your-s3-endpoint.com
+# S3 backend (R2 or MinIO)
+S3Settings__AccessKeyId=your-r2-key
+S3Settings__SecretAccessKey=your-r2-secret
+S3Settings__EndpointHostname=https://<account-id>.r2.cloudflarestorage.com
 S3Settings__Region=auto
 
-# VM (required)
-VM_MANAGEMENT_URL=http://192.168.1.100:9000
-VM_OSWS_HOST=192.168.1.100
-VM_HEALTH_TIMEOUT_SECONDS=120
+KeyVault__Provider=Azure
+KeyVault__VaultUri=https://<your-vault>.vault.azure.net/
+KeyVault__TenantId=
+KeyVault__ClientId=
+KeyVault__ClientSecret=
 
-# Optional
-WARP_CONCURRENCY=8
-WARP_DURATION_SECONDS=60
-INSTANCE_COUNTS="1 2 4 8"
+ConnectionStrings__OswsContext=Host=localhost;Port=5432;Database=osws_bench;Username=postgres;Password=postgres
+
+# Local OSWS instance
+OSWS_ENDPOINT=http://localhost:5000
+
+# Benchmark user credentials (from seed-s3-credential output)
+BENCH_OSWS_ACCESS_KEY=
+BENCH_OSWS_SECRET_KEY=
+
+# Settings
+BENCH_BUCKET=osws-benchmark
+BENCH_REPETITIONS=10
 ```
 
-### S3 Backend Options
-
-- **AWS S3**: `https://s3.amazonaws.com`
-- **Cloudflare R2**: `https://<account-id>.r2.cloudflarestorage.com`
-- **MinIO**: `http://localhost:9000`
-
-## Output
-
-- `Infrastructure/warp-results/warp-<N>instances-<category>.json.zst` — Warp results
-- `BenchmarkDotNet.Artifacts/results/` — Micro-benchmark reports
+---
 
 ## Troubleshooting
 
-| Error | Fix |
-|-------|-----|
-| `VM_MANAGEMENT_URL is required` | Set in `.env` |
-| Warp 500 errors | Check S3 backend is accessible |
-| No results files | Check `warp-results/` dir exists |
-| "too many clients" | PostgreSQL `max_connections` ≥ 200 |
-| Parquet GET fails | Ensure parquet files exist in S3 under correct prefix |
+| Error                                      | Fix                                                                     |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
+| `BENCH_OSWS_ACCESS_KEY not found`          | Run `seed-s3-credential` and copy output to `.env`                      |
+| OSWS health check failed                   | Start OSWS with correct config before running the script                |
+| `No objects found` on GET                  | Run `generate-corpus` first                                             |
+| Corpus upload fails on column registration | Ensure OSWS is running with encryption enabled during `generate-corpus` |

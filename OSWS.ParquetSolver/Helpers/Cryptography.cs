@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using System.Security.Cryptography;
+using Microsoft.Extensions.Logging;
 using OSWS.Common.Configuration;
 using OSWS.Models.DTOs;
 using OSWS.Models.Interfaces;
@@ -29,22 +31,42 @@ public static class Cryptography
         IKeyVaultProvider keyVaultProvider,
         string role,
         string providerType,
-        EncryptionSettings? encryptionSettings = null
+        EncryptionSettings? encryptionSettings = null,
+        ILogger? logger = null
     )
     {
+        var sw = Stopwatch.StartNew();
         var dekSizeBytes = encryptionSettings?.GetDekSizeBytes() ?? 16; // Default 128 bits (16 bytes)
 
         var fileKeyName = $"{role}-file-{Guid.NewGuid():N}";
+
+        logger?.LogDebug(
+            "[Cryptography] Creating KEK in vault: keyName={KeyName}, role={Role}",
+            fileKeyName, role
+        );
+        var kekSw = Stopwatch.StartNew();
         var fileKeyId = keyVaultProvider.CreateKeyAsync(fileKeyName, role).GetAwaiter().GetResult();
+        logger?.LogDebug(
+            "[Cryptography] KEK created: keyId={KeyId} ({ElapsedMs}ms)",
+            fileKeyId, kekSw.ElapsedMilliseconds
+        );
+
         var encryptedColumns = new List<EncryptedColumnInfo>();
 
         // Parquet still expects a footer key and key metadata even when the footer itself is plaintext.
         // Keep the footer plaintext, but wrap the footer key with the file-level KEK so readers can initialize crypto.
         var footerKey = RandomNumberGenerator.GetBytes(16);
+
+        logger?.LogDebug("[Cryptography] Encrypting footer DEK via vault");
+        var footerEncSw = Stopwatch.StartNew();
         var encryptedFooterKey = keyVaultProvider
             .EncryptAsync(fileKeyId, footerKey)
             .GetAwaiter()
             .GetResult();
+        logger?.LogDebug(
+            "[Cryptography] Footer DEK encrypted ({ElapsedMs}ms)",
+            footerEncSw.ElapsedMilliseconds
+        );
 
         var footerMetadata = new KeyMetadata
         {
@@ -63,6 +85,11 @@ public static class Cryptography
         // Each encrypted column gets its own DEK, but every DEK in the file is wrapped by one KEK.
         var numColumns = schema.NumColumns;
         var columnProperties = new ColumnEncryptionProperties[numColumns];
+        var encryptedColumnCount = columnsToEncrypt?.Length ?? numColumns;
+        logger?.LogDebug(
+            "[Cryptography] Starting per-column DEK generation: {TotalColumns} schema columns, encrypting {EncryptedCount}",
+            numColumns, encryptedColumnCount
+        );
 
         for (var i = 0; i < numColumns; i++)
         {
@@ -81,10 +108,19 @@ public static class Cryptography
             // DEK size is configurable via EncryptionSettings
             var columnDek = RandomNumberGenerator.GetBytes(dekSizeBytes);
 
+            logger?.LogDebug(
+                "[Cryptography] Encrypting DEK for column [{ColumnIndex}/{Total}]: {ColumnName}",
+                i + 1, numColumns, colName
+            );
+            var colEncSw = Stopwatch.StartNew();
             var encryptedColumnDek = keyVaultProvider
                 .EncryptAsync(fileKeyId!, columnDek)
                 .GetAwaiter()
                 .GetResult();
+            logger?.LogDebug(
+                "[Cryptography] Column DEK encrypted: {ColumnName} ({ElapsedMs}ms)",
+                colName, colEncSw.ElapsedMilliseconds
+            );
 
             var columnMetadata = new KeyMetadata
             {
@@ -116,6 +152,11 @@ public static class Cryptography
         {
             builder.EncryptedColumns(encryptedCols!);
         }
+
+        logger?.LogDebug(
+            "[Cryptography] BuildEncryptionProperties complete: {EncryptedCols} columns encrypted, total elapsed {ElapsedMs}ms",
+            encryptedCols.Length, sw.ElapsedMilliseconds
+        );
 
         return (
             builder.Build(),

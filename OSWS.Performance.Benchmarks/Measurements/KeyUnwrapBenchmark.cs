@@ -71,7 +71,7 @@ public class KeyUnwrapBenchmark
         // 10 columns triggers ~10 cold KV calls (~1s), which is enough to measure
         // per-call unwrap latency without running for minutes per iteration.
         Console.WriteLine("   Generating dataset (10 cols × 100 rows) for key unwrap testing...");
-        var unencrypted = await WideDatasetGenerator.GenerateAsync(
+        var unencrypted = await ParquetGenerator.GenerateAsync(
             10,
             100,
             cancellationToken: CancellationToken.None

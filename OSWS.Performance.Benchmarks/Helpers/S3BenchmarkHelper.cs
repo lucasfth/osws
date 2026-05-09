@@ -177,10 +177,10 @@ public static class S3BenchmarkHelper
                 "EncryptionObj is partially initialized. Provide all keys and streams, or none."
             );
 
-        var smallUnenc = await SmallDatasetGenerator.GenerateAsync(
+        var smallUnenc = await ParquetGenerator.GenerateAsync(
             encryptionObj.SmallCols,
             encryptionObj.SmallRows,
-            CancellationToken.None
+            cancellationToken: CancellationToken.None
         );
         (encryptionObj.SmallEnc, _) = await RetryWithBackoffAsync(
             () => encryptionObj.ParquetWriter.WriteParquetAsync(smallUnenc, "default"),
@@ -202,7 +202,7 @@ public static class S3BenchmarkHelper
         );
         await Task.Delay(Wait);
 
-        var wideUnenc = await WideDatasetGenerator.GenerateAsync(
+        var wideUnenc = await ParquetGenerator.GenerateAsync(
             encryptionObj.WideCols,
             encryptionObj.WideRows,
             cancellationToken: CancellationToken.None
@@ -227,10 +227,10 @@ public static class S3BenchmarkHelper
         );
         await Task.Delay(Wait);
 
-        var deepUnenc = await DeepDatasetGenerator.GenerateAsync(
+        var deepUnenc = await ParquetGenerator.GenerateAsync(
             encryptionObj.DeepCols,
             encryptionObj.DeepRows,
-            CancellationToken.None
+            cancellationToken: CancellationToken.None
         );
         (encryptionObj.DeepEnc, _) = await RetryWithBackoffAsync(
             () => encryptionObj.ParquetWriter.WriteParquetAsync(deepUnenc, "default"),

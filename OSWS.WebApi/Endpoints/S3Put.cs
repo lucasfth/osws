@@ -82,13 +82,6 @@ public class S3Put(
 
                 req.InputStream = uploadStream;
 
-                // Set content length using reflection (ContentLength property)
-                var contentLengthProp = typeof(PutObjectRequest).GetProperty("ContentLength");
-                if (contentLengthProp != null && contentLengthProp.CanWrite)
-                {
-                    contentLengthProp.SetValue(req, uploadStream.Length);
-                }
-
                 // Forward metadata headers
                 foreach (var h in httpRequest.Headers)
                 {
@@ -113,18 +106,10 @@ public class S3Put(
         else if (isParquetFile && encryptionSettings.DisableEncryption)
         {
             // Encryption disabled: pass-through raw parquet without encryption
-            req.InputStream = httpRequest.Body;
-
-            // Set content length
-            var contentLength = httpRequest.ContentLength;
-            if (contentLength.HasValue)
-            {
-                var contentLengthProp = typeof(PutObjectRequest).GetProperty("ContentLength");
-                if (contentLengthProp != null && contentLengthProp.CanWrite)
-                {
-                    contentLengthProp.SetValue(req, contentLength.Value);
-                }
-            }
+            var passThrough = new MemoryStream();
+            await httpRequest.Body.CopyToAsync(passThrough, cancellationToken);
+            passThrough.Position = 0;
+            req.InputStream = passThrough;
         }
         else
         {

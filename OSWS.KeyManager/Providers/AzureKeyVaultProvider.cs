@@ -153,17 +153,25 @@ public class AzureKeyVaultProvider : IKeyVaultProvider
         };
     }
 
-    private static DefaultAzureCredential BuildCredential(KeyVaultSettings settings)
+    private static Azure.Core.TokenCredential BuildCredential(KeyVaultSettings settings)
     {
-        var options = new DefaultAzureCredentialOptions();
+        if (
+            !string.IsNullOrWhiteSpace(settings.TenantId)
+            && !string.IsNullOrWhiteSpace(settings.ClientId)
+            && !string.IsNullOrWhiteSpace(settings.ClientSecret)
+        )
+        {
+            return new ClientSecretCredential(
+                settings.TenantId,
+                settings.ClientId,
+                settings.ClientSecret
+            );
+        }
 
+        var options = new DefaultAzureCredentialOptions();
         if (!string.IsNullOrWhiteSpace(settings.TenantId))
             options.TenantId = settings.TenantId;
 
-        // When ClientId + ClientSecret are set, the EnvironmentCredential path
-        // inside DefaultAzureCredential will pick them up via env vars,
-        // or you can use ClientSecretCredential directly. DefaultAzureCredential
-        // also supports managed identity, CLI, VS, etc.
         return new DefaultAzureCredential(options);
     }
 

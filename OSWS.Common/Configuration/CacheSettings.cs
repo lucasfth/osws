@@ -33,6 +33,11 @@ public class CacheSettings
     /// </summary>
     public int DekAdminTtlSeconds { get; set; } = 300;
 
+    /// <summary>
+    /// Enable in-memory caching of DEKs.
+    /// </summary>
+    public bool EnableDekCache { get; set; } = true;
+
     // -----------------------------------------------------------------------
     // Encrypted parquet file cache (always local disk — not Redis)
     // -----------------------------------------------------------------------

@@ -1,6 +1,7 @@
 using Amazon;
 using Amazon.Runtime;
 using Amazon.S3;
+using dotenv.net;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -27,6 +28,9 @@ namespace OSWS.Performance.Benchmarks.Helpers
     {
         public static ServiceProvider BuildServiceProvider()
         {
+            // Load .env first so environment variables are available to ConfigurationBuilder
+            DotEnv.Fluent().WithoutExceptions().Load();
+
             // Load configuration - same as WebApi Program.cs
             var config = new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: true)

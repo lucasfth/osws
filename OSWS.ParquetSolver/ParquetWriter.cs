@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using OSWS.Common.Configuration;
 using OSWS.Models.DTOs;
@@ -78,14 +79,26 @@ public class ParquetWriter(
         var schema = fileMetaData.Schema;
         var keyValueMetadata = fileMetaData.KeyValueMetadata;
 
+        logger?.LogDebug(
+            "[ParquetWriter] Schema: {NumColumns} columns, {NumRowGroups} row groups, input size: {InputBytes} bytes",
+            numColumns, numRowGroups, input.CanSeek ? input.Length : -1
+        );
+
         // Build encryption properties via the key vault provider
+        logger?.LogDebug("[ParquetWriter] Starting BuildEncryptionProperties");
+        var encSw = Stopwatch.StartNew();
         var (encryptionProperties, encryptionMetadata) = Cryptography.BuildEncryptionProperties(
             schema,
             columnsToEncrypt,
             keyVaultProvider,
             role,
             providerType,
-            encryptionSettings
+            encryptionSettings,
+            logger
+        );
+        logger?.LogDebug(
+            "[ParquetWriter] BuildEncryptionProperties done ({ElapsedMs}ms)",
+            encSw.ElapsedMilliseconds
         );
 
         logger?.LogInformation(
@@ -107,10 +120,22 @@ public class ParquetWriter(
             keyValueMetadata
         );
 
+        logger?.LogDebug("[ParquetWriter] Starting CopyRowGroups");
+        var copySw = Stopwatch.StartNew();
         RowGroupCopier.CopyRowGroups(writer, reader, numColumns, numRowGroups);
+        logger?.LogDebug(
+            "[ParquetWriter] CopyRowGroups done ({ElapsedMs}ms)",
+            copySw.ElapsedMilliseconds
+        );
 
+        logger?.LogDebug("[ParquetWriter] Closing writer");
+        var closeSw = Stopwatch.StartNew();
         writer.Close();
         reader.Close();
+        logger?.LogDebug(
+            "[ParquetWriter] Writer closed ({ElapsedMs}ms)",
+            closeSw.ElapsedMilliseconds
+        );
 
         if (outputStream.CanSeek)
         {

@@ -32,7 +32,16 @@ public sealed class S3ObjectFetcher(
         var cacheKey = EncryptedFileCache.GenerateCacheKey(bucket, key);
 
         if (fileCache.TryGet(cacheKey, out var cachedStream))
-            return new FetchResult(cachedStream, null);
+        {
+            // The file cache returns a FileStream. ParquetSharp performs random seeks to read
+            // individual column chunks, which is very slow on disk (~3s/row-group for large files).
+            // Buffer into memory first so all seeks are in-RAM.
+            var cachedMemStream = new MemoryStream(cachedStream!.CanSeek ? (int)Math.Min(cachedStream.Length, int.MaxValue) : 0);
+            await cachedStream.CopyToAsync(cachedMemStream, cancellationToken);
+            await cachedStream.DisposeAsync();
+            cachedMemStream.Position = 0;
+            return new FetchResult(cachedMemStream, null);
+        }
 
         var req = new GetObjectRequest { BucketName = bucket, Key = key };
         var resp = await s3Client.GetObjectAsync(req, cancellationToken).ConfigureAwait(false);

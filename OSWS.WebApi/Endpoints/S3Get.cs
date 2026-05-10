@@ -84,10 +84,7 @@ public class S3Get(
             isParquetFile,
             rangeSpec.IsRangeRequested
         );
-        // Due to how OSWS handles encryption, we cannot set byte-range on the S3 request, as we
-        // may need to fetch the full object to decrypt before slicing. Range slicing is applied
-        // in-memory after fetching (and potentially decrypting) the full object.
-        var cacheKey = EncryptedFileCache.GenerateCacheKey(bucket, key);
+
         GetObjectResponse? resp = null;
         Stream? outputStream = null;
 

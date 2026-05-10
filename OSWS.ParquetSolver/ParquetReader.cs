@@ -107,6 +107,14 @@ public class ParquetReader(
 
         var sw = Stopwatch.StartNew();
 
+        GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+        GC.WaitForPendingFinalizers();
+        logger?.LogInformation(
+            "[ParquetReader] Pre-decrypt forced GC done ({ElapsedMs}ms), heap now {HeapMB}MB, gen2={Gen2}",
+            sw.ElapsedMilliseconds, GC.GetTotalMemory(false) / (1024 * 1024), GC.CollectionCount(2)
+        );
+
+        sw.Restart();
         RowGroupCopier.CopyRowGroups(
             writer,
             reader,
@@ -116,7 +124,10 @@ public class ParquetReader(
             OnColumnDecryptionError,
             allowedColumns,
             onRowGroupCopied: logger == null ? null : (rg, ms) =>
-                logger.LogDebug("[ParquetReader] Row group {Rg}/{Total} copied ({ElapsedMs}ms)", rg, numRowGroups, ms)
+                logger.LogDebug(
+                    "[ParquetReader] Row group {Rg}/{Total} copied ({ElapsedMs}ms) gen2={Gen2}",
+                    rg, numRowGroups, ms, GC.CollectionCount(2)
+                )
         );
 
         logger?.LogInformation("[ParquetReader] CopyRowGroups done ({ElapsedMs}ms)", sw.ElapsedMilliseconds);

@@ -17,7 +17,13 @@ from azure.identity import ClientSecretCredential
 from azure.keyvault.keys import KeyClient
 from azure.core.exceptions import ResourceNotFoundError
 
-DB_CONN = "host=localhost port=5433 dbname=osws_e2e_test user=postgres password=postgres"
+from dotenv import load_dotenv
+
+load_dotenv()
+
+DB_CONN = (
+    "host=localhost port=5433 dbname=osws_e2e_test user=postgres password=postgres"
+)
 
 
 def extract_key_name(uri: str) -> str | None:
@@ -83,7 +89,9 @@ def cleanup_keys(vault_uri: str, key_names: list[str]):
         except Exception as e:
             print(f"  ⚠ Could not purge key '{name}': {e}")
 
-    print(f"  Cleanup complete: {deleted} deleted, {failed} failed out of {len(key_names)} keys")
+    print(
+        f"  Cleanup complete: {deleted} deleted, {failed} failed out of {len(key_names)} keys"
+    )
 
 
 if __name__ == "__main__":

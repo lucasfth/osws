@@ -45,10 +45,18 @@ public class S3Get(
         var user = await currentUser.ResolveAsync(cancellationToken);
         if (user is null)
         {
-            logger.LogWarning("[S3Get] Unauthorized: could not resolve user for {Bucket}/{Key}", bucket, key);
+            logger.LogWarning(
+                "[S3Get] Unauthorized: could not resolve user for {Bucket}/{Key}",
+                bucket,
+                key
+            );
             return Results.Unauthorized();
         }
-        logger.LogDebug("[S3Get] Auth resolved: userId={UserId} ({ElapsedMs}ms)", user.Id, sw.ElapsedMilliseconds);
+        logger.LogDebug(
+            "[S3Get] Auth resolved: userId={UserId} ({ElapsedMs}ms)",
+            user.Id,
+            sw.ElapsedMilliseconds
+        );
 
         if (string.IsNullOrEmpty(bucket))
         {
@@ -72,7 +80,11 @@ public class S3Get(
         }
 
         var isParquetFile = TypeCheck.IsParquetFile(key, httpRequest.ContentType);
-        logger.LogDebug("[S3Get] isParquet={IsParquet}, rangeRequested={RangeRequested}", isParquetFile, rangeSpec.IsRangeRequested);
+        logger.LogDebug(
+            "[S3Get] isParquet={IsParquet}, rangeRequested={RangeRequested}",
+            isParquetFile,
+            rangeSpec.IsRangeRequested
+        );
         // Due to how OSWS handles encryption, we cannot set byte-range on the S3 request, as we
         // may need to fetch the full object to decrypt before slicing. Range slicing is applied
         // in-memory after fetching (and potentially decrypting) the full object.
@@ -95,7 +107,9 @@ public class S3Get(
                 var source = resp is null ? "file-cache" : "s3";
                 logger.LogInformation(
                     "[S3Get] Fetch parquet: source={Source}, size={SizeBytes}B ({ElapsedMs}ms)",
-                    source, encryptedStream?.Length ?? -1, sw.ElapsedMilliseconds
+                    source,
+                    encryptedStream?.Length ?? -1,
+                    sw.ElapsedMilliseconds
                 );
             }
             catch (AmazonS3Exception e)
@@ -103,7 +117,10 @@ public class S3Get(
                 logger.LogError(
                     e,
                     "[S3Get] S3 error fetching parquet {Bucket}/{Key}: {StatusCode} {ErrorCode}",
-                    bucket, key, e.StatusCode, e.ErrorCode
+                    bucket,
+                    key,
+                    e.StatusCode,
+                    e.ErrorCode
                 );
                 return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
             }
@@ -113,14 +130,20 @@ public class S3Get(
             try
             {
                 resp = await objectFetcher.FetchObjectAsync(bucket, key, cancellationToken);
-                logger.LogDebug("[S3Get] Fetch object from S3 ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
+                logger.LogDebug(
+                    "[S3Get] Fetch object from S3 ({ElapsedMs}ms)",
+                    sw.ElapsedMilliseconds
+                );
             }
             catch (AmazonS3Exception e)
             {
                 logger.LogError(
                     e,
                     "[S3Get] S3 error fetching object {Bucket}/{Key}: {StatusCode} {ErrorCode}",
-                    bucket, key, e.StatusCode, e.ErrorCode
+                    bucket,
+                    key,
+                    e.StatusCode,
+                    e.ErrorCode
                 );
                 return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
             }
@@ -155,7 +178,10 @@ public class S3Get(
                         allowedColumnSet != null ? string.Join(",", allowedColumnSet) : "* (all)";
                     logger.LogDebug(
                         "[S3Get] Permission check: userId={UserId}, roles=[{Roles}], allowedColumns=[{Columns}] ({ElapsedMs}ms)",
-                        user.Id, string.Join(",", roleIds), allowedColumnsDisplay, sw.ElapsedMilliseconds
+                        user.Id,
+                        string.Join(",", roleIds),
+                        allowedColumnsDisplay,
+                        sw.ElapsedMilliseconds
                     );
                 }
 
@@ -166,7 +192,8 @@ public class S3Get(
                 );
                 logger.LogInformation(
                     "[S3Get] Decrypt+re-encode complete: outputSize={SizeBytes}B ({ElapsedMs}ms)",
-                    (outputStream as MemoryStream)?.Length ?? -1, sw.ElapsedMilliseconds
+                    (outputStream as MemoryStream)?.Length ?? -1,
+                    sw.ElapsedMilliseconds
                 );
             }
             catch (Exception ex)
@@ -174,7 +201,10 @@ public class S3Get(
                 logger.LogError(
                     ex,
                     "[S3Get] Parquet decryption failed for {Bucket}/{Key} after {ElapsedMs}ms: {Message}",
-                    bucket, key, totalSw.ElapsedMilliseconds, ex.Message
+                    bucket,
+                    key,
+                    totalSw.ElapsedMilliseconds,
+                    ex.Message
                 );
                 httpRequest.HttpContext.Response.StatusCode = 500;
                 return Results.Text(
@@ -226,14 +256,20 @@ public class S3Get(
                         cancellationToken
                     )
                     .ConfigureAwait(false);
-                logger.LogDebug("[S3Get] Metadata fetch (file-cache hit path): ({ElapsedMs}ms)", sw.ElapsedMilliseconds);
+                logger.LogDebug(
+                    "[S3Get] Metadata fetch (file-cache hit path): ({ElapsedMs}ms)",
+                    sw.ElapsedMilliseconds
+                );
             }
             catch (AmazonS3Exception e)
             {
                 logger.LogError(
                     e,
                     "[S3Get] S3 error fetching metadata for {Bucket}/{Key}: {StatusCode} {ErrorCode}",
-                    bucket, key, e.StatusCode, e.ErrorCode
+                    bucket,
+                    key,
+                    e.StatusCode,
+                    e.ErrorCode
                 );
                 return S3ErrorHelper.HandleS3Exception(e, httpRequest.HttpContext);
             }
@@ -292,7 +328,9 @@ public class S3Get(
 
             logger.LogInformation(
                 "[S3Get] GET {Bucket}/{Key} complete (range): total={TotalMs}ms",
-                bucket, key, totalSw.ElapsedMilliseconds
+                bucket,
+                key,
+                totalSw.ElapsedMilliseconds
             );
             return Results.Empty;
         }
@@ -320,7 +358,10 @@ public class S3Get(
         httpResponse.ContentLength = contentLength;
         logger.LogInformation(
             "[S3Get] GET {Bucket}/{Key} complete: contentLength={ContentLength}B, total={TotalMs}ms",
-            bucket, key, contentLength, totalSw.ElapsedMilliseconds
+            bucket,
+            key,
+            contentLength,
+            totalSw.ElapsedMilliseconds
         );
         if (outputStream != null)
             return Results.File(outputStream, responseContentType, fileDownloadName: key);

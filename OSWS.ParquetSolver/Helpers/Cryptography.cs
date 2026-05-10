@@ -94,6 +94,17 @@ public static class Cryptography
             encryptedColumnCount
         );
 
+        var columnDeks = Enumerable
+            .Range(0, numColumns)
+            .Select(_ => RandomNumberGenerator.GetBytes(dekSizeBytes))
+            .ToList();
+
+        var columnDekTasks = columnDeks.Select(dek =>
+            keyVaultProvider.EncryptAsync(fileKeyId, dek)
+        );
+
+        var encryptedColumnDeks = Task.WhenAll(columnDekTasks).GetAwaiter().GetResult();
+
         for (var i = 0; i < numColumns; i++)
         {
             var colName = schema.Column(i).Name;
@@ -108,25 +119,10 @@ public static class Cryptography
                 continue;
 
             // Generate a unique ephemeral DEK for this specific column (in-memory only, never persisted)
-            // DEK size is configurable via EncryptionSettings
-            var columnDek = RandomNumberGenerator.GetBytes(dekSizeBytes);
-
-            logger?.LogDebug(
-                "[Cryptography] Encrypting DEK for column [{ColumnIndex}/{Total}]: {ColumnName}",
-                i + 1,
-                numColumns,
-                colName
-            );
-            var colEncSw = Stopwatch.StartNew();
-            var encryptedColumnDek = keyVaultProvider
-                .EncryptAsync(fileKeyId!, columnDek)
-                .GetAwaiter()
-                .GetResult();
-            logger?.LogDebug(
-                "[Cryptography] Column DEK encrypted: {ColumnName} ({ElapsedMs}ms)",
-                colName,
-                colEncSw.ElapsedMilliseconds
-            );
+            // DEK size is configurable via EncryptionSettings.
+            // All DEKs are encrypted in parallel via Task.WhenAll before this loop.
+            var columnDek = columnDeks[i];
+            var encryptedColumnDek = encryptedColumnDeks[i];
 
             var columnMetadata = new KeyMetadata
             {

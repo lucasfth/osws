@@ -7,6 +7,7 @@ Created as part of the thesis [Fine-grained role-based access control by encrypt
 ## Uses
 
 OSWS can be used for later research and development but should not be used in production in its current state. Query engines which do not save metadata for the size of the Parquet file (e.g. DuckDB) can use OSWS without any modifications.
+Read our [thesis](https://github.com/lucasfth/fine-grained-role-based-access-control-by-encryption) for more details on design, implementation, evaluation, trade-offs, and suggestions for future work.
 
 ## Architecture
 

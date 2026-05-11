@@ -1,23 +1,38 @@
-# README
+# Scripts
 
-## removeKeysByDate.ts
+Utility scripts for OSWS key management.
 
-Must be run with bun.
+## Prerequisites
 
-How to:
+Scripts require [Bun](https://bun.sh) or [Zig](https://ziglang.org/) depending on the script.
+
+## removeKeysByDate.ts (Bun)
+
+Removes keys from an Azure Key Vault older than a specified date.
 
 ```bash
 bun removeKeysByDate.ts <vault-name> <concurrency>
 ```
 
-Concurrency will default to 10 if not provided.
+Concurrency defaults to 10. Optionally pass a date filter:
 
-## listKeys.ts
+```bash
+bun removeKeysByDate.ts <vault-name> <concurrency> <days>
+```
 
-Must be run with bun.
+## listKeys.ts (Bun)
 
-How to:
+Lists all keys in an Azure Key Vault.
 
 ```bash
 bun listKeys.ts <vault-name>
+```
+
+## check_architecture.zig (Zig)
+
+Checks the project's .NET project references to verify the architecture dependency tree is consistent (layered architecture enforcement).
+
+```bash
+# From repo root
+zig run scripts/check_architecture.zig -- .
 ```

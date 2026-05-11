@@ -8,7 +8,14 @@ namespace OSWS.Performance.Benchmarks;
 
 public static class Program
 {
-    private static readonly string[] AllCorpusSizes = ["tiny", "small", "medium", "large", "xlarge"];
+    private static readonly string[] AllCorpusSizes =
+    [
+        "tiny",
+        "small",
+        "medium",
+        "large",
+        "xlarge",
+    ];
     private static readonly string[] KeyUnwrapCorpusSizes = ["tiny", "small"];
     private static readonly int[] DekSizeBitsOptions = [128, 192, 256];
     private static readonly int[] RoleCounts = [4, 64, 256];
@@ -36,11 +43,7 @@ public static class Program
                 return;
             }
             case > 0
-                when string.Equals(
-                    args[0],
-                    "generate-corpus",
-                    StringComparison.OrdinalIgnoreCase
-                ):
+                when string.Equals(args[0], "generate-corpus", StringComparison.OrdinalIgnoreCase):
             {
                 var exitCode = await BenchmarkCorpusUploader.RunAsync();
                 Environment.ExitCode = exitCode;
@@ -73,11 +76,7 @@ public static class Program
                 return;
             }
             case > 0
-                when string.Equals(
-                    args[0],
-                    "ensure-bucket",
-                    StringComparison.OrdinalIgnoreCase
-                ):
+                when string.Equals(args[0], "ensure-bucket", StringComparison.OrdinalIgnoreCase):
             {
                 var exitCode = await S3BucketEnsurer.RunAsync();
                 Environment.ExitCode = exitCode;
@@ -85,15 +84,9 @@ public static class Program
             }
         }
 
-        Console.WriteLine(
-            "╔══════════════════════════════════════════════════════════╗"
-        );
-        Console.WriteLine(
-            "║        OSWS Performance Benchmarks                       ║"
-        );
-        Console.WriteLine(
-            "╚══════════════════════════════════════════════════════════╝"
-        );
+        Console.WriteLine("╔══════════════════════════════════════════════════════════╗");
+        Console.WriteLine("║        OSWS Performance Benchmarks                       ║");
+        Console.WriteLine("╚══════════════════════════════════════════════════════════╝");
         Console.WriteLine();
 
         var choice = Environment.GetEnvironmentVariable("BENCH_MEASUREMENT");
@@ -116,16 +109,16 @@ public static class Program
             case "KeyUnwrapBenchmark":
                 Console.WriteLine("  Running: Key Unwrap (tiny+small × 128/192/256 bits)");
                 benchmarks = KeyUnwrapCorpusSizes
-                    .SelectMany(size => DekSizeBitsOptions, (size, bits) =>
-                        (IMicroBenchmark)new KeyUnwrapBenchmark(size, bits))
+                    .SelectMany(
+                        size => DekSizeBitsOptions,
+                        (size, bits) => (IMicroBenchmark)new KeyUnwrapBenchmark(size, bits)
+                    )
                     .ToList();
                 break;
 
             case "auth":
             case "PermissionServiceBenchmark":
-                Console.WriteLine(
-                    "  Running: Permission Service (4, 64, 256 direct roles)"
-                );
+                Console.WriteLine("  Running: Permission Service (4, 64, 256 direct roles)");
                 benchmarks = RoleCounts
                     .Select(r => (IMicroBenchmark)new PermissionServiceBenchmark(r))
                     .ToList();
@@ -133,9 +126,7 @@ public static class Program
 
             case "hierarchy":
             case "PermissionHierarchyBenchmark":
-                Console.WriteLine(
-                    "  Running: Permission Hierarchy (depth 0, 4, 16, 64)"
-                );
+                Console.WriteLine("  Running: Permission Hierarchy (depth 0, 4, 16, 64)");
                 benchmarks = HierarchyDepths
                     .Select(d => (IMicroBenchmark)new PermissionHierarchyBenchmark(d))
                     .ToList();
@@ -148,25 +139,22 @@ public static class Program
                 Console.WriteLine(
                     "  • Permission Service — flat hierarchy (4, 64, 256 direct roles)"
                 );
-                Console.WriteLine(
-                    "  • Permission Hierarchy — chain depth (0, 4, 16, 64)"
-                );
-                Console.WriteLine(
-                    "  • Key Unwrap — tiny/small corpus × DEK 128/192/256 bits"
-                );
-                Console.WriteLine(
-                    "  • Decryption — tiny/small/medium/large/xlarge corpus sizes"
-                );
+                Console.WriteLine("  • Permission Hierarchy — chain depth (0, 4, 16, 64)");
+                Console.WriteLine("  • Key Unwrap — tiny/small corpus × DEK 128/192/256 bits");
+                Console.WriteLine("  • Decryption — tiny/small/medium/large/xlarge corpus sizes");
                 Console.WriteLine();
 
                 benchmarks =
                 [
                     .. AllCorpusSizes.Select(s => (IMicroBenchmark)new DecryptionBenchmark(s)),
-                    .. KeyUnwrapCorpusSizes.SelectMany(size => DekSizeBitsOptions,
-                        (size, bits) => (IMicroBenchmark)new KeyUnwrapBenchmark(size, bits)),
+                    .. KeyUnwrapCorpusSizes.SelectMany(
+                        size => DekSizeBitsOptions,
+                        (size, bits) => (IMicroBenchmark)new KeyUnwrapBenchmark(size, bits)
+                    ),
                     .. RoleCounts.Select(r => (IMicroBenchmark)new PermissionServiceBenchmark(r)),
                     .. HierarchyDepths.Select(d =>
-                        (IMicroBenchmark)new PermissionHierarchyBenchmark(d)),
+                        (IMicroBenchmark)new PermissionHierarchyBenchmark(d)
+                    ),
                 ];
                 break;
         }
@@ -175,25 +163,15 @@ public static class Program
         await MicroBenchmarkRunner.RunAsync(benchmarks);
 
         Console.WriteLine();
-        Console.WriteLine(
-            "╔══════════════════════════════════════════════════════════╗"
-        );
-        Console.WriteLine(
-            "║  Benchmarks Complete                                     ║"
-        );
-        Console.WriteLine(
-            "╚══════════════════════════════════════════════════════════╝"
-        );
+        Console.WriteLine("╔══════════════════════════════════════════════════════════╗");
+        Console.WriteLine("║  Benchmarks Complete                                     ║");
+        Console.WriteLine("╚══════════════════════════════════════════════════════════╝");
         Console.WriteLine();
         Console.WriteLine("  Results saved to:");
-        Console.WriteLine(
-            "   benchmark-results/micro-<timestamp>.csv — Per-iteration results"
-        );
+        Console.WriteLine("   benchmark-results/micro-<timestamp>.csv — Per-iteration results");
         Console.WriteLine();
         Console.WriteLine("  Analyse with:");
-        Console.WriteLine(
-            "   python Infrastructure/analyse-micro-results.py benchmark-results/"
-        );
+        Console.WriteLine("   python Infrastructure/analyse-micro-results.py benchmark-results/");
         Console.WriteLine();
     }
 }

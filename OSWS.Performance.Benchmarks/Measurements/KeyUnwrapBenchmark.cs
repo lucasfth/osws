@@ -58,9 +58,7 @@ public class KeyUnwrapBenchmark : IMicroBenchmark
 
         // Load corpus file from disk
         var corpusPath = MicroBenchmarkRunner.FindCorpusFile(_sizeLabel);
-        Console.WriteLine(
-            $"      Loaded corpus: {Path.GetFileName(corpusPath)}"
-        );
+        Console.WriteLine($"      Loaded corpus: {Path.GetFileName(corpusPath)}");
 
         // Re-encrypt the corpus with the target DEK size
         _encryptedDatasetPath = Path.Combine(

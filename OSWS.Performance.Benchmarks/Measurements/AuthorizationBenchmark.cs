@@ -1,4 +1,3 @@
-using BenchmarkDotNet.Attributes;
 using OSWS.Performance.Benchmarks.Helpers;
 using OSWS.Performance.Benchmarks.Infrastructure;
 using OSWS.WebApi.Services;
@@ -6,43 +5,60 @@ using OSWS.WebApi.Services;
 namespace OSWS.Performance.Benchmarks.Measurements;
 
 /// <summary>
-/// Measures the end-to-end cost of <see cref="PermissionService.GetAllowedColumnsAsync"/>
+/// Measures the cost of PermissionService.GetAllowedColumnsAsync
 /// across varying numbers of directly-assigned roles (flat hierarchy).
 /// </summary>
-[Config(typeof(SharedBenchmarkConfig))]
-[BenchmarkCategory("Authorization")]
-public class PermissionServiceBenchmark
+public class PermissionServiceBenchmark : IMicroBenchmark
 {
-    [Params(4, 64, 256)]
-    public int RoleCount { get; set; }
+    private readonly int _roleCount;
+
+    public string Name => "PermissionService";
+    public string Parameters => $"role_count={_roleCount}";
 
     private PermissionBenchmarkFixture? _fixture;
-    private PermissionService? _permissionService;
-    private OSWS.KeyManager.Persistence.OswsContext? _iterationContext;
 
-    [GlobalSetup]
-    public void GlobalSetup()
+    public PermissionServiceBenchmark(int roleCount)
     {
-        _fixture = new PermissionBenchmarkFixture(RoleCount);
-        Console.WriteLine($"   ✅ Setup complete (RoleCount={RoleCount})");
+        _roleCount = roleCount;
     }
 
-    [IterationSetup]
-    public void IterationSetup() =>
-        (_permissionService, _iterationContext) = _fixture!.CreatePermissionService();
-
-    [Benchmark(Description = "GetAllowedColumns: varies by direct role count")]
-    public async Task<HashSet<string>> MeasureGetAllowedColumns() =>
-        await _permissionService!.GetAllowedColumnsAsync(_fixture!.UserId, CancellationToken.None);
-
-    [IterationCleanup]
-    public void IterationCleanup()
+    public async Task SetupAsync()
     {
-        _iterationContext?.Dispose();
-        _iterationContext = null;
-        _permissionService = null;
+        await Task.Run(() =>
+        {
+            _fixture = new PermissionBenchmarkFixture(_roleCount);
+            Console.WriteLine($"    Setup complete ({_roleCount} roles)");
+        });
     }
 
-    [GlobalCleanup]
-    public void GlobalCleanup() => _fixture?.Dispose();
+    public async Task RunAsync(MetricsCollector metrics)
+    {
+        var (permissionService, context) = _fixture!.CreatePermissionService();
+        try
+        {
+            await permissionService.GetAllowedColumnsAsync(
+                _fixture!.UserId,
+                CancellationToken.None
+            );
+        }
+        finally
+        {
+            context.Dispose();
+        }
+    }
+
+    public async Task CleanupAsync()
+    {
+        await Task.Run(() =>
+        {
+            Console.WriteLine($"    Cleanup ({_roleCount} roles)");
+            _fixture?.Dispose();
+            _fixture = null;
+        });
+    }
+
+    public void Dispose()
+    {
+        _fixture?.Dispose();
+    }
 }

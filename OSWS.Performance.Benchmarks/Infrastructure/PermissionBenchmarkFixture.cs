@@ -1,3 +1,4 @@
+using dotenv.net;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using OSWS.KeyManager.Persistence;
@@ -8,13 +9,13 @@ namespace OSWS.Performance.Benchmarks.Infrastructure;
 
 /// <summary>
 /// Provides a Postgres database seeded with benchmark data for
-/// <see cref="PermissionService"/> and <see cref="RoleHierarchyService"/> benchmarks.
+/// PermissionService and RoleHierarchyService benchmarks.
 ///
 /// Assumes a dedicated benchmark database — all existing rows are cleared on
-/// construction and on <see cref="Dispose"/>.
+/// construction and on Dispose.
 ///
-/// Each call to <see cref="CreatePermissionService"/> returns a fresh, untracked
-/// <see cref="OswsContext"/> — matching the per-request scoped lifetime in production.
+/// Each call to CreatePermissionService returns a fresh, untracked
+/// OswsContext — matching the per-request scoped lifetime in production.
 /// </summary>
 public sealed class PermissionBenchmarkFixture : IDisposable
 {
@@ -33,13 +34,11 @@ public sealed class PermissionBenchmarkFixture : IDisposable
     {
         var cs =
             connectionString
-            ?? new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: true)
-                .AddJsonFile("appsettings.Development.json", optional: true)
-                .AddEnvironmentVariables()
-                .Build()
-                .GetConnectionString("OswsContext")
-            ?? throw new InvalidOperationException("ConnectionStrings:OswsContext is not set.");
+            ?? ResolveConnectionString()
+            ?? throw new InvalidOperationException(
+                "ConnectionStrings:OswsContext is not set. "
+                    + "Add it to .env, appsettings.json, or set the env var."
+            );
 
         _dbOptions = new DbContextOptionsBuilder<OswsContext>().UseNpgsql(cs).Options;
 
@@ -52,6 +51,19 @@ public sealed class PermissionBenchmarkFixture : IDisposable
     {
         var ctx = new OswsContext(_dbOptions);
         return (new PermissionService(new RoleHierarchyService(ctx), ctx), ctx);
+    }
+
+    private static string? ResolveConnectionString()
+    {
+        // Load .env into env vars so ConfigurationBuilder picks it up
+        DotEnv.Fluent().WithoutExceptions().Load();
+
+        return new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json", optional: true)
+            .AddJsonFile("appsettings.Development.json", optional: true)
+            .AddEnvironmentVariables()
+            .Build()
+            .GetConnectionString("OswsContext");
     }
 
     private static void ClearAll(OswsContext db)

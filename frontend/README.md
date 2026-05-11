@@ -1,75 +1,47 @@
-# React + TypeScript + Vite
+# OSWS Admin UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Web frontend for OSWS — manage RBAC roles, users, column permissions, and S3 credentials.
 
-Currently, two official plugins are available:
+## Tech stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+React 19, TypeScript, Vite 7, Tailwind CSS v4, shadcn/ui, CodeMirror 6, react-oidc-context, react-router-dom v7.
 
-## React Compiler
+## Setup
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+bun install
+cp .env.example .env
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Edit `.env`:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_API_BASE_URL=http://localhost:5000
+VITE_OIDC_AUTHORITY=https://your-oidc-provider
+VITE_OIDC_CLIENT_ID=your-client-id
 ```
+
+## Commands
+
+| Command         | Description                        |
+| --------------- | ---------------------------------- |
+| `bun dev`       | Start dev server at :5173          |
+| `bun build`     | Production build to `dist/`        |
+| `bun test`      | Run tests (Vitest)                 |
+| `bun lint`      | ESLint                             |
+| `bun preview`   | Preview production build           |
+
+## Pages
+
+| Route              | Description                                               |
+| ------------------ | --------------------------------------------------------- |
+| `/`                | Login page — redirects to OIDC provider                   |
+| `/dashboard`       | Profile info and assigned role badges                     |
+| `/credentials`     | Create/revoke S3 credentials with optional default role   |
+| `/admin/query`     | SQL-style admin editor for RBAC (admin only)              |
+
+## Notes
+
+- **Authentication** via react-oidc-context (OIDC PKCE flow). Users are JIT-provisioned in the backend on first login.
+- **Admin detection**: the OIDC provider must set an `isRbacAdmin` claim. Admin users see the query editor; non-admins see only dashboard and credentials.
+- **Admin query language**: a PEG grammar (`src/lib/query.peggy`) parses SQL-style `GRANT`/`REVOKE`/`CREATE ROLE`/`DROP ROLE` statements. The editor uses a custom CodeMirror language extension with syntax highlighting.

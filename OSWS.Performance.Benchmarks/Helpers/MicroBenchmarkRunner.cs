@@ -86,10 +86,7 @@ public static class MicroBenchmarkRunner
     public static int GetConfiguredIterationCount()
     {
         if (
-            int.TryParse(
-                Environment.GetEnvironmentVariable("BENCH_ITERATIONS"),
-                out var envIter
-            )
+            int.TryParse(Environment.GetEnvironmentVariable("BENCH_ITERATIONS"), out var envIter)
             && envIter > 0
         )
             return envIter;

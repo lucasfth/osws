@@ -1,137 +1,126 @@
-using BenchmarkDotNet.Attributes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OSWS.Common.Configuration;
 using OSWS.Models.Interfaces;
 using OSWS.ParquetSolver;
-using OSWS.Performance.Benchmarks.DatasetGenerators;
 using OSWS.Performance.Benchmarks.Fixtures;
 using OSWS.Performance.Benchmarks.Helpers;
 
 namespace OSWS.Performance.Benchmarks.Measurements;
 
 /// <summary>
-/// Micro-benchmark: Key Unwrap Latency
-///
-/// Measures how long it takes to unwrap (decrypt) a Data Encryption Key (DEK)
-/// from the Key Encryption Key (KEK).
-///
-/// DEK size is parameterized per benchmark case (128, 192, 256 bits).
-/// This benchmark measures key unwrap time using a cold cache scenario.
-///
-/// Method: We measure key unwrap time by using a cold cache and reading encrypted parquet.
-/// This forces the system to unwrap DEKs without benefit of cached keys.
-///
-/// Dataset: 10 cols × 100 rows — sized to trigger ~10 KV calls (~1 s total unwrap)
-/// without burying the per-call signal under thousands of sequential round-trips.
-/// (The original 2,000-col × 10,000-row dataset caused ~218 s of KV calls per iteration.)
-///
-/// Expected outcome: Understanding key unwrap overhead independent of decryption.
+/// Measures key unwrap (AKV/KV) latency using pre-generated e2e corpus files
+/// re-encrypted with varying DEK sizes. Each instance corresponds to one
+/// (corpus size label, DEK size bits) combination.
+/// Clears the DEK cache before every iteration to force cold unwraps.
 /// </summary>
-[Config(typeof(SharedBenchmarkConfig))]
-[IterationCount(30)]
-[WarmupCount(8)]
-public class KeyUnwrapBenchmark
+public class KeyUnwrapBenchmark : IMicroBenchmark
 {
-    [Params(128, 192, 256)]
-    public int DekSizeBits { get; set; }
+    private readonly string _sizeLabel;
+    private readonly int _dekSizeBits;
+
+    public string Name => "KeyUnwrap";
+    public string Parameters => $"size={_sizeLabel},dek_bits={_dekSizeBits}";
 
     private ServiceProvider? _services;
     private IKeyVaultProvider? _keyVaultProvider;
     private ILogger<KeyUnwrapBenchmark>? _logger;
     private ColdStartFixture? _fixture;
-    private ParquetWriter? _parquetWriter;
-    private ParquetReader? _parquetReader;
-    private byte[]? _encryptedFileBytes;
+    private byte[]? _encryptedBytes;
     private readonly byte[] _readBuffer = new byte[8192];
+    private string? _encryptedDatasetPath;
 
-    [GlobalSetup]
-    public async Task GlobalSetupAsync()
+    public KeyUnwrapBenchmark(string sizeLabel, int dekSizeBits)
     {
-        Console.WriteLine($"    Setting up Key Unwrap benchmark (DekSizeBits={DekSizeBits})...");
+        _sizeLabel = sizeLabel;
+        _dekSizeBits = dekSizeBits;
+    }
+
+    public async Task SetupAsync()
+    {
+        Console.WriteLine($"    KeyUnwrap setup ({_sizeLabel}, DEK {_dekSizeBits} bits)...");
 
         _services = BenchmarkServiceFactory.BuildServiceProvider();
         var config = _services.GetRequiredService<IConfiguration>();
         _keyVaultProvider = _services.GetRequiredService<IKeyVaultProvider>();
         _logger = _services.GetRequiredService<ILogger<KeyUnwrapBenchmark>>();
 
-        // Use cold start fixture - forces cache to be empty, so each read must unwrap keys
         _fixture = new ColdStartFixture();
 
         var providerType = config.GetValue<string>("KeyVault:Provider") ?? "Internal";
-        _parquetWriter = new ParquetWriter(
+        var writer = new ParquetWriter(
             _keyVaultProvider,
             providerType,
             logger: _logger,
-            encryptionSettings: new EncryptionSettings { DekSizeBits = DekSizeBits }
+            encryptionSettings: new EncryptionSettings { DekSizeBits = _dekSizeBits }
         );
 
-        // Generate a narrow dataset (10 cols × 100 rows) for key unwrap testing.
-        // 10 columns triggers ~10 cold KV calls (~1s), which is enough to measure
-        // per-call unwrap latency without running for minutes per iteration.
-        Console.WriteLine("   Generating dataset (10 cols × 100 rows) for key unwrap testing...");
-        var unencrypted = await ParquetGenerator.GenerateAsync(
-            10,
-            100,
-            cancellationToken: CancellationToken.None
+        // Load corpus file from disk
+        var corpusPath = MicroBenchmarkRunner.FindCorpusFile(_sizeLabel);
+        Console.WriteLine(
+            $"      Loaded corpus: {Path.GetFileName(corpusPath)}"
         );
 
-        Console.WriteLine("   Encrypting dataset for key unwrap benchmarks...");
-        var (encryptedStream, _) = await _parquetWriter.WriteParquetAsync(unencrypted, "default");
-        _encryptedFileBytes = ((MemoryStream)encryptedStream).ToArray();
-        encryptedStream.Dispose();
+        // Re-encrypt the corpus with the target DEK size
+        _encryptedDatasetPath = Path.Combine(
+            Path.GetTempPath(),
+            $"osws-bench-kw-{Guid.NewGuid():N}.parquet"
+        );
 
-        Console.WriteLine($"   ✅ Setup complete for key unwrap benchmark");
-    }
-
-    [IterationSetup]
-    public void IterationSetup()
-    {
-        // Cold start: clear caches before each iteration to force key unwrapping
-        if (_fixture == null)
+        // Scope write stream so file lock is released before reading back
         {
-            _fixture = new ColdStartFixture();
+            await using var plainStream = File.OpenRead(corpusPath);
+            await using var encryptedOutput = new FileStream(
+                _encryptedDatasetPath,
+                FileMode.Create,
+                FileAccess.ReadWrite,
+                FileShare.None
+            );
+            await writer.WriteParquetAsync(plainStream, "default", output: encryptedOutput);
         }
 
+        _encryptedBytes = await File.ReadAllBytesAsync(_encryptedDatasetPath);
+        Console.WriteLine($"      Setup complete ({_sizeLabel}, DEK {_dekSizeBits})");
+    }
+
+    public async Task RunAsync(MetricsCollector metrics)
+    {
+        if (_encryptedBytes == null || _keyVaultProvider == null || _fixture == null)
+            throw new InvalidOperationException("Setup not completed");
+
+        // Clear cache to force cold key unwrap on every iteration
         _fixture.DekCache.Clear();
 
-        if (_keyVaultProvider != null)
-        {
-            _parquetReader = new ParquetReader(_keyVaultProvider, _fixture.DekCache);
-        }
-    }
+        var reader = new ParquetReader(_keyVaultProvider, _fixture.DekCache);
 
-    [Benchmark(Description = "Key Unwrap - Time to unwrap DEKs and read encrypted parquet")]
-    public async Task MeasureKeyUnwrap()
-    {
-        if (_encryptedFileBytes == null || _parquetReader == null)
-            throw new InvalidOperationException("Benchmark setup incomplete");
-
-        var encryptedStream = new MemoryStream(_encryptedFileBytes);
-        var result = await _parquetReader.ReadParquetAsync(encryptedStream);
+        await using var encryptedStream = new MemoryStream(_encryptedBytes, writable: false);
+        using var result = await reader.ReadParquetAsync(encryptedStream);
 
         long totalBytesRead = 0;
         int bytesRead;
         while ((bytesRead = await result.ReadAsync(_readBuffer)) > 0)
-        {
             totalBytesRead += bytesRead;
-        }
-
-        encryptedStream.Dispose();
-        result.Dispose();
 
         if (totalBytesRead == 0)
             throw new InvalidOperationException("No data was read during key unwrap");
     }
 
-    [GlobalCleanup]
-    public void GlobalCleanup()
+    public async Task CleanupAsync()
     {
-        Console.WriteLine($"   Cleaning up Key Unwrap benchmark");
+        Console.WriteLine($"    KeyUnwrap cleanup ({_sizeLabel}, DEK {_dekSizeBits})");
         _fixture?.Dispose();
-        _parquetWriter = null;
-        _parquetReader = null;
+        _fixture = null;
+        _services?.Dispose();
+        _services = null;
+
+        if (!string.IsNullOrWhiteSpace(_encryptedDatasetPath) && File.Exists(_encryptedDatasetPath))
+            File.Delete(_encryptedDatasetPath);
+    }
+
+    public void Dispose()
+    {
+        _fixture?.Dispose();
         _services?.Dispose();
     }
 }

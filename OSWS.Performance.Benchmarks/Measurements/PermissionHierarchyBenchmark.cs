@@ -1,47 +1,68 @@
-using BenchmarkDotNet.Attributes;
+using OSWS.Performance.Benchmarks.Helpers;
 using OSWS.Performance.Benchmarks.Infrastructure;
 using OSWS.WebApi.Services;
 
 namespace OSWS.Performance.Benchmarks.Measurements;
 
 /// <summary>
-/// Measures the cost of <see cref="PermissionService.GetAllowedColumnsAsync"/> as the
-/// role-inheritance chain depth grows, isolating the <c>WITH RECURSIVE</c> CTE overhead.
+/// Measures the cost of PermissionService.GetAllowedColumnsAsync
+/// as the role-inheritance chain depth grows, isolating the
+/// WITH RECURSIVE CTE overhead.
 /// </summary>
-[Config(typeof(SharedBenchmarkConfig))]
-[BenchmarkCategory("Authorization")]
-public class PermissionHierarchyBenchmark
+public class PermissionHierarchyBenchmark : IMicroBenchmark
 {
-    [Params(0, 4, 16, 64)]
-    public int HierarchyDepth { get; set; }
+    private readonly int _hierarchyDepth;
+
+    public string Name => "PermissionHierarchy";
+    public string Parameters => $"hierarchy_depth={_hierarchyDepth}";
 
     private PermissionBenchmarkFixture? _fixture;
-    private PermissionService? _permissionService;
-    private OSWS.KeyManager.Persistence.OswsContext? _iterationContext;
 
-    [GlobalSetup]
-    public void GlobalSetup()
+    public PermissionHierarchyBenchmark(int hierarchyDepth)
     {
-        _fixture = new PermissionBenchmarkFixture(directRoles: 1, hierarchyDepth: HierarchyDepth);
-        Console.WriteLine($"   ✅ Setup complete (HierarchyDepth={HierarchyDepth})");
+        _hierarchyDepth = hierarchyDepth;
     }
 
-    [IterationSetup]
-    public void IterationSetup() =>
-        (_permissionService, _iterationContext) = _fixture!.CreatePermissionService();
-
-    [Benchmark(Description = "GetAllowedColumns: varies by hierarchy chain depth")]
-    public async Task<HashSet<string>> MeasureGetAllowedColumns() =>
-        await _permissionService!.GetAllowedColumnsAsync(_fixture!.UserId, CancellationToken.None);
-
-    [IterationCleanup]
-    public void IterationCleanup()
+    public async Task SetupAsync()
     {
-        _iterationContext?.Dispose();
-        _iterationContext = null;
-        _permissionService = null;
+        await Task.Run(() =>
+        {
+            _fixture = new PermissionBenchmarkFixture(
+                directRoles: 1,
+                hierarchyDepth: _hierarchyDepth
+            );
+            Console.WriteLine($"    Setup complete (depth={_hierarchyDepth})");
+        });
     }
 
-    [GlobalCleanup]
-    public void GlobalCleanup() => _fixture?.Dispose();
+    public async Task RunAsync(MetricsCollector metrics)
+    {
+        var (permissionService, context) = _fixture!.CreatePermissionService();
+        try
+        {
+            await permissionService.GetAllowedColumnsAsync(
+                _fixture!.UserId,
+                CancellationToken.None
+            );
+        }
+        finally
+        {
+            context.Dispose();
+        }
+    }
+
+    public async Task CleanupAsync()
+    {
+        await Task.Run(() =>
+        {
+            Console.WriteLine($"    Cleanup (depth={_hierarchyDepth})");
+            _fixture?.Dispose();
+            _fixture = null;
+        });
+    }
+
+    public void Dispose()
+    {
+        _fixture?.Dispose();
+    }
 }
